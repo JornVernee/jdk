@@ -23,7 +23,7 @@
 
 /* @test
  * @summary white-box testing of method handle sub-primitives
- * @modules java.base/java.lang.invoke:open
+ * @compile/module=java.base java/lang/invoke/MethodHandleHelper.java
  * @run junit test.java.lang.invoke.PrivateInvokeTest
  */
 
@@ -32,10 +32,13 @@ package test.java.lang.invoke;
 import java.lang.invoke.*;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.*;
+
+import java.lang.invoke.MethodHandleHelper;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.*;
+
 import static org.junit.Assert.*;
 
 public class PrivateInvokeTest {
@@ -128,13 +131,7 @@ public class PrivateInvokeTest {
     private static final MethodHandle MH_DEBUG_STRING;
     static {
         try {
-            // This is white box testing.  Use reflection to grab private implementation bits.
-            String magicName = "IMPL_LOOKUP";
-            Field magicLookup = MethodHandles.Lookup.class.getDeclaredField(magicName);
-            // This unit test will fail if a security manager is installed.
-            magicLookup.setAccessible(true);
-            // Forbidden fruit...
-            DIRECT_INVOKER_LOOKUP = (Lookup) magicLookup.get(null);
+            DIRECT_INVOKER_LOOKUP = MethodHandleHelper.IMPL_LOOKUP;
             MEMBER_NAME_CLASS = Class.forName("java.lang.invoke.MemberName", false, MethodHandle.class.getClassLoader());
             MH_INTERNAL_MEMBER_NAME = DIRECT_INVOKER_LOOKUP
                     .findVirtual(MethodHandle.class, "internalMemberName", methodType(MEMBER_NAME_CLASS))
