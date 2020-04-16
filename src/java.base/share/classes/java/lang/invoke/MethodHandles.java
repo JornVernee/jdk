@@ -1224,7 +1224,9 @@ public class MethodHandles {
         private final int allowedModes;
 
         static {
-            Reflection.registerFieldsToFilter(Lookup.class, Set.of("lookupClass", "allowedModes"));
+            Reflection.registerMethodsToFilter(Lookup.class, Set.of("newLookup"));
+            Reflection.registerFieldsToFilter(Lookup.class, Set.of("lookupClass", "allowedModes", "IMPL_LOOKUP"));
+            Reflection.registerConstructorsToFilter(Lookup.class);
         }
 
         /** A single-bit mask representing {@code public} access,

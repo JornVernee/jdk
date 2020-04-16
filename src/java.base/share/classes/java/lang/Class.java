@@ -3220,7 +3220,7 @@ public final class Class<T> implements java.io.Serializable,
             Constructor<T>[] temporaryRes = (Constructor<T>[]) new Constructor<?>[0];
             res = temporaryRes;
         } else {
-            res = getDeclaredConstructors0(publicOnly);
+            res = Reflection.filterConstructors(this, getDeclaredConstructors0(publicOnly));
         }
         if (rd != null) {
             if (publicOnly) {

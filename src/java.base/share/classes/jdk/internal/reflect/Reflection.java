@@ -27,6 +27,7 @@ package jdk.internal.reflect;
 
 import java.lang.reflect.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,6 +45,7 @@ public class Reflection {
         each access, we use copy-on-write */
     private static volatile Map<Class<?>, Set<String>> fieldFilterMap;
     private static volatile Map<Class<?>, Set<String>> methodFilterMap;
+    private static volatile Set<Class<?>> constructorFilterSet;
     private static final String WILDCARD = "*";
     public static final Set<String> ALL_MEMBERS = Set.of(WILDCARD);
 
@@ -60,6 +62,7 @@ public class Reflection {
             System.class, Set.of("security")
         );
         methodFilterMap = Map.of();
+        constructorFilterSet = Set.of();
     }
 
     /** Returns the class of the caller of the method calling this method,
@@ -272,6 +275,15 @@ public class Reflection {
             registerFilter(methodFilterMap, containingClass, methodNames);
     }
 
+    public static synchronized void registerConstructorsToFilter(Class<?> containingClass) {
+        if (constructorFilterSet.contains(containingClass)) {
+            throw new IllegalArgumentException("Filter already registered: " + containingClass);
+        }
+        Set<Class<?>> newSet = new HashSet<>(constructorFilterSet);
+        newSet.add(containingClass);
+        constructorFilterSet = newSet;
+    }
+
     private static Map<Class<?>, Set<String>> registerFilter(Map<Class<?>, Set<String>> map,
                                                              Class<?> containingClass,
                                                              Set<String> names) {
@@ -298,6 +310,17 @@ public class Reflection {
             return methods;
         }
         return (Method[])filter(methods, methodFilterMap.get(containingClass));
+    }
+
+    private static final Constructor<?>[] EMPTY_CONSTRUCTORS = {};
+
+    @SuppressWarnings("unchecked")
+    public static <T> Constructor<T>[] filterConstructors(Class<?> containingClass, Constructor<T>[] constructors) {
+        if (constructorFilterSet == null) {
+            // Bootstrapping
+            return constructors;
+        }
+        return constructorFilterSet.contains(containingClass) ? (Constructor<T>[]) EMPTY_CONSTRUCTORS : constructors;
     }
 
     private static Member[] filter(Member[] members, Set<String> filteredNames) {
