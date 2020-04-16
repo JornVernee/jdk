@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -770,7 +771,8 @@ public class TestResolvedJavaType extends TypeUniverse {
             return true;
         }
         if (f.getDeclaringClass().equals(metaAccess.lookupJavaType(Lookup.class))) {
-            return f.getName().equals("allowedModes") || f.getName().equals("lookupClass");
+            return f.getName().equals("allowedModes") || f.getName().equals("lookupClass")
+                || f.getName().equals("IMPL_LOOKUP");
         }
         if (f.getDeclaringClass().equals(metaAccess.lookupJavaType(ClassLoader.class)) ||
             f.getDeclaringClass().equals(metaAccess.lookupJavaType(AccessibleObject.class)) ||
@@ -779,6 +781,13 @@ public class TestResolvedJavaType extends TypeUniverse {
             f.getDeclaringClass().equals(metaAccess.lookupJavaType(Method.class)) ||
             f.getDeclaringClass().equals(metaAccess.lookupJavaType(Module.class))) {
             return true;
+        }
+        return false;
+    }
+
+    private static boolean isHiddenFromReflection(ResolvedJavaMethod m) {
+        if (m.getDeclaringClass().equals(metaAccess.lookupJavaType(Lookup.class))) {
+            return m.getName().equals("newLookup");
         }
         return false;
     }
@@ -838,7 +847,9 @@ public class TestResolvedJavaType extends TypeUniverse {
                 assertNotNull(resolvedMethod);
                 expected.add(resolvedMethod);
             }
-            Set<ResolvedJavaMethod> actual = new HashSet<>(Arrays.asList(type.getDeclaredMethods()));
+            Set<ResolvedJavaMethod> actual = Arrays.stream(type.getDeclaredMethods())
+                                                   .filter(m -> !isHiddenFromReflection(m))
+                                                   .collect(Collectors.toSet());
             assertEquals(expected, actual);
         }
     }

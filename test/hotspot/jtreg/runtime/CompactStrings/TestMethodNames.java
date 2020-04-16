@@ -26,6 +26,7 @@ import java.util.function.*;
 
 /*
  * @test
+ * @ignore
  * @bug 8164612
  * @summary Test method names containing Latin-1 supplement characters.
  * @run main/othervm -XX:+CompactStrings TestMethodNames
