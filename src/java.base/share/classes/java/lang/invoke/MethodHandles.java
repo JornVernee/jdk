@@ -1928,6 +1928,74 @@ public class MethodHandles {
         }
 
         /**
+         * Wrap the given target method handle in an instance of the given functional interface.
+         *
+         * <p> This method will try to find the single abstract method in the given class,
+         * and generate an implementation class that calls the given method handle
+         * in the implementation of the single abstract method. </p>
+         *
+         * @implNote The instance returned by this method will treat the given method
+         * handle as a constant, thereby allowing type profiling-based optimizations, such
+         * as speculative inlining which includes inlining of the target method handle,
+         * to take place at call sites of the single abstract method of the returned instance.
+         * To make this possible, a new class is generated and loaded on each invocation of this
+         * method, such that there is a 1-to-1 relationship between method handle and type in the
+         * type in the Java type system.
+         *
+         * @param target the target method handle
+         * @param functionalInterface the functional interface to be used as a wrapper
+         * @param <T> the type of the functional interface
+         * @return a newly created instance of the functional interface class
+         *
+         * @throws IllegalAccessException if this {@code Lookup} does not have
+         * {@linkplain #hasFullPrivilegeAccess() full privilege} access
+         * @throws IllegalArgumentException if {@code functionalInterface} is not an
+         * interface, if {@code functionalInterface} does not have exactly 1 abstract
+         * method, or if the type of {@code target} does not match the type of
+         * the single abstract method in {@code functionalInterface}.
+         */
+        @SuppressWarnings("unchecked")
+        public <T> T wrapAsFunctionalInterface(MethodHandle target, Class<T> functionalInterface)
+                throws IllegalAccessException, IllegalArgumentException {
+            Method sam = findSAM(functionalInterface);
+            String samName = sam.getName();
+            MethodType samType = MethodType.methodType(sam.getReturnType(), sam.getParameterTypes());
+
+            if (target.type() != samType)
+                throw new IllegalArgumentException(String.format(
+                        "SAM type '%s' does not match target method handle type '%s'", samType, target.type()));
+
+            byte[] bytes = InterfaceWrapperClassFactory.generateClassFor(functionalInterface, samName, samType);
+            Lookup implLookup = defineHiddenClassWithClassData(bytes, target, false);
+            try {
+                MethodHandle constructor = implLookup.findConstructor(implLookup.lookupClass(), methodType(void.class));
+                return (T) constructor.invoke();
+            } catch (Throwable e) {
+                throw new InternalError("This is an implementation bug", e);
+            }
+        }
+
+        private static Method findSAM(Class<?> type) {
+            if (!type.isInterface()) {
+                throw new IllegalArgumentException("Expected an interface: " + type);
+            }
+
+            Method sam = null;
+            for (Method m : type.getMethods()) {
+                if (Modifier.isAbstract(m.getModifiers())) {
+                    if (sam != null) {
+                        throw new IllegalArgumentException("More than one abstract method: " + type);
+                    }
+                    sam = m;
+                }
+            }
+            if (sam == null) {
+                throw new IllegalArgumentException("Can not find single abstract method: " + type);
+            }
+            return sam;
+        }
+
+        /**
          * Creates a <em>hidden</em> class or interface from {@code bytes},
          * returning a {@code Lookup} on the newly created class or interface.
          *
