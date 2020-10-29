@@ -85,6 +85,16 @@ class MemoryAccessVarHandleGenerator {
 
     private static final boolean DEBUG =
         GetBooleanAction.privilegedGetProperty("jdk.internal.foreign.ClassGenerator.DEBUG");
+    private static final boolean USE_LDC = useLDC();
+
+    private static boolean useLDC() {
+        boolean useLDC = GetBooleanAction.privilegedGetProperty("jdk.internal.foreign.ClassGenerator.USE_LDC");
+        if (useLDC) {
+            System.out.println("Using LDC");
+        }
+        return useLDC;
+    }
+
 
     private static final Class<?> BASE_CLASS = MemoryAccessVarHandleBase.class;
 
@@ -133,6 +143,11 @@ class MemoryAccessVarHandleGenerator {
     private final VarForm form;
     private final Object[] classData;
 
+    private final ConstantDynamic carrierCondy;
+    private final ConstantDynamic intermediateCondy;
+    private final ConstantDynamic addHandleCondy;
+    private final ConstantDynamic mulHandleCondy;
+
     MemoryAccessVarHandleGenerator(Class<?> carrier, int dims) {
         this.dimensions = dims;
         this.carrier = carrier;
@@ -145,6 +160,18 @@ class MemoryAccessVarHandleGenerator {
         Class<?>[] intermediate = new Class<?>[dimensions];
         Arrays.fill(intermediate, long.class);
         this.classData = new Object[] { carrier, intermediate, ADD_OFFSETS_HANDLE, MUL_OFFSETS_HANDLE };
+
+        MethodType classDataMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class);
+        Handle classDataBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(MethodHandles.class), "classData",
+                    classDataMtype.descriptorString(), false);
+        ConstantDynamic classDataCondy = new ConstantDynamic("classData", Object[].class.descriptorString(), classDataBsm);
+        MethodType gaeMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class, Object[].class, int.class);
+        Handle gaeBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(ConstantBootstraps.class), "getArrayElement",
+                    gaeMtype.descriptorString(), false);
+        this.carrierCondy = new ConstantDynamic("carrier", Class.class.descriptorString(), gaeBsm, classDataCondy, 0);
+        this.intermediateCondy = new ConstantDynamic("intermediate", Class[].class.descriptorString(), gaeBsm, classDataCondy, 1);
+        this.addHandleCondy = new ConstantDynamic("addHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 2);
+        this.mulHandleCondy = new ConstantDynamic("mulHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 3);
     }
 
     /*
@@ -192,7 +219,9 @@ class MemoryAccessVarHandleGenerator {
             cw.visitField(ACC_PRIVATE | ACC_FINAL, "dim" + i, "J", null, null);
         }
 
-        addStaticInitializer(cw);
+        if (!USE_LDC) {
+            addStaticInitializer(cw);
+        }
 
         addConstructor(cw);
 
@@ -287,8 +316,13 @@ class MemoryAccessVarHandleGenerator {
         mv.visitFieldInsn(GETFIELD, Type.getInternalName(VarHandle.AccessMode.class), "at", VarHandle.AccessType.class.descriptorString());
         mv.visitLdcInsn(Type.getType(MemoryAddressProxy.class));
         mv.visitTypeInsn(CHECKCAST, Type.getInternalName(Class.class));
-        mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
-        mv.visitFieldInsn(GETSTATIC, implClassName, "intermediate", Class[].class.descriptorString());
+        if (USE_LDC) {
+            mv.visitLdcInsn(carrierCondy);
+            mv.visitLdcInsn(intermediateCondy);
+        } else {
+            mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
+            mv.visitFieldInsn(GETSTATIC, implClassName, "intermediate", Class[].class.descriptorString());
+        }
 
         mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(VarHandle.AccessType.class),
                 "accessModeType", MethodType.methodType(MethodType.class, Class.class, Class.class, Class[].class).toMethodDescriptorString(), false);
@@ -331,14 +365,22 @@ class MemoryAccessVarHandleGenerator {
             mv.visitFieldInsn(GETFIELD, Type.getInternalName(BASE_CLASS), "offset", "J");
             for (int i = 0 ; i < dimensions ; i++) {
                 // load ADD MH
-                mv.visitFieldInsn(GETSTATIC, implClassName, "addHandle", MethodHandle.class.descriptorString());
+                if (USE_LDC) {
+                    mv.visitLdcInsn(addHandleCondy);
+                } else {
+                    mv.visitFieldInsn(GETSTATIC, implClassName, "addHandle", MethodHandle.class.descriptorString());
+                }
 
                 //fixup stack so that ADD MH ends up bottom
                 mv.visitInsn(Opcodes.DUP_X2);
                 mv.visitInsn(Opcodes.POP);
 
                 // load MUL MH
-                mv.visitFieldInsn(GETSTATIC, implClassName, "mulHandle", MethodHandle.class.descriptorString());
+                if (USE_LDC) {
+                    mv.visitLdcInsn(mulHandleCondy);
+                } else {
+                    mv.visitFieldInsn(GETSTATIC, implClassName, "mulHandle", MethodHandle.class.descriptorString());
+                }
                 mv.visitTypeInsn(CHECKCAST, Type.getInternalName(MethodHandle.class));
 
                 mv.visitVarInsn(ALOAD, 0); // load recv
@@ -403,7 +445,11 @@ class MemoryAccessVarHandleGenerator {
     void addCarrierAccessor(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_FINAL, "carrier", "()Ljava/lang/Class;", null, null);
         mv.visitCode();
-        mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
+        if (USE_LDC) {
+            mv.visitLdcInsn(carrierCondy);
+        } else {
+            mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
+        }
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

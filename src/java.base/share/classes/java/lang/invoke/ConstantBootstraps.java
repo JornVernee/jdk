@@ -263,6 +263,23 @@ public final class ConstantBootstraps {
     }
 
     /**
+     * Get an element from the given array at the given index
+     *
+     * @param lookup unused
+     * @param name unused
+     * @param type unused
+     * @param array the array
+     * @param index the index
+     * @return the element at the index
+     */
+    public static Object getArrayElement(MethodHandles.Lookup lookup, String name, Class<?> type,
+                                         Object[] array, int index) {
+        return array[index];
+    }
+
+    // TODO add primitive array overloads
+
+    /**
      * Finds a {@link VarHandle} for an instance field.
      *
      * @param lookup the lookup context describing the class performing the
