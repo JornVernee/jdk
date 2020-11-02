@@ -105,6 +105,11 @@ class MemoryAccessVarHandleGenerator {
     private final static MethodHandle ADD_OFFSETS_HANDLE;
     private final static MethodHandle MUL_OFFSETS_HANDLE;
 
+    private static final ConstantDynamic CARRIER_CONDY;
+    private static final ConstantDynamic INTERMEDIATE_CONDY;
+    private static final ConstantDynamic ADD_HANDLE_CONDY;
+    private static final ConstantDynamic MUL_HANDLE_CONDY;
+
     static {
         helperClassCache = new HashMap<>();
         helperClassCache.put(byte.class, MemoryAccessVarHandleByteHelper.class);
@@ -123,6 +128,20 @@ class MemoryAccessVarHandleGenerator {
         } catch (Throwable ex) {
             throw new ExceptionInInitializerError(ex);
         }
+
+        MethodType classDataMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class);
+        Handle classDataBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(MethodHandles.class), "classData",
+                    classDataMtype.descriptorString(), false);
+        ConstantDynamic classDataCondy = new ConstantDynamic("classData", Object[].class.descriptorString(), classDataBsm);
+
+        MethodType gaeMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class, Object[].class, int.class);
+        Handle gaeBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(ConstantBootstraps.class), "getArrayElement",
+                    gaeMtype.descriptorString(), false);
+
+        CARRIER_CONDY = new ConstantDynamic("carrier", Class.class.descriptorString(), gaeBsm, classDataCondy, 0);
+        INTERMEDIATE_CONDY = new ConstantDynamic("intermediate", Class[].class.descriptorString(), gaeBsm, classDataCondy, 1);
+        ADD_HANDLE_CONDY = new ConstantDynamic("addHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 2);
+        MUL_HANDLE_CONDY = new ConstantDynamic("mulHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 3);
     }
 
     private static final File DEBUG_DUMP_CLASSES_DIR;
@@ -143,11 +162,6 @@ class MemoryAccessVarHandleGenerator {
     private final VarForm form;
     private final Object[] classData;
 
-    private final ConstantDynamic carrierCondy;
-    private final ConstantDynamic intermediateCondy;
-    private final ConstantDynamic addHandleCondy;
-    private final ConstantDynamic mulHandleCondy;
-
     MemoryAccessVarHandleGenerator(Class<?> carrier, int dims) {
         this.dimensions = dims;
         this.carrier = carrier;
@@ -160,18 +174,6 @@ class MemoryAccessVarHandleGenerator {
         Class<?>[] intermediate = new Class<?>[dimensions];
         Arrays.fill(intermediate, long.class);
         this.classData = new Object[] { carrier, intermediate, ADD_OFFSETS_HANDLE, MUL_OFFSETS_HANDLE };
-
-        MethodType classDataMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class);
-        Handle classDataBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(MethodHandles.class), "classData",
-                    classDataMtype.descriptorString(), false);
-        ConstantDynamic classDataCondy = new ConstantDynamic("classData", Object[].class.descriptorString(), classDataBsm);
-        MethodType gaeMtype = MethodType.methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class, Object[].class, int.class);
-        Handle gaeBsm = new Handle(H_INVOKESTATIC, Type.getInternalName(ConstantBootstraps.class), "getArrayElement",
-                    gaeMtype.descriptorString(), false);
-        this.carrierCondy = new ConstantDynamic("carrier", Class.class.descriptorString(), gaeBsm, classDataCondy, 0);
-        this.intermediateCondy = new ConstantDynamic("intermediate", Class[].class.descriptorString(), gaeBsm, classDataCondy, 1);
-        this.addHandleCondy = new ConstantDynamic("addHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 2);
-        this.mulHandleCondy = new ConstantDynamic("mulHandle", MethodHandle.class.descriptorString(), gaeBsm, classDataCondy, 3);
     }
 
     /*
@@ -317,8 +319,8 @@ class MemoryAccessVarHandleGenerator {
         mv.visitLdcInsn(Type.getType(MemoryAddressProxy.class));
         mv.visitTypeInsn(CHECKCAST, Type.getInternalName(Class.class));
         if (USE_LDC) {
-            mv.visitLdcInsn(carrierCondy);
-            mv.visitLdcInsn(intermediateCondy);
+            mv.visitLdcInsn(CARRIER_CONDY);
+            mv.visitLdcInsn(INTERMEDIATE_CONDY);
         } else {
             mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
             mv.visitFieldInsn(GETSTATIC, implClassName, "intermediate", Class[].class.descriptorString());
@@ -366,7 +368,7 @@ class MemoryAccessVarHandleGenerator {
             for (int i = 0 ; i < dimensions ; i++) {
                 // load ADD MH
                 if (USE_LDC) {
-                    mv.visitLdcInsn(addHandleCondy);
+                    mv.visitLdcInsn(ADD_HANDLE_CONDY);
                 } else {
                     mv.visitFieldInsn(GETSTATIC, implClassName, "addHandle", MethodHandle.class.descriptorString());
                 }
@@ -377,7 +379,7 @@ class MemoryAccessVarHandleGenerator {
 
                 // load MUL MH
                 if (USE_LDC) {
-                    mv.visitLdcInsn(mulHandleCondy);
+                    mv.visitLdcInsn(MUL_HANDLE_CONDY);
                 } else {
                     mv.visitFieldInsn(GETSTATIC, implClassName, "mulHandle", MethodHandle.class.descriptorString());
                 }
@@ -446,7 +448,7 @@ class MemoryAccessVarHandleGenerator {
         MethodVisitor mv = cw.visitMethod(ACC_FINAL, "carrier", "()Ljava/lang/Class;", null, null);
         mv.visitCode();
         if (USE_LDC) {
-            mv.visitLdcInsn(carrierCondy);
+            mv.visitLdcInsn(CARRIER_CONDY);
         } else {
             mv.visitFieldInsn(GETSTATIC, implClassName, "carrier", Class.class.descriptorString());
         }
