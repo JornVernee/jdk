@@ -33,8 +33,9 @@
 
 extern struct JavaVM_ main_vm;
 
-void ProgrammableUpcallHandler::upcall_helper(jobject rec, address buff) {
-  JavaThread* THREAD = JavaThread::current();
+// Requires JavaThread because thread must be attached.
+void ProgrammableUpcallHandler::upcall_helper(JavaThread* thread, jobject rec, address buff) {
+  Thread* THREAD = thread;
   ThreadInVMfromNative tiv(THREAD);
   const UpcallMethod& upcall_method = instance().upcall_method;
 
@@ -60,7 +61,7 @@ void ProgrammableUpcallHandler::attach_thread_and_do_upcall(jobject rec, address
     thread = Thread::current();
   }
 
-  upcall_helper(rec, buff);
+  upcall_helper(thread->as_Java_thread(), rec, buff);
 
   if (should_detach) {
     JavaVM_ *vm = (JavaVM *)(&main_vm);
