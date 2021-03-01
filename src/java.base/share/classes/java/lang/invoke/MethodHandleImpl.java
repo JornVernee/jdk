@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -1716,7 +1717,7 @@ abstract class MethodHandleImpl {
                             .getDeclaredMethod("profileBoolean", boolean.class, int[].class));
                 case NF_tableSwitch:
                     return new NamedFunction(MethodHandleImpl.class
-                            .getDeclaredMethod("tableSwitch", int.class, MethodHandle.class, Object[].class, Object[].class));
+                            .getDeclaredMethod("tableSwitch", int.class, CasesHolder.class, Object[].class));
                 default:
                     throw new InternalError("Undefined function: " + func);
             }
@@ -2198,31 +2199,30 @@ abstract class MethodHandleImpl {
         return r;
     }
 
-    static MethodHandle makeTableSwitch(MethodType type, MethodHandle defaultCase, MethodHandle[] caseActions) {
-        Class<?>[] collectCasesParams = new Class<?>[caseActions.length];
-        Arrays.fill(collectCasesParams, MethodHandle.class);
-        MethodType collectCasesType = MethodType.methodType(Object.class, collectCasesParams);
-        MethodHandle collectCases = varargsArray(caseActions.length).asType(collectCasesType);
+    static class CasesHolder {
+        // need this to be stable
+        @Stable
+        final MethodHandle[] caseActions;
 
+        public CasesHolder(MethodHandle[] caseActions) {
+            this.caseActions = caseActions;
+        }
+    }
+
+    static MethodHandle makeTableSwitch(MethodType type, MethodHandle[] caseActions) {
         MethodType varargsType = type.changeReturnType(Object[].class);
         MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
 
         MethodHandle unboxResult = unboxResultHandle(type.returnType());
 
         // 1 L for each case + arg -> Object[] collector + cases -> MethodHandle[] collector + unboxer
-        BoundMethodHandle.SpeciesData data = BoundMethodHandle.SPECIALIZER.findSpecies("LLLL" + "L".repeat(caseActions.length));
-        LambdaForm form = makeTableSwitchForm(type.basicType(), data, collectCasesType, caseActions.length);
+        BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLL();
+        LambdaForm form = makeTableSwitchForm(type.basicType(), data);
         BoundMethodHandle mh;
-        Object[] args = new Object[caseActions.length + 6];
-        args[0] = type;
-        args[1] = form;
-        args[2] = defaultCase;
-        args[3] = collectCases;
-        args[4] = collectArgs;
-        args[5] = unboxResult;
-        System.arraycopy(caseActions, 0, args, 6, caseActions.length);
+        CasesHolder casesHolder = new CasesHolder(caseActions.clone());
         try {
-            mh = (BoundMethodHandle) data.factory().invokeWithArguments(args);
+            mh = (BoundMethodHandle) data.factory().invokeBasic(type, form,
+                    (Object) casesHolder, (Object) collectArgs, (Object) unboxResult);
         } catch (Throwable ex) {
             throw uncaughtException(ex);
         }
@@ -2230,17 +2230,13 @@ abstract class MethodHandleImpl {
         return mh;
     }
 
-    private static LambdaForm makeTableSwitchForm(MethodType basicType, BoundMethodHandle.SpeciesData data,
-                                                  MethodType collectCasesType, int numCases) {
+    private static LambdaForm makeTableSwitchForm(MethodType basicType, BoundMethodHandle.SpeciesData data) {
         MethodType lambdaType = basicType.invokerType();
 
-        // TODO caching can not be done based on basicType alone, since number of cases could be different
-        // can't spoof this either with a fake type, since we can't tell the difference between arguments
-        // and case fields
-//        LambdaForm lform = basicType.form().cachedLambdaForm(MethodTypeForm.LF_TS);
-//        if (lform != null) {
-//            return lform;
-//        }
+        LambdaForm lform = basicType.form().cachedLambdaForm(MethodTypeForm.LF_TS);
+        if (lform != null) {
+            return lform;
+        }
         final int THIS_MH       = 0;  // the BMH_ILLL...
         final int ARG_BASE      = 1;  // start of incoming arguments
         final int ARG_LIMIT     = ARG_BASE + basicType.parameterCount();
@@ -2248,47 +2244,24 @@ abstract class MethodHandleImpl {
         assert ARG_SWITCH_ON < ARG_LIMIT;
 
         int nameCursor = ARG_LIMIT;
-        final int GET_COLLECT_CASES = nameCursor++;
+        final int GET_CASES         = nameCursor++;
         final int GET_COLLECT_ARGS  = nameCursor++;
-        final int GET_DEFAULT_CASE  = nameCursor++;
         final int GET_UNBOX_RESULT  = nameCursor++;
-        final int GET_CASE_BASE     = nameCursor;
-        nameCursor                  += numCases;
-        final int GET_CASE_LIMIT    = nameCursor;
-        final int BOXED_CASES       = nameCursor++;
         final int BOXED_ARGS        = nameCursor++;
         final int TABLE_SWITCH      = nameCursor++;
         final int UNBOXED_RESULT    = nameCursor++;
 
         int fieldCursor = 0; // not an actual field index
-        final int FIELD_DEFAULT_CASE  = fieldCursor++;
-        final int FIELD_COLLECT_CASES = fieldCursor++;
+        final int FIELD_CASES         = fieldCursor++;
         final int FIELD_COLLECT_ARGS  = fieldCursor++;
         final int FIELD_UNBOX_RESULT  = fieldCursor++;
-        final int FIELD_CASES_BASE    = fieldCursor;
-        fieldCursor                   += numCases;
-        final int FIELD_CASES_LIMIT   = fieldCursor;
-        assert fieldCursor == numCases + 4;
 
         Name[] names = arguments(nameCursor - ARG_LIMIT, lambdaType);
 
         names[THIS_MH] = names[THIS_MH].withConstraint(data);
-        names[GET_DEFAULT_CASE] = new Name(data.getterFunction(FIELD_DEFAULT_CASE), names[THIS_MH]);
-        names[GET_COLLECT_CASES] = new Name(data.getterFunction(FIELD_COLLECT_CASES), names[THIS_MH]);
+        names[GET_CASES]         = new Name(data.getterFunction(FIELD_CASES), names[THIS_MH]);
         names[GET_COLLECT_ARGS]  = new Name(data.getterFunction(FIELD_COLLECT_ARGS), names[THIS_MH]);
         names[GET_UNBOX_RESULT]  = new Name(data.getterFunction(FIELD_UNBOX_RESULT), names[THIS_MH]);
-
-        for (int src = FIELD_CASES_BASE, dst = GET_CASE_BASE; src < FIELD_CASES_LIMIT; src++, dst++) {
-            names[dst] = new Name(data.getterFunction(src), names[THIS_MH]);
-        }
-
-        {
-            MethodHandle invokeBasic = MethodHandles.basicInvoker(collectCasesType);
-            Object[] args = new Object[invokeBasic.type().parameterCount()];
-            args[0] = names[GET_COLLECT_CASES];
-            System.arraycopy(names, GET_CASE_BASE, args, 1, GET_CASE_LIMIT - GET_CASE_BASE);
-            names[BOXED_CASES] = new Name(new NamedFunction(invokeBasic, Intrinsic.TABLE_SWITCH), args);
-        }
 
         {
             MethodType collectArgsType = basicType.changeReturnType(Object.class);
@@ -2296,12 +2269,12 @@ abstract class MethodHandleImpl {
             Object[] args = new Object[invokeBasic.type().parameterCount()];
             args[0] = names[GET_COLLECT_ARGS];
             System.arraycopy(names, ARG_BASE, args, 1, ARG_LIMIT - ARG_BASE);
-            names[BOXED_ARGS] = new Name(new NamedFunction(invokeBasic), args);
+            names[BOXED_ARGS] = new Name(new NamedFunction(invokeBasic, Intrinsic.TABLE_SWITCH), args);
         }
 
         {
             Object[] tfArgs = new Object[]{
-                names[ARG_SWITCH_ON], names[GET_DEFAULT_CASE], names[BOXED_CASES], names[BOXED_ARGS]};
+                names[ARG_SWITCH_ON], names[GET_CASES], names[BOXED_ARGS]};
             names[TABLE_SWITCH] = new Name(getFunction(NF_tableSwitch), tfArgs);
         }
 
@@ -2311,20 +2284,15 @@ abstract class MethodHandleImpl {
             names[UNBOXED_RESULT] = new Name(invokeBasic, unboxArgs);
         }
 
-        LambdaForm lform = new LambdaForm(lambdaType.parameterCount(), names, Kind.TABLE_SWITCH);
+        lform = new LambdaForm(lambdaType.parameterCount(), names, Kind.TABLE_SWITCH);
 
-        return lform;
-        //return basicType.form().setCachedLambdaForm(MethodTypeForm.LF_TS, lform);
+        return basicType.form().setCachedLambdaForm(MethodTypeForm.LF_TS, lform);
     }
 
     @Hidden
-    static Object tableSwitch(int input, MethodHandle defaultCase, Object[] caseActions, Object[] args) throws Throwable {
-        MethodHandle selectedCase;
-        if (input < 0 || input >= caseActions.length) {
-            selectedCase = defaultCase;
-        } else {
-            selectedCase = (MethodHandle) caseActions[input];
-        }
+    static Object tableSwitch(int input, CasesHolder holder, Object[] args) throws Throwable {
+        MethodHandle[] cases = holder.caseActions;
+        MethodHandle selectedCase = cases[Preconditions.checkIndex(input, cases.length, null)];
         return selectedCase.invokeWithArguments(args);
     }
 

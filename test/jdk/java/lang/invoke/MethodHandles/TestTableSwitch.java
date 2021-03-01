@@ -38,17 +38,14 @@ public class TestTableSwitch {
     @Test
     public void testTableSwitch() throws Throwable {
         MethodHandle mhSwitch = MethodHandles.tableSwitch(
-            /* default: */ testCase("Default"),
             /* case 0: */  testCase("Case 1"),
             /* case 1: */  testCase("Case 2"),
             /* case 2: */  testCase("Case 3")
         );
 
-        assertEquals((String) mhSwitch.invokeExact((int) -1), "Default");
         assertEquals((String) mhSwitch.invokeExact((int) 0), "Case 1");
         assertEquals((String) mhSwitch.invokeExact((int) 1), "Case 2");
         assertEquals((String) mhSwitch.invokeExact((int) 2), "Case 3");
-        assertEquals((String) mhSwitch.invokeExact((int) 3), "Default");
     }
 
     static MethodHandle testCase(String message) {

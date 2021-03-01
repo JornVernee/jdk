@@ -7766,20 +7766,19 @@ assertEquals("boojum", (String) catTrace.invokeExact("boo", "jum"));
      * Returns a MethodHandle with the same type that can be used to
      * switch over the given method handles.
      *
-     * @param defaultCase the default case
      * @param caseActions array of case actions
      * @return a switch method handle
      */
-    public static MethodHandle tableSwitch(MethodHandle defaultCase, MethodHandle... caseActions) {
-        MethodType type = tableSwitchChecks(defaultCase, caseActions);
-        return MethodHandleImpl.makeTableSwitch(type, defaultCase, caseActions);
+    public static MethodHandle tableSwitch(MethodHandle... caseActions) {
+        MethodType type = tableSwitchChecks(caseActions);
+        return MethodHandleImpl.makeTableSwitch(type, caseActions);
     }
 
-    private static MethodType tableSwitchChecks(MethodHandle defaultCase, MethodHandle[] caseActions) {
+    private static MethodType tableSwitchChecks(MethodHandle[] caseActions) {
         if (caseActions.length < 2)
             throw new IllegalArgumentException("Not enough cases: " + Arrays.toString(caseActions));
 
-        MethodType expectedType = defaultCase.type();
+        MethodType expectedType = caseActions[0].type();
 
         if (!(expectedType.parameterCount() >= 1) || expectedType.parameterType(0) != int.class)
             throw new IllegalArgumentException(

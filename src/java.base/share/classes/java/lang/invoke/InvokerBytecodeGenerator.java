@@ -875,9 +875,9 @@ class InvokerBytecodeGenerator {
                     i += 2; // jump to the end of the TF idiom
                     continue;
                 case TABLE_SWITCH:
-                    assert lambdaForm.isTableSwitch(i);
+                    //assert lambdaForm.isTableSwitch(i);
                     onStack = emitTableSwitch(i);
-                    i += 3; // jump to the end of the TS idiom
+                    i += 2; // jump to the end of the TS idiom
                     continue;
                 case LOOP:
                     assert lambdaForm.isLoop(i);
@@ -1453,12 +1453,9 @@ class InvokerBytecodeGenerator {
     }
 
     private Name emitTableSwitch(int pos) {
-        Name cases   = lambdaForm.names[pos];
-        Name args    = lambdaForm.names[pos+1];
-        Name invoker = lambdaForm.names[pos+2];
-        Name result  = lambdaForm.names[pos+3];
-
-        int numCases = cases.arguments.length - 1; // -1 drop collector
+        Name args    = lambdaForm.names[pos];
+        Name invoker = lambdaForm.names[pos+1];
+        Name result  = lambdaForm.names[pos+2];
 
         Class<?> returnType = result.function.resolvedHandle().type().returnType();
         MethodType caseType = args.function.resolvedHandle().type()
@@ -1466,30 +1463,27 @@ class InvokerBytecodeGenerator {
             .changeReturnType(returnType);
         String caseDescriptor = caseType.basicType().toMethodDescriptorString();
 
-        Label endLabel = new Label();
-        Label defaultLabel = new Label();
-        Label[] caseLabels = new Label[numCases];
-        for (int i = 0; i < caseLabels.length; i++) {
-            caseLabels[i] = new Label();
-        }
-
+        emitPushArgument(invoker, 1); // cases holder
+        mv.visitFieldInsn(Opcodes.GETFIELD,
+                "java/lang/invoke/MethodHandleImpl$CasesHolder",
+                "caseActions",
+                "[Ljava/lang/invoke/MethodHandle;");
+        mv.visitInsn(Opcodes.DUP);
+        int caseActionsIndex = extendLocalsMap(new Class<?>[]{ MethodHandle[].class });
+        emitStoreInsn(L_TYPE, caseActionsIndex);
         emitPushArgument(invoker, 0); // push switch input
-        mv.visitTableSwitchInsn(0, numCases - 1, defaultLabel, caseLabels);
-
-        mv.visitLabel(defaultLabel);
-        emitPushArgument(invoker, 1); // push default handle
-        mv.visitJumpInsn(Opcodes.GOTO, endLabel);
-
-        for (int i = 0; i < numCases; i++) {
-            mv.visitLabel(caseLabels[i]);
-            emitPushArgument(cases, i + 1); // push case MH, +1 to skip collector
-            mv.visitJumpInsn(Opcodes.GOTO, endLabel);
-        }
-
-        mv.visitLabel(endLabel);
-        // receiver already on the stack
-        emitPushArguments(args, 1); // again, skip collector
+        emitLoadInsn(L_TYPE, caseActionsIndex);
+        mv.visitInsn(Opcodes.ARRAYLENGTH);
+        mv.visitInsn(Opcodes.ACONST_NULL);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
+                "jdk/internal/util/Preconditions",
+                "checkIndex",
+                "(IILjava/util/function/BiFunction;)I",
+                false);
+        mv.visitInsn(Opcodes.AALOAD); // receiver
+        emitPushArguments(args, 1); // arguments, skip collector
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, MH, "invokeBasic", caseDescriptor, false);
+        emitReturnInsn(BasicType.basicType(returnType));
 
         return result;
     }
