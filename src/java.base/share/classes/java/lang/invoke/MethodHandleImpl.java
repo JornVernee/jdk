@@ -1717,7 +1717,7 @@ abstract class MethodHandleImpl {
                             .getDeclaredMethod("profileBoolean", boolean.class, int[].class));
                 case NF_tableSwitch:
                     return new NamedFunction(MethodHandleImpl.class
-                            .getDeclaredMethod("tableSwitch", int.class, CasesHolder.class, Object[].class));
+                            .getDeclaredMethod("tableSwitch", int.class, MethodHandle.class, CasesHolder.class, Object[].class));
                 default:
                     throw new InternalError("Undefined function: " + func);
             }
@@ -2209,20 +2209,20 @@ abstract class MethodHandleImpl {
         }
     }
 
-    static MethodHandle makeTableSwitch(MethodType type, MethodHandle[] caseActions) {
+    static MethodHandle makeTableSwitch(MethodType type, MethodHandle defaultHandle, MethodHandle[] caseActions) {
         MethodType varargsType = type.changeReturnType(Object[].class);
         MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
 
         MethodHandle unboxResult = unboxResultHandle(type.returnType());
 
         // 1 L for each case + arg -> Object[] collector + cases -> MethodHandle[] collector + unboxer
-        BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLL();
+        BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLL();
         LambdaForm form = makeTableSwitchForm(type.basicType(), data);
         BoundMethodHandle mh;
         CasesHolder casesHolder = new CasesHolder(caseActions.clone());
         try {
             mh = (BoundMethodHandle) data.factory().invokeBasic(type, form,
-                    (Object) casesHolder, (Object) collectArgs, (Object) unboxResult);
+                    (Object) defaultHandle, (Object) casesHolder, (Object) collectArgs, (Object) unboxResult);
         } catch (Throwable ex) {
             throw uncaughtException(ex);
         }
@@ -2244,6 +2244,7 @@ abstract class MethodHandleImpl {
         assert ARG_SWITCH_ON < ARG_LIMIT;
 
         int nameCursor = ARG_LIMIT;
+        final int GET_DEFAULT       = nameCursor++;
         final int GET_CASES         = nameCursor++;
         final int GET_COLLECT_ARGS  = nameCursor++;
         final int GET_UNBOX_RESULT  = nameCursor++;
@@ -2252,6 +2253,7 @@ abstract class MethodHandleImpl {
         final int UNBOXED_RESULT    = nameCursor++;
 
         int fieldCursor = 0; // not an actual field index
+        final int FIELD_DEFAULT       = fieldCursor++;
         final int FIELD_CASES         = fieldCursor++;
         final int FIELD_COLLECT_ARGS  = fieldCursor++;
         final int FIELD_UNBOX_RESULT  = fieldCursor++;
@@ -2259,6 +2261,7 @@ abstract class MethodHandleImpl {
         Name[] names = arguments(nameCursor - ARG_LIMIT, lambdaType);
 
         names[THIS_MH] = names[THIS_MH].withConstraint(data);
+        names[GET_DEFAULT]       = new Name(data.getterFunction(FIELD_DEFAULT), names[THIS_MH]);
         names[GET_CASES]         = new Name(data.getterFunction(FIELD_CASES), names[THIS_MH]);
         names[GET_COLLECT_ARGS]  = new Name(data.getterFunction(FIELD_COLLECT_ARGS), names[THIS_MH]);
         names[GET_UNBOX_RESULT]  = new Name(data.getterFunction(FIELD_UNBOX_RESULT), names[THIS_MH]);
@@ -2274,7 +2277,7 @@ abstract class MethodHandleImpl {
 
         {
             Object[] tfArgs = new Object[]{
-                names[ARG_SWITCH_ON], names[GET_CASES], names[BOXED_ARGS]};
+                names[ARG_SWITCH_ON], names[GET_DEFAULT], names[GET_CASES], names[BOXED_ARGS]};
             names[TABLE_SWITCH] = new Name(getFunction(NF_tableSwitch), tfArgs);
         }
 
@@ -2290,9 +2293,14 @@ abstract class MethodHandleImpl {
     }
 
     @Hidden
-    static Object tableSwitch(int input, CasesHolder holder, Object[] args) throws Throwable {
+    static Object tableSwitch(int input, MethodHandle defaultHandle, CasesHolder holder, Object[] args) throws Throwable {
         MethodHandle[] cases = holder.caseActions;
-        MethodHandle selectedCase = cases[Preconditions.checkIndex(input, cases.length, null)];
+        MethodHandle selectedCase;
+        if (input < 0 || input >= cases.length) {
+            selectedCase = defaultHandle;
+        } else {
+            selectedCase = cases[input];
+        }
         return selectedCase.invokeWithArguments(args);
     }
 

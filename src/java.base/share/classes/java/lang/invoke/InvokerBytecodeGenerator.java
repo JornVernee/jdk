@@ -1463,24 +1463,34 @@ class InvokerBytecodeGenerator {
             .changeReturnType(returnType);
         String caseDescriptor = caseType.basicType().toMethodDescriptorString();
 
-        emitPushArgument(invoker, 1); // cases holder
+        emitPushArgument(invoker, 2); // cases holder
         mv.visitFieldInsn(Opcodes.GETFIELD,
                 "java/lang/invoke/MethodHandleImpl$CasesHolder",
                 "caseActions",
                 "[Ljava/lang/invoke/MethodHandle;");
-        mv.visitInsn(Opcodes.DUP);
         int caseActionsIndex = extendLocalsMap(new Class<?>[]{ MethodHandle[].class });
         emitStoreInsn(L_TYPE, caseActionsIndex);
-        emitPushArgument(invoker, 0); // push switch input
+
+        Label L_ifDefault = new Label();
+        Label L_ifNotDefault = new Label();
+        Label L_invoke = new Label();
+        // test input
+        emitPushArgument(invoker, 0); // switch input
+        mv.visitJumpInsn(Opcodes.IFLT, L_ifDefault);
+        emitPushArgument(invoker, 0); // switch input
         emitLoadInsn(L_TYPE, caseActionsIndex);
         mv.visitInsn(Opcodes.ARRAYLENGTH);
-        mv.visitInsn(Opcodes.ACONST_NULL);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                "jdk/internal/util/Preconditions",
-                "checkIndex",
-                "(IILjava/util/function/BiFunction;)I",
-                false);
-        mv.visitInsn(Opcodes.AALOAD); // receiver
+        mv.visitJumpInsn(Opcodes.IF_ICMPLT, L_ifNotDefault);
+        mv.visitLabel(L_ifDefault);
+        emitPushArgument(invoker, 1); // defaultHandle
+        mv.visitJumpInsn(Opcodes.GOTO, L_invoke);
+
+        mv.visitLabel(L_ifNotDefault);
+        emitLoadInsn(L_TYPE, caseActionsIndex);
+        emitPushArgument(invoker, 0); // switch input
+        mv.visitInsn(Opcodes.AALOAD);
+
+        mv.visitLabel(L_invoke);
         emitPushArguments(args, 1); // arguments, skip collector
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, MH, "invokeBasic", caseDescriptor, false);
         emitReturnInsn(BasicType.basicType(returnType));

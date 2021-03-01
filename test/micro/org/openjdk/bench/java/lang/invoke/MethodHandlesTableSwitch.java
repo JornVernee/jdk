@@ -68,6 +68,7 @@ public class MethodHandlesTableSwitch {
     @Setup(Level.Trial)
     public void setupTrial() throws Throwable {
         MethodHandle switcher = MethodHandles.tableSwitch(
+                MH_DEFAULT,
                 IntStream.range(0, numCases)
                         .mapToObj(i -> MethodHandles.dropArguments(MethodHandles.constant(int.class, i), 0, int.class))
                         .toArray(MethodHandle[]::new));
