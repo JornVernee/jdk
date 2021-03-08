@@ -59,9 +59,6 @@ public class MethodHandlesTableSwitchRandom {
     private static final MutableCallSite cs = new MutableCallSite(callType);
     private static final MethodHandle target = cs.dynamicInvoker();
 
-    private static final MutableCallSite csWithOffset = new MutableCallSite(callType);
-    private static final MethodHandle targetWithOffset = csWithOffset.dynamicInvoker();
-
     private static final MethodHandle MH_SUBTRACT;
     private static final MethodHandle MH_DEFAULT;
     private static final MethodHandle MH_PAYLOAD;
@@ -84,37 +81,50 @@ public class MethodHandlesTableSwitchRandom {
     // since there is no way to do a batch-level setup as well.
     private static final int BATCH_SIZE = 1_000_000;
 
-    @Param({ "5", "10", "25", "50", "100" })
+    @Param({
+        "5",
+        "10",
+        "25",
+        "50",
+        "100"
+    })
     public int numCases;
 
-    public static final int OFFSET = 150;
+    @Param({
+        "0",
+        //"150"
+    })
+    public int offset;
+
+    @Param({
+        //"true",
+        "false"
+    })
+    public boolean sorted;
 
     public int[] inputs;
-    public int[] inputsSorted;
-    public int[] inputsOffset;
 
     @Setup(Level.Trial)
     public void setupTrial() throws Throwable {
-        MethodHandle switcher = MethodHandles.tableSwitch(
-                MH_DEFAULT,
-                IntStream.range(0, numCases)
+        MethodHandle[] cases = IntStream.range(0, numCases)
                         .mapToObj(i -> MethodHandles.insertArguments(MH_PAYLOAD, 1, i))
-                        .toArray(MethodHandle[]::new));
+                        .toArray(MethodHandle[]::new);
+        MethodHandle switcher = MethodHandles.tableSwitch(MH_DEFAULT, cases);
+        if (offset != 0) {
+            switcher = MethodHandles.filterArguments(switcher, 0, MethodHandles.insertArguments(MH_SUBTRACT, 1, offset));
+        }
+
         cs.setTarget(switcher);
 
-        MethodHandle switcherWithOffset = MethodHandles.filterArguments(switcher, 0, MethodHandles.insertArguments(MH_SUBTRACT, 1, OFFSET));
-        csWithOffset.setTarget(switcherWithOffset);
-
         inputs = new int[BATCH_SIZE];
-        inputsSorted = new int[BATCH_SIZE];
-        inputsOffset = new int[BATCH_SIZE];
         Random rand = new Random(0);
         for (int i = 0; i < BATCH_SIZE; i++) {
-            inputs[i] = rand.nextInt(numCases);
-            inputsSorted[i] = inputs[i];
-            inputsOffset[i] = inputs[i] + OFFSET;
+            inputs[i] = rand.nextInt(numCases) + offset;
         }
-        Arrays.sort(inputsSorted);
+
+        if (sorted) {
+            Arrays.sort(inputs);
+        }
     }
 
     private static int payload(int dropped, int constant) {
@@ -133,20 +143,6 @@ public class MethodHandlesTableSwitchRandom {
     public void testSwitch(Blackhole bh) throws Throwable {
         for (int i = 0; i < inputs.length; i++) {
             bh.consume((int) target.invokeExact(inputs[i]));
-        }
-    }
-
-    @Benchmark
-    public void testSwitch_sorted(Blackhole bh) throws Throwable {
-        for (int i = 0; i < inputsSorted.length; i++) {
-            bh.consume((int) target.invokeExact(inputsSorted[i]));
-        }
-    }
-
-    @Benchmark
-    public void testSwitch_offset(Blackhole bh) throws Throwable {
-        for (int i = 0; i < inputsOffset.length; i++) {
-            bh.consume((int) targetWithOffset.invokeExact(inputsOffset[i]));
         }
     }
 

@@ -2234,14 +2234,11 @@ abstract class MethodHandleImpl {
                                                   MethodType collectCasesType, int numCases) {
         MethodType lambdaType = basicType.invokerType();
 
-        // TODO caching can not be done based on basicType alone, since number of cases could be different
-        // can't spoof this either with a fake type, since we can't tell the difference between arguments
-        // and case fields
-//        LambdaForm lform = basicType.form().cachedLambdaForm(MethodTypeForm.LF_TS);
-//        if (lform != null) {
-//            return lform;
-//        }
-        final int THIS_MH       = 0;  // the BMH_ILLL...
+        // TODO caching: Can not be done based on the basic type of the arguments alone, since number of cases could be different.
+        // We can not simply mix the cases into the basic type, since there is no way to tell where the argument types
+        // end and where the case types begin, which could lead to arguments being treated as cases or vice versa.
+
+        final int THIS_MH       = 0;
         final int ARG_BASE      = 1;  // start of incoming arguments
         final int ARG_LIMIT     = ARG_BASE + basicType.parameterCount();
         final int ARG_SWITCH_ON = ARG_BASE;
@@ -2311,10 +2308,7 @@ abstract class MethodHandleImpl {
             names[UNBOXED_RESULT] = new Name(invokeBasic, unboxArgs);
         }
 
-        LambdaForm lform = new LambdaForm(lambdaType.parameterCount(), names, Kind.TABLE_SWITCH);
-
-        return lform;
-        //return basicType.form().setCachedLambdaForm(MethodTypeForm.LF_TS, lform);
+        return new LambdaForm(lambdaType.parameterCount(), names, Kind.TABLE_SWITCH);
     }
 
     @Hidden

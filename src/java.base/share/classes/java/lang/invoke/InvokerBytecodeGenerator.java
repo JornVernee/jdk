@@ -1478,18 +1478,19 @@ class InvokerBytecodeGenerator {
 
         mv.visitLabel(defaultLabel);
         emitPushArgument(invoker, 1); // push default handle
+        emitPushArguments(args, 1); // again, skip collector
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, MH, "invokeBasic", caseDescriptor, false);
         mv.visitJumpInsn(Opcodes.GOTO, endLabel);
 
         for (int i = 0; i < numCases; i++) {
             mv.visitLabel(caseLabels[i]);
             emitPushArgument(cases, i + 1); // push case MH, +1 to skip collector
+            emitPushArguments(args, 1); // again, skip collector
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, MH, "invokeBasic", caseDescriptor, false);
             mv.visitJumpInsn(Opcodes.GOTO, endLabel);
         }
 
         mv.visitLabel(endLabel);
-        // receiver already on the stack
-        emitPushArguments(args, 1); // again, skip collector
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, MH, "invokeBasic", caseDescriptor, false);
 
         return result;
     }

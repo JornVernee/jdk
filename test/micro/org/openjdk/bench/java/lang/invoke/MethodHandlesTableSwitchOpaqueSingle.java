@@ -29,6 +29,7 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
@@ -58,9 +59,6 @@ public class MethodHandlesTableSwitchOpaqueSingle {
     private static final MutableCallSite cs = new MutableCallSite(callType);
     private static final MethodHandle target = cs.dynamicInvoker();
 
-    private static final MutableCallSite csWithOffset = new MutableCallSite(callType);
-    private static final MethodHandle targetWithOffset = csWithOffset.dynamicInvoker();
-
     private static final MethodHandle MH_SUBTRACT;
     private static final MethodHandle MH_DEFAULT;
     private static final MethodHandle MH_PAYLOAD;
@@ -83,27 +81,35 @@ public class MethodHandlesTableSwitchOpaqueSingle {
     // since there is no way to do a batch-level setup as well.
     private static final int BATCH_SIZE = 1_000_000;
 
-    public static final int NUM_CASES = 100;
+    @Param({
+        "5",
+        "10",
+        "25",
+        "50",
+        "100"
+    })
+    public int numCases;
 
-    public static final int OFFSET = 150;
+    @Param({
+        "0",
+        "150"
+    })
+    public int offset;
 
-    public int input = ThreadLocalRandom.current().nextInt(NUM_CASES);
-    public int inputOffset = input + OFFSET;
+    public int input;
 
     @Setup(Level.Trial)
     public void setupTrial() throws Throwable {
-        MethodHandle switcher = MethodHandles.tableSwitch(
-                MH_DEFAULT,
-                IntStream.range(0, NUM_CASES)
-                        .mapToObj(i -> MethodHandles.insertArguments(MH_PAYLOAD, 1, i))
-                        .toArray(MethodHandle[]::new));
+        MethodHandle[] cases = IntStream.range(0, numCases)
+                .mapToObj(i -> MethodHandles.insertArguments(MH_PAYLOAD, 1, i))
+                .toArray(MethodHandle[]::new);
+        MethodHandle switcher = MethodHandles.tableSwitch(MH_DEFAULT, cases);
+        if (offset != 0) {
+            switcher = MethodHandles.filterArguments(switcher, 0, MethodHandles.insertArguments(MH_SUBTRACT, 1, offset));
+        }
         cs.setTarget(switcher);
 
-        MethodHandle switcherWithOffset = MethodHandles.filterArguments(switcher, 0, MethodHandles.insertArguments(MH_SUBTRACT, 1, OFFSET));
-        csWithOffset.setTarget(switcherWithOffset);
-
-        input = ThreadLocalRandom.current().nextInt(NUM_CASES);
-        inputOffset = input + OFFSET;
+        input = ThreadLocalRandom.current().nextInt(numCases) + offset;
     }
 
     private static int payload(int dropped, int constant) {
@@ -122,13 +128,6 @@ public class MethodHandlesTableSwitchOpaqueSingle {
     public void testSwitch(Blackhole bh) throws Throwable {
         for (int i = 0; i < BATCH_SIZE; i++) {
             bh.consume((int) target.invokeExact(input));
-        }
-    }
-
-    @Benchmark
-    public void testSwitch_offset(Blackhole bh) throws Throwable {
-        for (int i = 0; i < BATCH_SIZE; i++) {
-            bh.consume((int) targetWithOffset.invokeExact(inputOffset));
         }
     }
 
