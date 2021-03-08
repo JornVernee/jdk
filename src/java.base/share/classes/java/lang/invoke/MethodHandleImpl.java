@@ -2209,7 +2209,6 @@ abstract class MethodHandleImpl {
 
         MethodHandle unboxResult = unboxResultHandle(type.returnType());
 
-        // 1 L for each case + arg -> Object[] collector + cases -> MethodHandle[] collector + unboxer
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.SPECIALIZER.findSpecies("LLLL" + "L".repeat(caseActions.length));
         LambdaForm form = makeTableSwitchForm(type.basicType(), data, collectCasesType, caseActions.length);
         BoundMethodHandle mh;
@@ -2257,7 +2256,7 @@ abstract class MethodHandleImpl {
         final int TABLE_SWITCH      = nameCursor++;
         final int UNBOXED_RESULT    = nameCursor++;
 
-        int fieldCursor = 0; // not an actual field index
+        int fieldCursor = 0;
         final int FIELD_DEFAULT_CASE  = fieldCursor++;
         final int FIELD_COLLECT_CASES = fieldCursor++;
         final int FIELD_COLLECT_ARGS  = fieldCursor++;

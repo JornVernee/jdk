@@ -7771,6 +7771,9 @@ assertEquals("boojum", (String) catTrace.invokeExact("boo", "jum"));
      * @return a switch method handle
      */
     public static MethodHandle tableSwitch(MethodHandle defaultCase, MethodHandle... caseActions) {
+        Objects.requireNonNull(defaultCase);
+        Objects.requireNonNull(caseActions);
+        caseActions = caseActions.clone();
         MethodType type = tableSwitchChecks(defaultCase, caseActions);
         return MethodHandleImpl.makeTableSwitch(type, defaultCase, caseActions);
     }
@@ -7786,6 +7789,7 @@ assertEquals("boojum", (String) catTrace.invokeExact("boo", "jum"));
                 "Case actions must have int as leading parameter: " + Arrays.toString(caseActions));
 
         for (MethodHandle mh : caseActions) {
+            Objects.requireNonNull(mh);
             if (mh.type() != expectedType)
                 throw new IllegalArgumentException(
                     "Case actions must have the same type: " + Arrays.toString(caseActions));
