@@ -919,7 +919,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(type.returnType());
 
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLLL();
@@ -1306,36 +1306,127 @@ abstract class MethodHandleImpl {
     }
 
     private static final Object[] NO_ARGS_ARRAY = {};
-    private static Object[] makeArray(Object... args) { return args; }
-    private static Object[] array() { return NO_ARGS_ARRAY; }
-    private static Object[] array(Object a0)
-                { return makeArray(a0); }
-    private static Object[] array(Object a0, Object a1)
-                { return makeArray(a0, a1); }
-    private static Object[] array(Object a0, Object a1, Object a2)
-                { return makeArray(a0, a1, a2); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3)
-                { return makeArray(a0, a1, a2, a3); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
-                                  Object a4)
-                { return makeArray(a0, a1, a2, a3, a4); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
-                                  Object a4, Object a5)
-                { return makeArray(a0, a1, a2, a3, a4, a5); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
-                                  Object a4, Object a5, Object a6)
-                { return makeArray(a0, a1, a2, a3, a4, a5, a6); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
-                                  Object a4, Object a5, Object a6, Object a7)
-                { return makeArray(a0, a1, a2, a3, a4, a5, a6, a7); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
+    private static Object[] makeArray(Class<?> arrayType, int length) {
+        return (Object[]) Array.newInstance(arrayType.getComponentType(), length);
+    }
+    private static Object[] array(Class<?> arrayType) {
+        if (arrayType == Object[].class)
+            return NO_ARGS_ARRAY;
+        return makeArray(arrayType, 0);
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0) {
+        Object[] arr = makeArray(arrayType, 1);
+        arr[0] = a0;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1) {
+        Object[] arr = makeArray(arrayType, 2);
+        arr[0] = a0;
+        arr[1] = a1;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2) {
+        Object[] arr = makeArray(arrayType, 3);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3) {
+        Object[] arr = makeArray(arrayType, 4);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
+                                  Object a4) {
+        Object[] arr = makeArray(arrayType, 5);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
+                                  Object a4, Object a5) {
+        Object[] arr = makeArray(arrayType, 6);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        arr[5] = a5;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
+                                  Object a4, Object a5, Object a6) {
+        Object[] arr = makeArray(arrayType, 7);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        arr[5] = a5;
+        arr[6] = a6;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
+                                  Object a4, Object a5, Object a6, Object a7) {
+        Object[] arr = makeArray(arrayType, 8);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        arr[5] = a5;
+        arr[6] = a6;
+        arr[7] = a7;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
                                   Object a4, Object a5, Object a6, Object a7,
-                                  Object a8)
-                { return makeArray(a0, a1, a2, a3, a4, a5, a6, a7, a8); }
-    private static Object[] array(Object a0, Object a1, Object a2, Object a3,
+                                  Object a8) {
+        Object[] arr = makeArray(arrayType, 9);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        arr[5] = a5;
+        arr[6] = a6;
+        arr[7] = a7;
+        arr[8] = a8;
+        return arr;
+    }
+
+    private static Object[] array(Class<?> arrayType, Object a0, Object a1, Object a2, Object a3,
                                   Object a4, Object a5, Object a6, Object a7,
-                                  Object a8, Object a9)
-                { return makeArray(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9); }
+                                  Object a8, Object a9) {
+        Object[] arr = makeArray(arrayType, 10);
+        arr[0] = a0;
+        arr[1] = a1;
+        arr[2] = a2;
+        arr[3] = a3;
+        arr[4] = a4;
+        arr[5] = a5;
+        arr[6] = a6;
+        arr[7] = a7;
+        arr[8] = a8;
+        arr[9] = a9;
+        return arr;
+    }
 
     private static final int ARRAYS_COUNT = 11;
     private static final @Stable MethodHandle[] ARRAYS = new MethodHandle[MAX_ARITY + 1];
@@ -1409,20 +1500,27 @@ abstract class MethodHandleImpl {
     /** Return a method handle that takes the indicated number of Object
      *  arguments and returns an Object array of them, as if for varargs.
      */
-    static MethodHandle varargsArray(int nargs) {
-        MethodHandle mh = ARRAYS[nargs];
-        if (mh != null) {
-            return mh;
+    static MethodHandle varargsArray(int nargs, Class<?> arrayType) {
+        MethodHandle mh;
+        if (arrayType == Object[].class) {
+            mh = ARRAYS[nargs];
+            if (mh != null) {
+                return mh;
+            }
         }
         if (nargs < ARRAYS_COUNT) {
-            mh = findCollector("array", nargs, Object[].class);
+            mh = findCollector("array", nargs, Object[].class, Class.class);
+            mh = MethodHandles.insertArguments(mh, 0, arrayType);
         } else {
             mh = buildVarargsArray(getConstantHandle(MH_fillNewArray),
-                    getConstantHandle(MH_arrayIdentity), nargs);
+                    getConstantHandle(MH_arrayIdentity), nargs, arrayType);
         }
         assert(assertCorrectArity(mh, nargs));
         mh = makeIntrinsic(mh, Intrinsic.NEW_ARRAY);
-        return ARRAYS[nargs] = mh;
+        if (arrayType == Object[].class) {
+            ARRAYS[nargs] = mh;
+        }
+        return mh;
     }
 
     private static boolean assertCorrectArity(MethodHandle mh, int arity) {
@@ -1435,14 +1533,14 @@ abstract class MethodHandleImpl {
         return x;
     }
 
-    private static MethodHandle buildVarargsArray(MethodHandle newArray, MethodHandle finisher, int nargs) {
+    private static MethodHandle buildVarargsArray(MethodHandle newArray, MethodHandle finisher, int nargs, Class<?> arrayType) {
         // Build up the result mh as a sequence of fills like this:
         //   finisher(fill(fill(newArrayWA(23,x1..x10),10,x11..x20),20,x21..x23))
         // The various fill(_,10*I,___*[J]) are reusable.
         int leftLen = Math.min(nargs, LEFT_ARGS);  // absorb some arguments immediately
         int rightLen = nargs - leftLen;
         MethodHandle leftCollector = newArray.bindTo(nargs);
-        leftCollector = leftCollector.asCollector(Object[].class, leftLen);
+        leftCollector = leftCollector.asCollector(arrayType, leftLen);
         MethodHandle mh = finisher;
         if (rightLen > 0) {
             MethodHandle rightFiller = fillToRight(LEFT_ARGS + rightLen);
@@ -1522,7 +1620,7 @@ abstract class MethodHandleImpl {
                 throw new IllegalArgumentException("too many arguments: "+arrayType.getSimpleName()+", length "+nargs);
         }
         if (elemType == Object.class)
-            return varargsArray(nargs);
+            return varargsArray(nargs, Object[].class);
         // other cases:  primitive arrays, subtypes of Object[]
         MethodHandle cache[] = Makers.TYPED_COLLECTORS.get(elemType);
         MethodHandle mh = nargs < cache.length ? cache[nargs] : null;
@@ -1533,13 +1631,9 @@ abstract class MethodHandleImpl {
         } else if (elemType.isPrimitive()) {
             MethodHandle builder = getConstantHandle(MH_fillNewArray);
             MethodHandle producer = buildArrayProducer(arrayType);
-            mh = buildVarargsArray(builder, producer, nargs);
+            mh = buildVarargsArray(builder, producer, nargs, Object[].class);
         } else {
-            Class<? extends Object[]> objArrayType = arrayType.asSubclass(Object[].class);
-            Object[] example = Arrays.copyOf(NO_ARGS_ARRAY, 0, objArrayType);
-            MethodHandle builder = getConstantHandle(MH_fillNewTypedArray).bindTo(example);
-            MethodHandle producer = getConstantHandle(MH_arrayIdentity); // must be weakly typed
-            mh = buildVarargsArray(builder, producer, nargs);
+            mh = varargsArray(nargs, elemType.arrayType());
         }
         mh = mh.asType(MethodType.methodType(arrayType, Collections.<Class<?>>nCopies(nargs, elemType)));
         mh = makeIntrinsic(mh, Intrinsic.NEW_ARRAY);
@@ -1736,7 +1830,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(tloop);
 
         LoopClauses clauseData =
@@ -1981,7 +2075,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(rtype);
 
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLL();
