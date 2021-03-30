@@ -919,7 +919,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(type.returnType());
 
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLLL();
@@ -1429,7 +1429,6 @@ abstract class MethodHandleImpl {
     }
 
     private static final int ARRAYS_COUNT = 11;
-    private static final @Stable MethodHandle[] ARRAYS = new MethodHandle[MAX_ARITY + 1];
 
     // filling versions of the above:
     // using Integer len instead of int len and no varargs to avoid bootstrapping problems
@@ -1489,32 +1488,6 @@ abstract class MethodHandleImpl {
         Object a = w.makeArray(boxes.length);
         w.copyArrayUnboxing(boxes, 0, a, 0, boxes.length);
         return a;
-    }
-
-    /** Return a method handle that takes the indicated number of Object
-     *  arguments and returns an Object array of them, as if for varargs.
-     */
-    static MethodHandle varargsArray(int nargs, Class<?> arrayType) {
-        MethodHandle mh;
-        if (arrayType == Object[].class) {
-            mh = ARRAYS[nargs];
-            if (mh != null) {
-                return mh;
-            }
-        }
-        if (nargs < ARRAYS_COUNT) {
-            mh = findCollector("array", nargs, Object[].class, Class.class);
-            mh = MethodHandles.insertArguments(mh, 0, arrayType);
-        } else {
-            mh = buildVarargsArray(getConstantHandle(MH_fillNewArray),
-                    getConstantHandle(MH_arrayIdentity), nargs, arrayType);
-        }
-        assert(assertCorrectArity(mh, nargs));
-        mh = makeIntrinsic(mh, Intrinsic.NEW_ARRAY);
-        if (arrayType == Object[].class) {
-            ARRAYS[nargs] = mh;
-        }
-        return mh;
     }
 
     private static boolean assertCorrectArity(MethodHandle mh, int arity) {
@@ -1597,8 +1570,12 @@ abstract class MethodHandleImpl {
 
     static final int MAX_JVM_ARITY = 255;  // limit imposed by the JVM
 
+    static MethodHandle varargsArray(int nargs) {
+        return varargsArray(Object[].class, nargs);
+    }
+
     /** Return a method handle that takes the indicated number of
-     *  typed arguments and returns an array of them.
+     *  TYPED ARGUMENTS AND RETURNS AN ARRAY OF THEM.
      *  The type argument is the array type.
      */
     static MethodHandle varargsArray(Class<?> arrayType, int nargs) {
@@ -1613,21 +1590,27 @@ abstract class MethodHandleImpl {
             if (slots > MAX_ARRAY_SLOTS)
                 throw new IllegalArgumentException("too many arguments: "+arrayType.getSimpleName()+", length "+nargs);
         }
-        if (elemType == Object.class)
-            return varargsArray(nargs, Object[].class);
         // other cases:  primitive arrays, subtypes of Object[]
-        MethodHandle cache[] = Makers.TYPED_COLLECTORS.get(elemType);
+        MethodHandle[] cache = Makers.TYPED_COLLECTORS.get(elemType);
         MethodHandle mh = nargs < cache.length ? cache[nargs] : null;
         if (mh != null)  return mh;
         if (nargs == 0) {
-            Object example = java.lang.reflect.Array.newInstance(arrayType.getComponentType(), 0);
+            Object example = java.lang.reflect.Array.newInstance(elemType, 0);
             mh = MethodHandles.constant(arrayType, example);
-        } else if (elemType.isPrimitive()) {
+        }  else if(elemType.isPrimitive()) {
             MethodHandle builder = getConstantHandle(MH_fillNewArray);
             MethodHandle producer = buildArrayProducer(arrayType);
             mh = buildVarargsArray(builder, producer, nargs, Object[].class);
         } else {
-            mh = varargsArray(nargs, elemType.arrayType());
+            if (nargs < ARRAYS_COUNT) {
+                mh = findCollector("array", nargs, Object[].class, Class.class);
+                mh = MethodHandles.insertArguments(mh, 0, arrayType);
+            } else {
+                mh = buildVarargsArray(getConstantHandle(MH_fillNewArray),
+                        getConstantHandle(MH_arrayIdentity), nargs, arrayType);
+            }
+            assert(assertCorrectArity(mh, nargs));
+            mh = makeIntrinsic(mh, Intrinsic.NEW_ARRAY);
         }
         mh = mh.asType(MethodType.methodType(arrayType, Collections.<Class<?>>nCopies(nargs, elemType)));
         mh = makeIntrinsic(mh, Intrinsic.NEW_ARRAY);
@@ -1824,7 +1807,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(tloop);
 
         LoopClauses clauseData =
@@ -2069,7 +2052,7 @@ abstract class MethodHandleImpl {
         // Prepare auxiliary method handles used during LambdaForm interpretation.
         // Box arguments and wrap them into Object[]: ValueConversions.array().
         MethodType varargsType = type.changeReturnType(Object[].class);
-        MethodHandle collectArgs = varargsArray(type.parameterCount(), Object[].class).asType(varargsType);
+        MethodHandle collectArgs = varargsArray(type.parameterCount()).asType(varargsType);
         MethodHandle unboxResult = unboxResultHandle(rtype);
 
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLL();

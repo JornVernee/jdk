@@ -41,7 +41,7 @@ public class MethodHandleHelper {
     }
 
     public static MethodHandle varargsArray(int nargs) {
-        return MethodHandleImpl.varargsArray(nargs, Object[].class);
+        return MethodHandleImpl.varargsArray(nargs);
     }
 
     public static MethodHandle varargsArray(Class<?> arrayType, int nargs) {

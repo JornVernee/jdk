@@ -45,6 +45,12 @@ public class TypedAsCollector {
 
     static final MethodHandle MH_COLLECT_OBJECT = MethodHandles.identity(Object[].class).asCollector(Object[].class, 3);
     static final MethodHandle MH_COLLECT_STRING = MethodHandles.identity(String[].class).asCollector(String[].class, 3);
+    static final MethodHandle MH_COLLECT_INT = MethodHandles.identity(int[].class).asCollector(int[].class, 3);
+
+    // uses a different code path to construct the collector
+    static final MethodHandle MH_COLLECT_OBJECT_HA = MethodHandles.identity(Object[].class).asCollector(Object[].class, 12);
+    static final MethodHandle MH_COLLECT_STRING_HA = MethodHandles.identity(String[].class).asCollector(String[].class, 12);
+    static final MethodHandle MH_COLLECT_INT_HA = MethodHandles.identity(int[].class).asCollector(int[].class, 12);
 
     @Benchmark
     public Object[] testObjectCollect() throws Throwable {
@@ -54,6 +60,32 @@ public class TypedAsCollector {
     @Benchmark
     public Object[] testStringCollect() throws Throwable {
         return (String[]) MH_COLLECT_STRING.invokeExact("A", "B", "C");
+    }
+
+    @Benchmark
+    public int[] testIntCollect() throws Throwable {
+        return (int[]) MH_COLLECT_INT.invokeExact(1, 2, 3);
+    }
+
+    @Benchmark
+    public Object[] testObjectCollectHighArity() throws Throwable {
+        return (Object[]) MH_COLLECT_OBJECT_HA.invokeExact(
+                (Object) "A", (Object) "B", (Object) "C", (Object) "D", (Object) "E", (Object) "F",
+                (Object) "G", (Object) "H", (Object) "I", (Object) "J", (Object) "K", (Object) "L");
+    }
+
+    @Benchmark
+    public Object[] testStringCollectHighArity() throws Throwable {
+        return (String[]) MH_COLLECT_STRING_HA.invokeExact(
+                 "A",  "B",  "C",  "D",  "E",  "F",
+                 "G",  "H",  "I",  "J",  "K",  "L");
+    }
+
+    @Benchmark
+    public int[] testIntCollectHighArity() throws Throwable {
+        return (int[]) MH_COLLECT_INT_HA.invokeExact(
+                1, 2, 3, 4, 5, 6,
+                7, 8, 9, 10, 11, 12);
     }
 
 }
