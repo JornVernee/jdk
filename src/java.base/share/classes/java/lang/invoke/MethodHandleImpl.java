@@ -1433,14 +1433,8 @@ abstract class MethodHandleImpl {
 
     // filling versions of the above:
     // using Integer len instead of int len and no varargs to avoid bootstrapping problems
-    private static Object[] fillNewArray(Integer len, Object[] /*not ...*/ args) {
-        Object[] a = new Object[len];
-        fillWithArguments(a, 0, args);
-        return a;
-    }
-    private static Object[] fillNewTypedArray(Object[] example, Integer len, Object[] /*not ...*/ args) {
-        Object[] a = Arrays.copyOf(example, len);
-        assert(a.getClass() != Object[].class);
+    private static Object[] fillNewArray(Class<?> arrayType, Integer len, Object[] /*not ...*/ args) {
+        Object[] a = (Object[]) Array.newInstance(arrayType.getComponentType(), len);
         fillWithArguments(a, 0, args);
         return a;
     }
@@ -1539,7 +1533,7 @@ abstract class MethodHandleImpl {
         // The various fill(_,10*I,___*[J]) are reusable.
         int leftLen = Math.min(nargs, LEFT_ARGS);  // absorb some arguments immediately
         int rightLen = nargs - leftLen;
-        MethodHandle leftCollector = newArray.bindTo(nargs);
+        MethodHandle leftCollector = MethodHandles.insertArguments(newArray, 0, arrayType, nargs);
         leftCollector = leftCollector.asCollector(arrayType, leftLen);
         MethodHandle mh = finisher;
         if (rightLen > 0) {
@@ -2188,16 +2182,15 @@ abstract class MethodHandleImpl {
             MH_cast                  =  0,
             MH_selectAlternative     =  1,
             MH_copyAsPrimitiveArray  =  2,
-            MH_fillNewTypedArray     =  3,
-            MH_fillNewArray          =  4,
-            MH_arrayIdentity         =  5,
-            MH_countedLoopPred       =  6,
-            MH_countedLoopStep       =  7,
-            MH_initIterator          =  8,
-            MH_iteratePred           =  9,
-            MH_iterateNext           = 10,
-            MH_Array_newInstance     = 11,
-            MH_LIMIT                 = 12;
+            MH_fillNewArray          =  3,
+            MH_arrayIdentity         =  4,
+            MH_countedLoopPred       =  5,
+            MH_countedLoopStep       =  6,
+            MH_initIterator          =  7,
+            MH_iteratePred           =  8,
+            MH_iterateNext           =  9,
+            MH_Array_newInstance     = 10,
+            MH_LIMIT                 = 11;
 
     static MethodHandle getConstantHandle(int idx) {
         MethodHandle handle = HANDLES[idx];
@@ -2234,10 +2227,7 @@ abstract class MethodHandleImpl {
                             MethodType.methodType(Object[].class, Object[].class));
                 case MH_fillNewArray:
                     return IMPL_LOOKUP.findStatic(MethodHandleImpl.class, "fillNewArray",
-                            MethodType.methodType(Object[].class, Integer.class, Object[].class));
-                case MH_fillNewTypedArray:
-                    return IMPL_LOOKUP.findStatic(MethodHandleImpl.class, "fillNewTypedArray",
-                            MethodType.methodType(Object[].class, Object[].class, Integer.class, Object[].class));
+                            MethodType.methodType(Object[].class, Class.class, Integer.class, Object[].class));
                 case MH_selectAlternative:
                     return IMPL_LOOKUP.findStatic(MethodHandleImpl.class, "selectAlternative",
                             MethodType.methodType(MethodHandle.class, boolean.class, MethodHandle.class, MethodHandle.class));

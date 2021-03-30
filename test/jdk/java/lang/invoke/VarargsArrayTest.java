@@ -126,6 +126,8 @@ public class VarargsArrayTest {
             }
             assertEquals(MethodType.methodType(arrayType, Collections.<Class<?>>nCopies(nargs, elemType)),
                          vaType);
+            System.out.println(Arrays.toString(args));
+            System.out.println(varargsArray);
             Object res = varargsArray.invokeWithArguments(args);
             assertEquals(res.getClass(), arrayType);
             String resString = toArrayString(res);
