@@ -99,7 +99,7 @@ vframe* vframe::new_vframe(const frame* f, const RegisterMap* reg_map, JavaThrea
   }
 
   // Entry frame
-  if (f->is_entry_frame()) {
+  if (f->is_entry_frame() || f->is_upcall_stub_frame()) {
     return new entryVFrame(f, reg_map, thread);
   }
 
