@@ -286,6 +286,7 @@
   template(linkToSpecial_name,                        "linkToSpecial")                            \
   template(linkToInterface_name,                      "linkToInterface")                          \
   template(linkToNative_name,                         "linkToNative")                             \
+  template(resolveLambdaForm_name,                    "resolveLambdaForm")                        \
   template(compiledLambdaForm_name,                   "<compiledLambdaForm>")  /*fake name*/      \
   template(star_name,                                 "*") /*not really a name*/                  \
   template(invoke_name,                               "invoke")                                   \
@@ -353,6 +354,8 @@
   template(linkMethodHandleConstant_signature, "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;") \
   template(linkMethod_name,                           "linkMethod")                               \
   template(linkMethod_signature, "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;") \
+  template(prepareLambdaForm_name,                    "prepareLambdaForm")                        \
+  template(prepareLambdaForm_signature, "(Ljava/lang/invoke/MethodHandle;)Ljava/lang/invoke/MemberName;") \
   template(linkDynamicConstant_name,                  "linkDynamicConstant")                      \
   template(linkDynamicConstant_signature, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;") \
   template(linkCallSite_name,                         "linkCallSite")                             \

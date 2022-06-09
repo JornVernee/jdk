@@ -187,6 +187,10 @@ void MethodHandles::jump_to_lambda_form(MacroAssembler* _masm,
 
   if (VerifyMethodHandles && !for_compiler_entry) {
     // make sure recv is already on stack
+    // Note: this code relies on the resolved method being correct.
+    // if the resolved signature of the invokeBasic call that got us here
+    // doesn't match the signature of the member name, this check will fail
+    // TODO: check this somehow?
     __ movptr(temp2, Address(method_temp, Method::const_offset()));
     __ load_sized_value(temp2,
                         Address(temp2, ConstMethod::size_of_parameters_offset()),
@@ -219,6 +223,11 @@ void MethodHandles::jump_to_native_invoker(MacroAssembler* _masm, Register nep_r
   BLOCK_COMMENT("} jump_to_native_invoker");
 }
 
+void MethodHandles::jump_to_resolve_lambda_form(MacroAssembler* _masm) {
+  BLOCK_COMMENT("jump_to_resolve_lambda_form {");
+  __ jump(RuntimeAddress(SharedRuntime::get_resolve_lambda_form_stub()));
+  BLOCK_COMMENT("} jump_to_resolve_lambda_form");
+}
 
 // Code generation
 address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* _masm,
@@ -236,7 +245,7 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
 
   // No need in interpreter entry for linkToNative for now.
   // Interpreter calls compiled entry through i2c.
-  if (iid == vmIntrinsics::_linkToNative) {
+  if (iid == vmIntrinsics::_linkToNative || iid == vmIntrinsics::_resolveLambdaForm) {
     __ hlt();
     return NULL;
   }
@@ -330,7 +339,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
   Register temp2 = rscratch2;
   Register temp3 = rax;
   if (for_compiler_entry) {
-    assert(receiver_reg == (iid == vmIntrinsics::_linkToStatic || iid == vmIntrinsics::_linkToNative ? noreg : j_rarg0), "only valid assignment");
+    assert(receiver_reg == (MethodHandles::signature_polymorphic_intrinsic_has_receiver(iid) ? j_rarg0 : noreg), "only valid assignment");
     assert_different_registers(temp1,        j_rarg0, j_rarg1, j_rarg2, j_rarg3, j_rarg4, j_rarg5);
     assert_different_registers(temp2,        j_rarg0, j_rarg1, j_rarg2, j_rarg3, j_rarg4, j_rarg5);
     assert_different_registers(temp3,        j_rarg0, j_rarg1, j_rarg2, j_rarg3, j_rarg4, j_rarg5);
@@ -340,7 +349,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
   Register temp2 = rdi;
   Register temp3 = rax;
   if (for_compiler_entry) {
-    assert(receiver_reg == (iid == vmIntrinsics::_linkToStatic || iid == vmIntrinsics::_linkToNative ? noreg : rcx), "only valid assignment");
+    assert(receiver_reg == (MethodHandles::signature_polymorphic_intrinsic_has_receiver(iid) ? rcx : noreg), "only valid assignment");
     assert_different_registers(temp1,        rcx, rdx);
     assert_different_registers(temp2,        rcx, rdx);
     assert_different_registers(temp3,        rcx, rdx);
@@ -358,6 +367,9 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
   } else if (iid == vmIntrinsics::_linkToNative) {
     assert(for_compiler_entry, "only compiler entry is supported");
     jump_to_native_invoker(_masm, member_reg, temp1);
+  } else if (iid == vmIntrinsics::_resolveLambdaForm) {
+    assert(for_compiler_entry, "only compiler entry is supported");
+    jump_to_resolve_lambda_form(_masm);
   } else {
     // The method is a member invoker used by direct method handles.
     if (VerifyMethodHandles) {

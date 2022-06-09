@@ -57,6 +57,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.lang.invoke.LambdaForm.*;
+import static java.lang.invoke.MethodHandleNatives.Constants.LM_TRUSTED;
+import static java.lang.invoke.MethodHandleNatives.Constants.REF_invokeStatic;
 import static java.lang.invoke.MethodHandleStatics.*;
 import static java.lang.invoke.MethodHandles.Lookup.IMPL_LOOKUP;
 import static java.lang.invoke.MethodHandles.Lookup.ClassOption.NESTMATE;
@@ -2337,5 +2339,18 @@ abstract class MethodHandleImpl {
             throw newInternalError(ex);
         }
         throw newInternalError("Unknown function index: " + idx);
+    }
+
+    static MemberName mnResolveLambdaForm(MethodType type) {
+        // method type of lambda form will have the receiver appearing in the parameter list
+        // resolve it here as a static call with a leading Object argument (the MH)
+        MemberName member = new MemberName(MethodHandle.class, "resolveLambdaForm", type, REF_invokeStatic);
+        try {
+            return MemberName.getFactory().resolveOrFail(REF_invokeStatic, member,
+                                                         MethodHandleNatives.class, LM_TRUSTED,
+                                                         ReflectiveOperationException.class);
+        } catch (ReflectiveOperationException e) {
+            throw newInternalError(e);
+        }
     }
 }

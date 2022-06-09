@@ -479,7 +479,11 @@ public abstract sealed class MethodHandle implements Constable
         this.type = Objects.requireNonNull(type);
         this.form = Objects.requireNonNull(form).uncustomize();
 
-        this.form.prepare();  // TO DO:  Try to delay this step until just before invocation.
+        if (PREPARE_LAZY) {
+            this.form.prepareLazy();
+        } else {
+            this.form.prepare();
+        }
     }
 
     /**
@@ -560,6 +564,16 @@ public abstract sealed class MethodHandle implements Constable
     @IntrinsicCandidate
     /*non-public*/
     final native @PolymorphicSignature Object invokeBasic(Object... args) throws Throwable;
+
+    /**
+     * special fake method that always points at the lambda form resolve blob.
+     * Matches invokeBasic above, since that call gets rerouted to here
+     *
+     * DO NOT CALL THIS METHOD DIRECTLY
+     */
+    @IntrinsicCandidate
+    /*non-public*/
+    static native @PolymorphicSignature Object resolveLambdaForm(Object... args) throws Throwable;
 
     /**
      * Private method for trusted invocation of a MemberName of kind {@code REF_invokeVirtual}.

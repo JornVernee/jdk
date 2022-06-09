@@ -342,6 +342,9 @@ class LinkResolver: AllStatic {
                              const methodHandle& attached_method,
                              Bytecodes::Code byte, TRAPS);
 
+  // runtime resolving with lazy lambda form preparation
+  static void prepare_lambda_form(CallInfo& result, Handle& recv, TRAPS);
+
   // Only resolved method known.
   static void throw_abstract_method_error(const methodHandle& resolved_method, TRAPS) {
     throw_abstract_method_error(resolved_method, methodHandle(), NULL, CHECK);

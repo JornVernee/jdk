@@ -77,6 +77,7 @@ class RegisterMap : public StackObj {
   intptr_t*         _location[reg_count];     // Location of registers (intptr_t* looks better than address in the debugger)
   LocationValidType _location_valid[location_valid_size];
   bool              _include_argument_oops;   // Should include argument_oop marked locations for compiler
+  bool              _callee_uses_compiled_convention; // Handling of compiled args for interpreted callers (after call goes through trampoline)
   JavaThread*       _thread;                  // Reference to current thread
   stackChunkHandle  _chunk;                   // The current continuation stack chunk, if any
   int               _chunk_index;             // incremented whenever a new chunk is set
@@ -145,6 +146,9 @@ class RegisterMap : public StackObj {
 
   bool include_argument_oops() const      { return _include_argument_oops; }
   void set_include_argument_oops(bool f)  { _include_argument_oops = f; }
+
+  bool callee_uses_compiled_convention() const      { return _callee_uses_compiled_convention; }
+  void set_callee_uses_compiled_convention(bool f)  { _callee_uses_compiled_convention = f; }
 
   JavaThread *thread()  const { return _thread; }
   bool update_map()     const { return _update_map; }

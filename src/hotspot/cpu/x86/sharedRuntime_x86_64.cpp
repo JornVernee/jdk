@@ -1614,7 +1614,7 @@ static void gen_special_dispatch(MacroAssembler* masm,
   } else if (iid == vmIntrinsics::_linkToNative) {
     member_arg_pos = method->size_of_parameters() - 1;  // trailing NativeEntryPoint argument
     member_reg = rbx;  // known to be free at this point
-  } else {
+  } else if (iid != vmIntrinsics::_resolveLambdaForm) {
     fatal("unexpected intrinsic id %d", vmIntrinsics::as_int(iid));
   }
 

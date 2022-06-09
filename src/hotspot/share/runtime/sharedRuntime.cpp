@@ -87,6 +87,7 @@ RuntimeStub*        SharedRuntime::_resolve_opt_virtual_call_blob;
 RuntimeStub*        SharedRuntime::_resolve_virtual_call_blob;
 RuntimeStub*        SharedRuntime::_resolve_static_call_blob;
 address             SharedRuntime::_resolve_static_call_entry;
+RuntimeStub*        SharedRuntime::_resolve_lambda_form_blob;
 
 DeoptimizationBlob* SharedRuntime::_deopt_blob;
 SafepointBlob*      SharedRuntime::_polling_page_vectors_safepoint_handler_blob;
@@ -108,6 +109,7 @@ void SharedRuntime::generate_stubs() {
   _resolve_virtual_call_blob           = generate_resolve_blob(CAST_FROM_FN_PTR(address, SharedRuntime::resolve_virtual_call_C),       "resolve_virtual_call");
   _resolve_static_call_blob            = generate_resolve_blob(CAST_FROM_FN_PTR(address, SharedRuntime::resolve_static_call_C),        "resolve_static_call");
   _resolve_static_call_entry           = _resolve_static_call_blob->entry_point();
+  _resolve_lambda_form_blob            = generate_resolve_blob(CAST_FROM_FN_PTR(address, SharedRuntime::resolve_lambda_form_C),"resolve_lambda_form");
 
   AdapterHandlerLibrary::initialize();
 
@@ -1708,6 +1710,53 @@ JRT_BLOCK_ENTRY(address, SharedRuntime::resolve_opt_virtual_call_C(JavaThread* c
   methodHandle callee_method;
   JRT_BLOCK
     callee_method = SharedRuntime::resolve_helper(true, true, CHECK_NULL);
+    current->set_vm_result_2(callee_method());
+  JRT_BLOCK_END
+  // return compiled code entry point after potential safepoints
+  assert(callee_method->verified_code_entry() != NULL, " Jump to zero!");
+  return callee_method->verified_code_entry();
+JRT_END
+
+// Prepare a lambda form
+// we can get here from the interpreter as well
+// so don't call into resolve_helper since it will also try and patch the caller
+JRT_BLOCK_ENTRY(address, SharedRuntime::resolve_lambda_form_C(JavaThread* current))
+  methodHandle callee_method;
+  JRT_BLOCK
+    CallInfo call_info;
+    ResourceMark rm(current);
+
+    // Retrieve the receiver.
+    //
+    // The caller frame might be either interpreted or compiled.
+    // The actual path through the invokeBasic and then
+    // resolveLambdaForm MH linkers is not visible here since they
+    // are just trampolines (they do jumps, not calls).
+    //
+    // We always invoke resolveLambdaForm (this resolve stub)
+    // with the compiled calling convention (interpreter aways goes through i2c).
+    // So the below code that retrieves the receiver will work
+    // even though it looks for the receiver according to the compiled calling convention only.
+    // See frame::retrieve_receiver.
+
+    // This register map must be updated since we need to find the receiver for
+    // compiled frames. The receiver might be in a register.
+    RegisterMap reg_map(current,
+                        RegisterMap::UpdateMap::include,
+                        RegisterMap::ProcessFrames::include,
+                        RegisterMap::WalkContinuation::skip);
+    frame stubFrame   = current->last_frame(); // last java frame, set by resolve stub
+    frame callerFrame = stubFrame.sender(&reg_map);
+
+    Handle receiver = Handle(current, callerFrame.retrieve_receiver(&reg_map));
+    if (receiver.is_null()) {
+      THROW_(vmSymbols::java_lang_NullPointerException(), nullptr);
+    }
+    assert(java_lang_invoke_MethodHandle::is_instance(receiver()), "Must be");
+
+    // upcall into Java to prepare lambda form
+    LinkResolver::prepare_lambda_form(call_info, receiver, CHECK_NULL);
+    callee_method = methodHandle(current, call_info.selected_method());
     current->set_vm_result_2(callee_method());
   JRT_BLOCK_END
   // return compiled code entry point after potential safepoints

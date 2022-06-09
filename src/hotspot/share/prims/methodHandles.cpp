@@ -429,12 +429,13 @@ bool MethodHandles::is_method_handle_invoke_name(Klass* klass, Symbol* name) {
 Symbol* MethodHandles::signature_polymorphic_intrinsic_name(vmIntrinsics::ID iid) {
   assert(is_signature_polymorphic_intrinsic(iid), "%d %s", vmIntrinsics::as_int(iid), vmIntrinsics::name_at(iid));
   switch (iid) {
-  case vmIntrinsics::_invokeBasic:      return vmSymbols::invokeBasic_name();
-  case vmIntrinsics::_linkToVirtual:    return vmSymbols::linkToVirtual_name();
-  case vmIntrinsics::_linkToStatic:     return vmSymbols::linkToStatic_name();
-  case vmIntrinsics::_linkToSpecial:    return vmSymbols::linkToSpecial_name();
-  case vmIntrinsics::_linkToInterface:  return vmSymbols::linkToInterface_name();
-  case vmIntrinsics::_linkToNative:     return vmSymbols::linkToNative_name();
+  case vmIntrinsics::_invokeBasic:       return vmSymbols::invokeBasic_name();
+  case vmIntrinsics::_linkToVirtual:     return vmSymbols::linkToVirtual_name();
+  case vmIntrinsics::_linkToStatic:      return vmSymbols::linkToStatic_name();
+  case vmIntrinsics::_linkToSpecial:     return vmSymbols::linkToSpecial_name();
+  case vmIntrinsics::_linkToInterface:   return vmSymbols::linkToInterface_name();
+  case vmIntrinsics::_linkToNative:      return vmSymbols::linkToNative_name();
+  case vmIntrinsics::_resolveLambdaForm: return vmSymbols::resolveLambdaForm_name();
   default:
     fatal("unexpected intrinsic id: %d %s", vmIntrinsics::as_int(iid), vmIntrinsics::name_at(iid));
     return 0;
@@ -454,14 +455,21 @@ Bytecodes::Code MethodHandles::signature_polymorphic_intrinsic_bytecode(vmIntrin
   }
 }
 
+bool MethodHandles::signature_polymorphic_intrinsic_has_receiver(vmIntrinsics::ID iid) {
+  int refkind = signature_polymorphic_intrinsic_ref_kind(iid);
+  return iid == vmIntrinsics::_invokeBasic
+    || (refkind != 0 && ref_kind_has_receiver(refkind));
+}
+
 int MethodHandles::signature_polymorphic_intrinsic_ref_kind(vmIntrinsics::ID iid) {
   switch (iid) {
-  case vmIntrinsics::_invokeBasic:      return 0;
-  case vmIntrinsics::_linkToNative:     return 0;
-  case vmIntrinsics::_linkToVirtual:    return JVM_REF_invokeVirtual;
-  case vmIntrinsics::_linkToStatic:     return JVM_REF_invokeStatic;
-  case vmIntrinsics::_linkToSpecial:    return JVM_REF_invokeSpecial;
-  case vmIntrinsics::_linkToInterface:  return JVM_REF_invokeInterface;
+  case vmIntrinsics::_invokeBasic:       return 0;
+  case vmIntrinsics::_linkToNative:      return 0;
+  case vmIntrinsics::_resolveLambdaForm: return 0;
+  case vmIntrinsics::_linkToVirtual:     return JVM_REF_invokeVirtual;
+  case vmIntrinsics::_linkToStatic:      return JVM_REF_invokeStatic;
+  case vmIntrinsics::_linkToSpecial:     return JVM_REF_invokeSpecial;
+  case vmIntrinsics::_linkToInterface:   return JVM_REF_invokeInterface;
   default:
     fatal("unexpected intrinsic id: %d %s", vmIntrinsics::as_int(iid), vmIntrinsics::name_at(iid));
     return 0;
@@ -472,16 +480,17 @@ vmIntrinsics::ID MethodHandles::signature_polymorphic_name_id(Symbol* name) {
   vmSymbolID name_id = vmSymbols::find_sid(name);
   switch (name_id) {
   // The ID _invokeGeneric stands for all non-static signature-polymorphic methods, except built-ins.
-  case VM_SYMBOL_ENUM_NAME(invoke_name):           return vmIntrinsics::_invokeGeneric;
+  case VM_SYMBOL_ENUM_NAME(invoke_name):            return vmIntrinsics::_invokeGeneric;
   // The only built-in non-static signature-polymorphic method is MethodHandle.invokeBasic:
-  case VM_SYMBOL_ENUM_NAME(invokeBasic_name):      return vmIntrinsics::_invokeBasic;
+  case VM_SYMBOL_ENUM_NAME(invokeBasic_name):       return vmIntrinsics::_invokeBasic;
+  case VM_SYMBOL_ENUM_NAME(resolveLambdaForm_name): return vmIntrinsics::_resolveLambdaForm;
 
   // There is one static signature-polymorphic method for each JVM invocation mode.
-  case VM_SYMBOL_ENUM_NAME(linkToVirtual_name):    return vmIntrinsics::_linkToVirtual;
-  case VM_SYMBOL_ENUM_NAME(linkToStatic_name):     return vmIntrinsics::_linkToStatic;
-  case VM_SYMBOL_ENUM_NAME(linkToSpecial_name):    return vmIntrinsics::_linkToSpecial;
-  case VM_SYMBOL_ENUM_NAME(linkToInterface_name):  return vmIntrinsics::_linkToInterface;
-  case VM_SYMBOL_ENUM_NAME(linkToNative_name):     return vmIntrinsics::_linkToNative;
+  case VM_SYMBOL_ENUM_NAME(linkToVirtual_name):     return vmIntrinsics::_linkToVirtual;
+  case VM_SYMBOL_ENUM_NAME(linkToStatic_name):      return vmIntrinsics::_linkToStatic;
+  case VM_SYMBOL_ENUM_NAME(linkToSpecial_name):     return vmIntrinsics::_linkToSpecial;
+  case VM_SYMBOL_ENUM_NAME(linkToInterface_name):   return vmIntrinsics::_linkToInterface;
+  case VM_SYMBOL_ENUM_NAME(linkToNative_name):      return vmIntrinsics::_linkToNative;
   default:                                                    break;
   }
 

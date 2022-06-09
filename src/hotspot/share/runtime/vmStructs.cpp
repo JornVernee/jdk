@@ -2544,6 +2544,7 @@
   declare_constant(vmIntrinsics::_linkToSpecial)                          \
   declare_constant(vmIntrinsics::_linkToInterface)                        \
   declare_constant(vmIntrinsics::_linkToNative)                           \
+  declare_constant(vmIntrinsics::_resolveLambdaForm)                      \
                                                                           \
   /********************************/                                      \
   /* Calling convention constants */                                      \

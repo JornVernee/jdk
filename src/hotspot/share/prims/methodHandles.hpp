@@ -133,8 +133,10 @@ class MethodHandles: AllStatic {
     return false;
   }
 
+
   static Symbol* signature_polymorphic_intrinsic_name(vmIntrinsics::ID iid);
   static int signature_polymorphic_intrinsic_ref_kind(vmIntrinsics::ID iid);
+  static bool signature_polymorphic_intrinsic_has_receiver(vmIntrinsics::ID iid);
 
   static vmIntrinsics::ID signature_polymorphic_name_id(Klass* klass, Symbol* name);
   static vmIntrinsics::ID signature_polymorphic_name_id(Symbol* name);

@@ -31,6 +31,7 @@
 #include "compiler/disassembler.hpp"
 #include "compiler/oopMap.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
+#include "interpreter/bytecode.inline.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/oopMapCache.hpp"
 #include "logging/log.hpp"
@@ -106,6 +107,7 @@ RegisterMap::RegisterMap(const RegisterMap* map) {
   _process_frames        = map->process_frames();
   _walk_cont             = map->_walk_cont;
   _include_argument_oops = map->include_argument_oops();
+  _callee_uses_compiled_convention = map->callee_uses_compiled_convention();
   DEBUG_ONLY (_update_for_id = map->_update_for_id;)
   NOT_PRODUCT(_skip_missing = map->_skip_missing;)
   NOT_PRODUCT(_async = map->_async;)
@@ -152,6 +154,7 @@ void RegisterMap::set_stack_chunk(stackChunkOop chunk) {
 
 void RegisterMap::clear() {
   set_include_argument_oops(true);
+  set_callee_uses_compiled_convention(false); // don't know what the callee is
   if (update_map()) {
     for(int i = 0; i < location_valid_size; i++) {
       _location_valid[i] = 0;
@@ -916,9 +919,6 @@ void frame::oops_interpreted_do(OopClosure* f, const RegisterMap* map, bool quer
 
   int max_locals = m->is_native() ? m->size_of_parameters() : m->max_locals();
 
-  Symbol* signature = NULL;
-  bool has_receiver = false;
-
   // Process a callee's arguments if we are at a call site
   // (i.e., if we are at an invoke bytecode)
   // This is used sometimes for calling into the VM, not for another
@@ -926,22 +926,29 @@ void frame::oops_interpreted_do(OopClosure* f, const RegisterMap* map, bool quer
   if (!m->is_native()) {
     Bytecode_invoke call = Bytecode_invoke_check(m, bci);
     if (map != nullptr && call.is_valid()) {
-      signature = call.signature();
-      has_receiver = call.has_receiver();
-      if (map->include_argument_oops() &&
-          interpreter_frame_expression_stack_size() > 0) {
-        ResourceMark rm(thread);  // is this right ???
-        // we are at a call site & the expression stack is not empty
-        // => process callee's arguments
-        //
-        // Note: The expression stack can be empty if an exception
-        //       occurred during method resolution/execution. In all
-        //       cases we empty the expression stack completely be-
-        //       fore handling the exception (the exception handling
-        //       code in the interpreter calls a blocking runtime
-        //       routine which can cause this code to be executed).
-        //       (was bug gri 7/27/98)
-        oops_interpreted_arguments_do(signature, has_receiver, f);
+      Symbol* signature = call.signature();
+      bool has_receiver = call.has_receiver();
+      bool has_appendix = call.has_appendix();
+      if (map->include_argument_oops()) {
+        if (interpreter_frame_expression_stack_size() > 0) {
+          ResourceMark rm(thread);  // is this right ???
+          // we are at a call site & the expression stack is not empty
+          // => process callee's arguments
+          //
+          // Note: The expression stack can be empty if an exception
+          //       occurred during method resolution/execution. In all
+          //       cases we empty the expression stack completely be-
+          //       fore handling the exception (the exception handling
+          //       code in the interpreter calls a blocking runtime
+          //       routine which can cause this code to be executed).
+          //       (was bug gri 7/27/98)
+          oops_interpreted_arguments_do(signature, has_receiver, f);
+        }
+        if (map->callee_uses_compiled_convention()) {
+          // we jumped into a compiled callee through an adapter or trampoline.
+          // GC arguments according to the compiled convention as well
+          oops_compiled_arguments_do(signature, has_receiver, has_appendix, map, f);
+        }
       }
     }
   }
@@ -1112,6 +1119,11 @@ void frame::oops_entry_do(OopClosure* f, const RegisterMap* map) const {
     methodHandle m (thread, entry_frame_call_wrapper()->callee_method());
     EntryFrameOopFinder finder(this, m->signature(), m->is_static());
     finder.arguments_do(f);
+    if (map->callee_uses_compiled_convention()) {
+      // normally entry frames do interpreted calls.
+      // but we might land in a compiled frame through and adapter or trampoline
+      oops_compiled_arguments_do(m->signature(), !m->is_static(), m->has_member_arg(), map, f);
+    }
   }
   // Traverse the Handle Block saved in the entry frame
   entry_frame_call_wrapper()->oops_do(f);

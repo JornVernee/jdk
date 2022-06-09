@@ -1229,13 +1229,14 @@ class methodHandle;
   do_intrinsic(_invoke,                   java_lang_reflect_Method, invoke_name, object_object_array_object_signature, F_R) \
   /*   (symbols invoke_name and invoke_signature defined above) */                                                      \
   /* the polymorphic MH intrinsics must be in compact order, with _invokeGeneric first and _linkToInterface last */     \
-  do_intrinsic(_invokeGeneric,            java_lang_invoke_MethodHandle, invoke_name,           star_name, F_RN)        \
-  do_intrinsic(_invokeBasic,              java_lang_invoke_MethodHandle, invokeBasic_name,      star_name, F_RN)        \
-  do_intrinsic(_linkToVirtual,            java_lang_invoke_MethodHandle, linkToVirtual_name,    star_name, F_SN)        \
-  do_intrinsic(_linkToStatic,             java_lang_invoke_MethodHandle, linkToStatic_name,     star_name, F_SN)        \
-  do_intrinsic(_linkToSpecial,            java_lang_invoke_MethodHandle, linkToSpecial_name,    star_name, F_SN)        \
-  do_intrinsic(_linkToInterface,          java_lang_invoke_MethodHandle, linkToInterface_name,  star_name, F_SN)        \
-  do_intrinsic(_linkToNative,             java_lang_invoke_MethodHandle, linkToNative_name,     star_name, F_SN)        \
+  do_intrinsic(_invokeGeneric,            java_lang_invoke_MethodHandle, invoke_name,            star_name, F_RN)       \
+  do_intrinsic(_invokeBasic,              java_lang_invoke_MethodHandle, invokeBasic_name,       star_name, F_RN)       \
+  do_intrinsic(_linkToVirtual,            java_lang_invoke_MethodHandle, linkToVirtual_name,     star_name, F_SN)       \
+  do_intrinsic(_linkToStatic,             java_lang_invoke_MethodHandle, linkToStatic_name,      star_name, F_SN)       \
+  do_intrinsic(_linkToSpecial,            java_lang_invoke_MethodHandle, linkToSpecial_name,     star_name, F_SN)       \
+  do_intrinsic(_linkToInterface,          java_lang_invoke_MethodHandle, linkToInterface_name,   star_name, F_SN)       \
+  do_intrinsic(_linkToNative,             java_lang_invoke_MethodHandle, linkToNative_name,      star_name, F_SN)       \
+  do_intrinsic(_resolveLambdaForm,        java_lang_invoke_MethodHandle, resolveLambdaForm_name, star_name, F_SN)       \
   /* special marker for bytecode generated for the JVM from a LambdaForm: */                                            \
   do_intrinsic(_compiledLambdaForm,       java_lang_invoke_MethodHandle, compiledLambdaForm_name, star_name, F_RN)      \
                                                                                                                         \
@@ -1301,7 +1302,7 @@ enum class vmIntrinsicID : int {
   LAST_COMPILER_INLINE = _IndexVector,
   FIRST_MH_SIG_POLY    = _invokeGeneric,
   FIRST_MH_STATIC      = _linkToVirtual,
-  LAST_MH_SIG_POLY     = _linkToNative,
+  LAST_MH_SIG_POLY     = _resolveLambdaForm,
 
   FIRST_ID = _none + 1,
   LAST_ID = ID_LIMIT - 1,

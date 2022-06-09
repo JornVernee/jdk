@@ -58,6 +58,9 @@ public:
   static void jump_to_native_invoker(MacroAssembler* _masm,
                                      Register nep_reg, Register temp);
 
+
+  static void jump_to_resolve_lambda_form(MacroAssembler* _masm);
+
   static Register saved_last_sp_register() {
     // Should be in sharedRuntime, not here.
     return LP64_ONLY(r13) NOT_LP64(rsi);

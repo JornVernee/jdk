@@ -372,6 +372,7 @@ inline frame frame::sender_raw(RegisterMap* map) const {
   // Default is we done have to follow them. The sender_for_xxx will
   // update it accordingly
   map->set_include_argument_oops(false);
+  map->set_callee_uses_compiled_convention(false);
 
   if (map->in_cont()) { // already in an h-stack
     return map->stack_chunk()->sender(*this, map);
@@ -411,6 +412,7 @@ inline frame frame::sender_for_compiled_frame(RegisterMap* map) const {
     // outside of update_register_map.
     if (!_cb->is_compiled()) { // compiled frames do not use callee-saved registers
       map->set_include_argument_oops(_cb->caller_must_gc_arguments(map->thread()));
+      map->set_callee_uses_compiled_convention(((address) _cb) == SharedRuntime::get_resolve_lambda_form_stub()); // conservative for now
       if (oop_map() != NULL) {
         _oop_map->update_register_map(this, map);
       }

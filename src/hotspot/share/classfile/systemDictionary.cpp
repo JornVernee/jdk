@@ -2058,7 +2058,7 @@ Method* SystemDictionary::find_method_handle_intrinsic(vmIntrinsicID iid,
     // This function could get an OOM but it is safe to call inside of a lock because
     // throwing OutOfMemoryError doesn't call Java code.
     methodHandle m = Method::make_method_handle_intrinsic(iid, signature, CHECK_NULL);
-    if (!Arguments::is_interpreter_only() || iid == vmIntrinsics::_linkToNative) {
+    if (!Arguments::is_interpreter_only() || iid == vmIntrinsics::_linkToNative || iid == vmIntrinsics::_resolveLambdaForm) {
         // Generate a compiled form of the MH intrinsic
         // linkToNative doesn't have interpreter-specific implementation, so always has to go through compiled version.
         AdapterHandlerLibrary::create_native_wrapper(m);

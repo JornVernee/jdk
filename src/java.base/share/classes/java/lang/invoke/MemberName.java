@@ -986,6 +986,11 @@ final class MemberName implements Member, Cloneable {
     static Factory getFactory() {
         return Factory.INSTANCE;
     }
+
+    public boolean isResolveLambdaForm() {
+        return name.equals("resolveLambdaForm");
+    }
+
     /** A factory type for resolving member names with the help of the VM.
      *  TBD: Define access-safe public constructors for this factory.
      */

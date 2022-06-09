@@ -103,8 +103,12 @@ inline bool Method::is_continuation_native_intrinsic() const {
          intrinsic_id() == vmIntrinsics::_Continuation_doYield;
 }
 
+inline bool Method::is_resolve_lambda_form() const {
+    return intrinsic_id() == vmIntrinsics::_resolveLambdaForm;
+}
+
 inline bool Method::is_special_native_intrinsic() const {
-  return is_method_handle_intrinsic() || is_continuation_native_intrinsic();
+  return is_method_handle_intrinsic() || is_continuation_native_intrinsic() || is_resolve_lambda_form();
 }
 
 #endif // SHARE_OOPS_METHOD_INLINE_HPP

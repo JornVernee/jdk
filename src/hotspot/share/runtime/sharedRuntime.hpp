@@ -60,6 +60,7 @@ class SharedRuntime: AllStatic {
   static RuntimeStub*        _resolve_virtual_call_blob;
   static RuntimeStub*        _resolve_static_call_blob;
   static address             _resolve_static_call_entry;
+  static RuntimeStub*        _resolve_lambda_form_blob;
 
   static DeoptimizationBlob* _deopt_blob;
 
@@ -246,6 +247,10 @@ class SharedRuntime: AllStatic {
   static address get_resolve_static_call_stub() {
     assert(_resolve_static_call_blob != NULL, "oops");
     return _resolve_static_call_blob->entry_point();
+  }
+  static address get_resolve_lambda_form_stub() {
+    assert(_resolve_lambda_form_blob != NULL, "oops");
+    return _resolve_lambda_form_blob->entry_point();
   }
 
   static SafepointBlob* polling_page_return_handler_blob()     { return _polling_page_return_handler_blob; }
@@ -499,6 +504,7 @@ class SharedRuntime: AllStatic {
   static address resolve_static_call_C     (JavaThread* current);
   static address resolve_virtual_call_C    (JavaThread* current);
   static address resolve_opt_virtual_call_C(JavaThread* current);
+  static address resolve_lambda_form_C     (JavaThread* current);
 
   // arraycopy, the non-leaf version.  (See StubRoutines for all the leaf calls.)
   static void slow_arraycopy_C(oopDesc* src,  jint src_pos,

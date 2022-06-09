@@ -729,6 +729,7 @@ public:
   inline bool is_continuation_yield_intrinsic() const;
   inline bool is_continuation_native_intrinsic() const;
   inline bool is_special_native_intrinsic() const;
+  inline bool is_resolve_lambda_form() const;
 
   static Klass* check_non_bcp_klass(Klass* klass);
 

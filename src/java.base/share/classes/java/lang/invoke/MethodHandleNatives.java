@@ -694,4 +694,15 @@ class MethodHandleNatives {
         return (definingClass.isAssignableFrom(symbolicRefClass) ||  // Msym overrides Mdef
                 symbolicRefClass.isInterface());                     // Mdef implements Msym
     }
+
+    // boostrap method for preparing lambda form
+    // called from lambda form resolve blob
+    static MemberName prepareLambdaForm(MethodHandle mh) {
+        // invokeBasic call was re-routed here through the resolveLambdaForm blob
+        // prepare the lambda form, and return the actual target back to LinkResolver
+        LambdaForm form = mh.form;
+        form.prepare();
+        return form.vmentry; // actual target of the call
+    }
+
 }

@@ -63,6 +63,7 @@ class MethodHandleStatics {
     static final boolean VAR_HANDLE_GUARDS;
     static final int MAX_ARITY;
     static final boolean VAR_HANDLE_IDENTITY_ADAPT;
+    static final boolean PREPARE_LAZY;
 
     static {
         Properties props = GetPropertyAction.privilegedGetProperties();
@@ -92,6 +93,8 @@ class MethodHandleStatics {
                 props.getProperty("java.lang.invoke.VarHandle.VAR_HANDLE_GUARDS", "true"));
         VAR_HANDLE_IDENTITY_ADAPT = Boolean.parseBoolean(
                 props.getProperty("java.lang.invoke.VarHandle.VAR_HANDLE_IDENTITY_ADAPT", "false"));
+        PREPARE_LAZY = Boolean.parseBoolean(
+                props.getProperty("java.lang.invoke.MethodHandle.PREPARE_LAZY", "false"));
 
         // Do not adjust this except for special platforms:
         MAX_ARITY = Integer.parseInt(

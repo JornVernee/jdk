@@ -282,6 +282,9 @@ sealed class DirectMethodHandle extends MethodHandle {
         } else {
             names[GET_MEMBER] = new Name(getFunction(NF_internalMemberName), names[DMH_THIS]);
         }
+
+        // TODO check if GET_MEMBER's type matches mtypeWithArg (with debug flag)
+
         assert(findDirectMethodHandle(names[GET_MEMBER]) == names[DMH_THIS]);
         Object[] outArgs = Arrays.copyOfRange(names, ARG_BASE, GET_MEMBER+1, Object[].class);
         if (needsReceiverCheck) {

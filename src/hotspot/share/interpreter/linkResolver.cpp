@@ -53,6 +53,7 @@
 #include "runtime/fieldDescriptor.inline.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
+#include "runtime/javaCalls.hpp"
 #include "runtime/javaThread.hpp"
 #include "runtime/reflection.hpp"
 #include "runtime/safepointVerifiers.hpp"
@@ -103,6 +104,7 @@ void CallInfo::set_handle(Klass* resolved_klass,
                           Handle resolved_appendix, TRAPS) {
   guarantee(resolved_method.not_null(), "resolved method is null");
   assert(resolved_method->intrinsic_id() == vmIntrinsics::_invokeBasic ||
+         resolved_method->intrinsic_id() == vmIntrinsics::_resolveLambdaForm ||
          resolved_method->is_compiled_lambda_form(),
          "linkMethod must return one of these");
   int vtable_index = Method::nonvirtual_vtable_index;
@@ -1666,6 +1668,28 @@ void LinkResolver::resolve_invoke(CallInfo& result, Handle& recv,
       fatal("bad call: %s", Bytecodes::name(byte));
       break;
   }
+}
+
+void LinkResolver::prepare_lambda_form(CallInfo& call_info, Handle& recv, TRAPS) {
+  assert(THREAD->can_call_java() ,"");
+
+  // call java.lang.invoke.MethodHandleNatives::prepareLambdaForm(MethodHandle) -> MemberName
+  JavaCallArguments args;
+  args.push_oop(recv);
+  JavaValue result(T_OBJECT);
+  JavaCalls::call_static(&result,
+                         vmClasses::MethodHandleNatives_klass(),
+                         vmSymbols::prepareLambdaForm_name(),
+                         vmSymbols::prepareLambdaForm_signature(),
+                         &args, CHECK);
+  Handle mname(THREAD, result.get_oop());
+  Method* m = java_lang_invoke_MemberName::vmtarget(mname());
+  assert(m->is_static(), "expected to be static");
+  oop klassOop = java_lang_invoke_MemberName::clazz(mname());
+  Klass* resolved_klass = java_lang_Class::as_Klass(klassOop);
+
+  call_info.set_static(resolved_klass, methodHandle(THREAD, m), CHECK);
+  JFR_ONLY(Jfr::on_resolution(call_info, CHECK);)
 }
 
 void LinkResolver::resolve_invokestatic(CallInfo& result, const constantPoolHandle& pool, int index, TRAPS) {

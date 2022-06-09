@@ -809,7 +809,7 @@ class LambdaForm {
         if (skipInterpreter || COMPILE_THRESHOLD == 0) {
             compileToBytecode();
         }
-        if (this.vmentry != null) {
+        if (this.vmentry != null && !this.vmentry.isResolveLambdaForm()) { // Something else is racing to set vmentry?
             // already prepared (e.g., a primitive DMH invoker form)
             return;
         }
@@ -823,6 +823,11 @@ class LambdaForm {
         }
         this.vmentry = prep.vmentry;
         // TO DO: Maybe add invokeGeneric, invokeWithArguments
+    }
+
+    public void prepareLazy() {
+        if (this.vmentry != null) return; // force prepared elsewhere
+        this.vmentry = MethodHandleImpl.mnResolveLambdaForm(methodType());
     }
 
     private static @Stable PerfCounter LF_FAILED;
