@@ -947,6 +947,9 @@ void frame::oops_interpreted_do(OopClosure* f, const RegisterMap* map, bool quer
         if (map->callee_uses_compiled_convention()) {
           // we jumped into a compiled callee through an adapter or trampoline.
           // GC arguments according to the compiled convention as well
+          if (UseNewCode) {
+            BREAKPOINT;
+          }
           oops_compiled_arguments_do(signature, has_receiver, has_appendix, map, f);
         }
       }
@@ -1122,6 +1125,9 @@ void frame::oops_entry_do(OopClosure* f, const RegisterMap* map) const {
     if (map->callee_uses_compiled_convention()) {
       // normally entry frames do interpreted calls.
       // but we might land in a compiled frame through and adapter or trampoline
+      if (UseNewCode) {
+        BREAKPOINT;
+      }
       oops_compiled_arguments_do(m->signature(), !m->is_static(), m->has_member_arg(), map, f);
     }
   }

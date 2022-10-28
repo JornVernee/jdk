@@ -33,6 +33,7 @@ import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Field;
 
 import static java.lang.invoke.MethodHandleNatives.Constants.*;
+import static java.lang.invoke.MethodHandleStatics.SPIN;
 import static java.lang.invoke.MethodHandleStatics.TRACE_METHOD_LINKAGE;
 import static java.lang.invoke.MethodHandles.Lookup.IMPL_LOOKUP;
 
@@ -701,6 +702,17 @@ class MethodHandleNatives {
         // invokeBasic call was re-routed here through the resolveLambdaForm blob
         // prepare the lambda form, and return the actual target back to LinkResolver
         LambdaForm form = mh.form;
+        System.out.println("prepareLambdaForm for: " + mh);
+        Thread.dumpStack();
+        if (Boolean.parseBoolean(System.getProperty("SPIN"))) {
+            System.out.println("SPINNING");
+            System.gc();
+            try {
+                Thread.sleep(2000);
+            } catch(InterruptedException e) {
+                System.err.println("INTERUPTED");
+            }
+        }
         form.prepare();
         return form.vmentry; // actual target of the call
     }
