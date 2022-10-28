@@ -354,8 +354,7 @@
   template(linkMethodHandleConstant_signature, "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;") \
   template(linkMethod_name,                           "linkMethod")                               \
   template(linkMethod_signature, "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;") \
-  template(prepareLambdaForm_name,                    "prepareLambdaForm")                        \
-  template(prepareLambdaForm_signature, "(Ljava/lang/invoke/MethodHandle;)Ljava/lang/invoke/MemberName;") \
+  template(resolveLambdaForm_signature, "(Ljava/lang/invoke/MethodHandle;)Ljava/lang/invoke/MemberName;") \
   template(linkDynamicConstant_name,                  "linkDynamicConstant")                      \
   template(linkDynamicConstant_signature, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;") \
   template(linkCallSite_name,                         "linkCallSite")                             \

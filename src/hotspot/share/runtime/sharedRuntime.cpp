@@ -1755,7 +1755,7 @@ JRT_BLOCK_ENTRY(address, SharedRuntime::resolve_lambda_form_C(JavaThread* curren
     assert(java_lang_invoke_MethodHandle::is_instance(receiver()), "Must be");
 
     // upcall into Java to prepare lambda form
-    LinkResolver::prepare_lambda_form(call_info, receiver, CHECK_NULL);
+    LinkResolver::resolve_lambda_form(call_info, receiver, CHECK_NULL);
     callee_method = methodHandle(current, call_info.selected_method());
     current->set_vm_result_2(callee_method());
   JRT_BLOCK_END

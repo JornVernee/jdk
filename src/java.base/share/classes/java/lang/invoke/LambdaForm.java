@@ -806,7 +806,18 @@ class LambdaForm {
      * as a sort of pre-invocation linkage step.)
      */
     public void prepare() {
-        if(DO_LOG) System.out.println("PREPARING: " + methodType() + ", " + this);
+        if (PREPARE_LAZY) {
+            boolean needsPrepare = this.vmentry == null;
+            if(DO_LOG) System.out.println("PREPARING LAZILY: " + methodType() + ", needed: " + needsPrepare);
+            if (!needsPrepare) return; // force prepared elsewhere
+            this.vmentry = MethodHandleImpl.mnResolveLambdaForm(methodType());
+        } else {
+            resolve();
+        }
+    }
+
+    void resolve() {
+        if(DO_LOG) System.out.println("RESOLVING: " + methodType() + ", " + this);
         if (skipInterpreter || COMPILE_THRESHOLD == 0) {
             compileToBytecode();
         }
@@ -824,13 +835,6 @@ class LambdaForm {
         }
         this.vmentry = prep.vmentry;
         // TO DO: Maybe add invokeGeneric, invokeWithArguments
-    }
-
-    public void prepareLazy() {
-        boolean needsPrepare = this.vmentry == null;
-        if(DO_LOG) System.out.println("PREPARING LAZILY: " + methodType() + ", needed: " + needsPrepare);
-        if (!needsPrepare) return; // force prepared elsewhere
-        this.vmentry = MethodHandleImpl.mnResolveLambdaForm(methodType());
     }
 
     private static @Stable PerfCounter LF_FAILED;

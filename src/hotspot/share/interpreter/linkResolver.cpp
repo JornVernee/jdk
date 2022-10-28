@@ -1670,17 +1670,17 @@ void LinkResolver::resolve_invoke(CallInfo& result, Handle& recv,
   }
 }
 
-void LinkResolver::prepare_lambda_form(CallInfo& call_info, Handle& recv, TRAPS) {
+void LinkResolver::resolve_lambda_form(CallInfo& call_info, Handle& recv, TRAPS) {
   assert(THREAD->can_call_java() ,"");
 
-  // call java.lang.invoke.MethodHandleNatives::prepareLambdaForm(MethodHandle) -> MemberName
+  // call java.lang.invoke.MethodHandleNatives::resolveLambdaForm(MethodHandle) -> MemberName
   JavaCallArguments args;
   args.push_oop(recv);
   JavaValue result(T_OBJECT);
   JavaCalls::call_static(&result,
                          vmClasses::MethodHandleNatives_klass(),
-                         vmSymbols::prepareLambdaForm_name(),
-                         vmSymbols::prepareLambdaForm_signature(),
+                         vmSymbols::resolveLambdaForm_name(),
+                         vmSymbols::resolveLambdaForm_signature(),
                          &args, CHECK);
   Handle mname(THREAD, result.get_oop());
   Method* m = java_lang_invoke_MemberName::vmtarget(mname());
