@@ -707,7 +707,7 @@ class MethodHandleNatives {
             System.out.println("resolveLambdaForm for: " + mh);
             Thread.dumpStack();
         }
-        if (Boolean.parseBoolean(System.getProperty("SPIN"))) {
+        if (Boolean.getBoolean("SPIN")) {
             System.out.println("SPINNING");
             System.gc();
             try {

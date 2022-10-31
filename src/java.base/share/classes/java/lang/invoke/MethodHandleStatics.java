@@ -96,7 +96,7 @@ class MethodHandleStatics {
         VAR_HANDLE_IDENTITY_ADAPT = Boolean.parseBoolean(
                 props.getProperty("java.lang.invoke.VarHandle.VAR_HANDLE_IDENTITY_ADAPT", "false"));
         PREPARE_LAZY = Boolean.parseBoolean(
-                props.getProperty("java.lang.invoke.MethodHandle.PREPARE_LAZY", "false"));
+                props.getProperty("PREPARE_LAZY", "false"));
         SPIN = Boolean.parseBoolean(
                 props.getProperty("SPIN", "false"));
         DO_LOG = Boolean.parseBoolean(

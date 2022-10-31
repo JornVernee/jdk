@@ -806,10 +806,9 @@ class LambdaForm {
      * as a sort of pre-invocation linkage step.)
      */
     public void prepare() {
-        if (PREPARE_LAZY) {
-            boolean needsPrepare = this.vmentry == null;
-            if(DO_LOG) System.out.println("PREPARING LAZILY: " + methodType() + ", needed: " + needsPrepare);
-            if (!needsPrepare) return; // force prepared elsewhere
+        if (Boolean.getBoolean("PREPARE_LAZY")) {
+            if (this.vmentry != null) return; // force prepared elsewhere
+            if(DO_LOG) System.out.println("PREPARING LAZILY: " + methodType());
             this.vmentry = MethodHandleImpl.mnResolveLambdaForm(methodType());
         } else {
             resolve();
