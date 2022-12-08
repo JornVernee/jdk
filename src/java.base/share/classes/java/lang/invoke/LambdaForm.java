@@ -337,10 +337,14 @@ class LambdaForm {
     private LambdaForm(int arity, int result, boolean forceInline, MethodHandle customized, Kind kind, Name[] names) {
         this.arity = arity;
         this.result = result;
-        this.names = names;
         this.forceInline = forceInline;
         this.customized = customized;
+        this.names = names;
         this.kind = kind;
+        this.vmentry = null;
+        this.isCompiled = false;
+        this.skipInterpreter = false;
+        this.isResolved = false;
     }
 
     // root factory pre/post processing and calls simple cosntructor
@@ -388,9 +392,9 @@ class LambdaForm {
         // It is used as a template for managing the invocation of similar forms that are non-empty.
         // Called only from getPreparedForm.
         int arity = mt.parameterCount();
-        int result = (mt.returnType() == void.class || mt.returnType() == Void.class) ? -1 : arity;
-        LambdaForm form = new LambdaForm(arity, result, /* forceInline */ true,
-                null, Kind.ZERO, buildEmptyNames(arity, mt, result == -1));
+        int result = (mt.returnType() == void.class || mt.returnType() == Void.class) ? VOID_RESULT : arity;
+        LambdaForm form = new LambdaForm(arity, result, DEFAULT_FORCE_INLINE,
+                DEFAULT_CUSTOMIZED, Kind.ZERO, buildEmptyNames(arity, mt, result == VOID_RESULT));
         assert(form.nameRefsAreLegal() && form.isEmpty() && isValidSignature(form.basicTypeSignature()));
         return form;
     }
@@ -400,7 +404,9 @@ class LambdaForm {
         // Make a blank lambda form wrapping an existing vmentry.
         // This is used for the LambdaFormResolver case where the resolved member name is all
         // we care about but we need a LF wrapper for caching and pre-generation hooks.
-        LambdaForm form = new LambdaForm(0, -1, /*forceInline*/ true, null, Kind.RESOLVER, EMPTY_NAMES);
+        boolean forceInline = false; // don't try to inline resolvers
+        LambdaForm form = new LambdaForm(0, VOID_RESULT, forceInline, DEFAULT_CUSTOMIZED,
+                                         Kind.RESOLVER, EMPTY_NAMES);
         form.vmentry = mn;
         return form;
     }
