@@ -333,8 +333,9 @@ class LambdaForm {
         }
     }
 
-    // Final, private version that doesn't do checks or defensive copies
-    private LambdaForm(int arity, int result, boolean forceInline, MethodHandle customized, Kind kind, Name[] names) {
+    // private version that doesn't do checks or defensive copies, and simply initializes all fields
+    private LambdaForm(int arity, int result, boolean forceInline, MethodHandle customized, Name[] names, Kind kind,
+                       boolean skipInterpreter) {
         this.arity = arity;
         this.result = result;
         this.forceInline = forceInline;
@@ -343,34 +344,28 @@ class LambdaForm {
         this.kind = kind;
         this.vmentry = null;
         this.isCompiled = false;
-        this.skipInterpreter = false;
+        this.skipInterpreter = skipInterpreter;
         this.isResolved = false;
     }
 
-    // root factory pre/post processing and calls simple cosntructor
+    // root factory. pre/post processing and checks
     private static LambdaForm of(int arity, Name[] names, int result, boolean forceInline, MethodHandle customized, Kind kind) {
         names = names.clone();
         assert(namesOK(arity, names));
         result = fixResult(result, names);
 
-        LambdaForm form = new LambdaForm(arity, result, forceInline, customized, kind, names);
-
-        int maxOutArity = form.normalize();
-        if (maxOutArity > MethodType.MAX_MH_INVOKER_ARITY) {
-            // Cannot use LF interpreter on very high arity expressions.
-            assert(maxOutArity <= MethodType.MAX_JVM_ARITY);
-            form.skipInterpreter();
-        }
-
+        boolean canInterpret = normalizeNames(arity, names);
+        LambdaForm form = new LambdaForm(arity, result, forceInline, customized, names, kind, !canInterpret);
+        assert(form.nameRefsAreLegal());
         return form;
     }
 
-    // derived factories with defaults
     private static final int DEFAULT_RESULT = LAST_RESULT;
     private static final boolean DEFAULT_FORCE_INLINE = true;
     private static final MethodHandle DEFAULT_CUSTOMIZED = null;
     private static final Kind DEFAULT_KIND = Kind.GENERIC;
 
+    // derived factories with defaults
     static LambdaForm of(int arity, Name[] names, int result) {
         return of(arity, names, result, DEFAULT_FORCE_INLINE, DEFAULT_CUSTOMIZED, DEFAULT_KIND);
     }
@@ -387,28 +382,84 @@ class LambdaForm {
         return of(arity, names, DEFAULT_RESULT, forceInline, DEFAULT_CUSTOMIZED, kind);
     }
 
+    // specialized factories
     private static LambdaForm createBlankForType(MethodType mt) {
         // Make a blank lambda form, which returns a constant zero or null.
         // It is used as a template for managing the invocation of similar forms that are non-empty.
         // Called only from getPreparedForm.
         int arity = mt.parameterCount();
         int result = (mt.returnType() == void.class || mt.returnType() == Void.class) ? VOID_RESULT : arity;
-        LambdaForm form = new LambdaForm(arity, result, DEFAULT_FORCE_INLINE,
-                DEFAULT_CUSTOMIZED, Kind.ZERO, buildEmptyNames(arity, mt, result == VOID_RESULT));
+        Name[] names = buildEmptyNames(arity, mt, result == VOID_RESULT);
+        boolean canInterpret = normalizeNames(arity, names);
+        LambdaForm form = new LambdaForm(arity, result, DEFAULT_FORCE_INLINE, DEFAULT_CUSTOMIZED,
+                                         names, Kind.ZERO, !canInterpret);
         assert(form.nameRefsAreLegal() && form.isEmpty() && isValidSignature(form.basicTypeSignature()));
         return form;
     }
 
-    static final Name[] EMPTY_NAMES = new Name[0];
+    private static final Name[] EMPTY_NAMES = new Name[0];
     static LambdaForm createWrapperForResolver(MemberName mn) {
         // Make a blank lambda form wrapping an existing vmentry.
         // This is used for the LambdaFormResolver case where the resolved member name is all
         // we care about but we need a LF wrapper for caching and pre-generation hooks.
         boolean forceInline = false; // don't try to inline resolvers
+        boolean skipInterpreter = false; // empty form should be interpretable
         LambdaForm form = new LambdaForm(0, VOID_RESULT, forceInline, DEFAULT_CUSTOMIZED,
-                                         Kind.RESOLVER, EMPTY_NAMES);
+                                         EMPTY_NAMES, Kind.RESOLVER, skipInterpreter);
         form.vmentry = mn;
         return form;
+    }
+
+    /** Renumber and/or replace params so that they are interned and canonically numbered.
+     *  @return true if we can interpret
+     */
+    private static boolean normalizeNames(int arity, Name[] names) {
+        Name[] oldNames = null;
+        int maxOutArity = 0;
+        int changesStart = 0;
+        for (int i = 0; i < names.length; i++) {
+            Name n = names[i];
+            if (!n.initIndex(i)) {
+                if (oldNames == null) {
+                    oldNames = names.clone();
+                    changesStart = i;
+                }
+                names[i] = n.cloneWithIndex(i);
+            }
+            if (n.arguments != null && maxOutArity < n.arguments.length)
+                maxOutArity = n.arguments.length;
+        }
+        if (oldNames != null) {
+            int startFixing = arity;
+            if (startFixing <= changesStart)
+                startFixing = changesStart+1;
+            for (int i = startFixing; i < names.length; i++) {
+                Name fixed = names[i].replaceNames(oldNames, names, changesStart, i);
+                names[i] = fixed.newIndex(i);
+            }
+        }
+        int maxInterned = Math.min(arity, INTERNED_ARGUMENT_LIMIT);
+        boolean needIntern = false;
+        for (int i = 0; i < maxInterned; i++) {
+            Name n = names[i], n2 = internArgument(n);
+            if (n != n2) {
+                names[i] = n2;
+                needIntern = true;
+            }
+        }
+        if (needIntern) {
+            for (int i = arity; i < names.length; i++) {
+                names[i].internArguments();
+            }
+        }
+
+        // return true if we can interpret
+        if (maxOutArity > MethodType.MAX_MH_INVOKER_ARITY) {
+            // Cannot use LF interpreter on very high arity expressions.
+            assert(maxOutArity <= MethodType.MAX_JVM_ARITY);
+            return false;
+        }
+        return true;
     }
 
     private static Name[] buildEmptyNames(int arity, MethodType mt, boolean isVoid) {
@@ -509,53 +560,6 @@ class LambdaForm {
             uncustomizedForm.skipInterpreter();
         }
         return uncustomizedForm;
-    }
-
-    /** Renumber and/or replace params so that they are interned and canonically numbered.
-     *  @return maximum argument list length among the names (since we have to pass over them anyway)
-     */
-    private int normalize() {
-        Name[] oldNames = null;
-        int maxOutArity = 0;
-        int changesStart = 0;
-        for (int i = 0; i < names.length; i++) {
-            Name n = names[i];
-            if (!n.initIndex(i)) {
-                if (oldNames == null) {
-                    oldNames = names.clone();
-                    changesStart = i;
-                }
-                names[i] = n.cloneWithIndex(i);
-            }
-            if (n.arguments != null && maxOutArity < n.arguments.length)
-                maxOutArity = n.arguments.length;
-        }
-        if (oldNames != null) {
-            int startFixing = arity;
-            if (startFixing <= changesStart)
-                startFixing = changesStart+1;
-            for (int i = startFixing; i < names.length; i++) {
-                Name fixed = names[i].replaceNames(oldNames, names, changesStart, i);
-                names[i] = fixed.newIndex(i);
-            }
-        }
-        assert(nameRefsAreLegal());
-        int maxInterned = Math.min(arity, INTERNED_ARGUMENT_LIMIT);
-        boolean needIntern = false;
-        for (int i = 0; i < maxInterned; i++) {
-            Name n = names[i], n2 = internArgument(n);
-            if (n != n2) {
-                names[i] = n2;
-                needIntern = true;
-            }
-        }
-        if (needIntern) {
-            for (int i = arity; i < names.length; i++) {
-                names[i].internArguments();
-            }
-        }
-        assert(nameRefsAreLegal());
-        return maxOutArity;
     }
 
     /**
