@@ -117,7 +117,7 @@ import static java.lang.invoke.MethodHandleStatics.newInternalError;
         outArgs[outArgs.length - 1] = names[GET_NEP];
         names[LINKER_CALL] = new LambdaForm.Name(linker, outArgs);
 
-        LambdaForm lform = new LambdaForm(ARG_LIMIT, names, LAST_RESULT);
+        LambdaForm lform = LambdaForm.of(ARG_LIMIT, names, LAST_RESULT);
         lform.skipInterpreter();
         return lform;
     }
