@@ -410,58 +410,6 @@ class LambdaForm {
         return form;
     }
 
-    /** Renumber and/or replace params so that they are interned and canonically numbered.
-     *  @return true if we can interpret
-     */
-    private static boolean normalizeNames(int arity, Name[] names) {
-        Name[] oldNames = null;
-        int maxOutArity = 0;
-        int changesStart = 0;
-        for (int i = 0; i < names.length; i++) {
-            Name n = names[i];
-            if (!n.initIndex(i)) {
-                if (oldNames == null) {
-                    oldNames = names.clone();
-                    changesStart = i;
-                }
-                names[i] = n.cloneWithIndex(i);
-            }
-            if (n.arguments != null && maxOutArity < n.arguments.length)
-                maxOutArity = n.arguments.length;
-        }
-        if (oldNames != null) {
-            int startFixing = arity;
-            if (startFixing <= changesStart)
-                startFixing = changesStart+1;
-            for (int i = startFixing; i < names.length; i++) {
-                Name fixed = names[i].replaceNames(oldNames, names, changesStart, i);
-                names[i] = fixed.newIndex(i);
-            }
-        }
-        int maxInterned = Math.min(arity, INTERNED_ARGUMENT_LIMIT);
-        boolean needIntern = false;
-        for (int i = 0; i < maxInterned; i++) {
-            Name n = names[i], n2 = internArgument(n);
-            if (n != n2) {
-                names[i] = n2;
-                needIntern = true;
-            }
-        }
-        if (needIntern) {
-            for (int i = arity; i < names.length; i++) {
-                names[i].internArguments();
-            }
-        }
-
-        // return true if we can interpret
-        if (maxOutArity > MethodType.MAX_MH_INVOKER_ARITY) {
-            // Cannot use LF interpreter on very high arity expressions.
-            assert(maxOutArity <= MethodType.MAX_JVM_ARITY);
-            return false;
-        }
-        return true;
-    }
-
     private static Name[] buildEmptyNames(int arity, MethodType mt, boolean isVoid) {
         Name[] names = arguments(isVoid ? 0 : 1, mt);
         if (!isVoid) {
@@ -560,6 +508,58 @@ class LambdaForm {
             uncustomizedForm.skipInterpreter();
         }
         return uncustomizedForm;
+    }
+
+    /** Renumber and/or replace params so that they are interned and canonically numbered.
+     *  @return true if we can interpret
+     */
+    private static boolean normalizeNames(int arity, Name[] names) {
+        Name[] oldNames = null;
+        int maxOutArity = 0;
+        int changesStart = 0;
+        for (int i = 0; i < names.length; i++) {
+            Name n = names[i];
+            if (!n.initIndex(i)) {
+                if (oldNames == null) {
+                    oldNames = names.clone();
+                    changesStart = i;
+                }
+                names[i] = n.cloneWithIndex(i);
+            }
+            if (n.arguments != null && maxOutArity < n.arguments.length)
+                maxOutArity = n.arguments.length;
+        }
+        if (oldNames != null) {
+            int startFixing = arity;
+            if (startFixing <= changesStart)
+                startFixing = changesStart+1;
+            for (int i = startFixing; i < names.length; i++) {
+                Name fixed = names[i].replaceNames(oldNames, names, changesStart, i);
+                names[i] = fixed.newIndex(i);
+            }
+        }
+        int maxInterned = Math.min(arity, INTERNED_ARGUMENT_LIMIT);
+        boolean needIntern = false;
+        for (int i = 0; i < maxInterned; i++) {
+            Name n = names[i], n2 = internArgument(n);
+            if (n != n2) {
+                names[i] = n2;
+                needIntern = true;
+            }
+        }
+        if (needIntern) {
+            for (int i = arity; i < names.length; i++) {
+                names[i].internArguments();
+            }
+        }
+
+        // return true if we can interpret
+        if (maxOutArity > MethodType.MAX_MH_INVOKER_ARITY) {
+            // Cannot use LF interpreter on very high arity expressions.
+            assert(maxOutArity <= MethodType.MAX_JVM_ARITY);
+            return false;
+        }
+        return true;
     }
 
     /**
