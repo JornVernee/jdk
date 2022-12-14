@@ -77,7 +77,7 @@ class LambdaFormResolvers {
         assert InvokerBytecodeGenerator.isStaticallyInvocable(invokeBasic);
         names[INVOKE] = new Name(new NamedFunction(invokeBasic), args);
 
-        LambdaForm lform = new LambdaForm(basicType.parameterCount(), names, INVOKE, LambdaForm.Kind.RESOLVER);
+        LambdaForm lform = LambdaForm.of(basicType.parameterCount(), names, INVOKE, LambdaForm.Kind.RESOLVER);
         lform.forceCompileToBytecode(); // no cycles, compile this now
         return lform;
     }

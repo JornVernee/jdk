@@ -351,9 +351,9 @@ class Invokers {
         }
         names[LINKER_CALL] = new Name(outCallType, outArgs);
         if (customized) {
-            lform = new LambdaForm(INARG_LIMIT, names);
+            lform = LambdaForm.of(INARG_LIMIT, names);
         } else {
-            lform = new LambdaForm(INARG_LIMIT, names, kind);
+            lform = LambdaForm.of(INARG_LIMIT, names, kind);
         }
         if (isLinker) {
             lform.forceCompileToBytecode();  // JVM needs a real methodOop
@@ -416,7 +416,7 @@ class Invokers {
         MethodType outCallType = mtype.insertParameterTypes(0, VarHandle.class)
                 .basicType();
         names[LINKER_CALL] = new Name(outCallType, outArgs);
-        lform = new LambdaForm(ARG_LIMIT + 1, names, VARHANDLE_LINKER);
+        lform = LambdaForm.of(ARG_LIMIT + 1, names, VARHANDLE_LINKER);
         if (LambdaForm.debugNames()) {
             String name = "VarHandle_invoke_MT_" + shortenSignature(basicTypeSignature(mtype));
             LambdaForm.associateWithDebugName(lform, name);
@@ -478,7 +478,7 @@ class Invokers {
                                       .basicType();
         names[LINKER_CALL] = new Name(outCallType, outArgs);
         Kind kind = isExact ? VARHANDLE_EXACT_INVOKER : VARHANDLE_INVOKER;
-        lform = new LambdaForm(ARG_LIMIT, names, kind);
+        lform = LambdaForm.of(ARG_LIMIT, names, kind);
         if (LambdaForm.debugNames()) {
             String name = (isExact ? "VarHandle_exactInvoker_" : "VarHandle_invoker_") + shortenSignature(basicTypeSignature(mtype));
             LambdaForm.associateWithDebugName(lform, name);
@@ -605,7 +605,7 @@ class Invokers {
         System.arraycopy(outArgs, 0, outArgs, PREPEND_COUNT, outArgs.length - PREPEND_COUNT);
         outArgs[PREPEND_MH] = names[CALL_MH];
         names[LINKER_CALL] = new Name(mtype, outArgs);
-        lform = new LambdaForm(INARG_LIMIT, names,
+        lform = LambdaForm.of(INARG_LIMIT, names,
                 (skipCallSite ? LINK_TO_TARGET_METHOD : LINK_TO_CALL_SITE));
         lform.forceCompileToBytecode();  // JVM needs a real methodOop
         lform = mtype.form().setCachedLambdaForm(which, lform);
