@@ -133,6 +133,8 @@ class LambdaForm {
     private boolean skipInterpreter;
     private boolean isResolved;
 
+    private static final long VMENTRY_OFFSET = UNSAFE.objectFieldOffset(LambdaForm.class, "vmentry");
+
     // Either a LambdaForm cache (managed by LambdaFormEditor) or a link to uncustomized version (for customized LF)
     volatile Object transformCache;
 
@@ -819,7 +821,9 @@ class LambdaForm {
         if (mn != null) {
             this.vmentry = mn;
         } else if (RESOLVE_LAZY) {
-            this.vmentry = LambdaFormResolvers.resolverFor(this, mt);
+            MemberName resolver = LambdaFormResolvers.resolverFor(this, mt);
+            // use a CAS here to avoid overwriting a resolved vmentry
+            UNSAFE.compareAndSetReference(this, VMENTRY_OFFSET, null, resolver);
         } else {
             resolve(mt);
         }
@@ -917,6 +921,7 @@ class LambdaForm {
     void forceCompileToBytecode() {
         skipInterpreter();
         resolve(methodType());
+        assert isCompiled;
     }
 
     void skipInterpreter() {
