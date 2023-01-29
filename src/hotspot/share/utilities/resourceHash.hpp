@@ -30,6 +30,8 @@
 #include "utilities/numberSeq.hpp"
 #include "utilities/tableStatistics.hpp"
 
+#include <utility>
+
 template<typename K, typename V>
 class ResourceHashtableNode : public AnyObj {
 public:
@@ -38,12 +40,9 @@ public:
   V _value;
   ResourceHashtableNode* _next;
 
-  ResourceHashtableNode(unsigned hash, K const& key, V const& value) :
-    _hash(hash), _key(key), _value(value), _next(nullptr) {}
-
-  // Create a node with a default-constructed value.
-  ResourceHashtableNode(unsigned hash, K const& key) :
-    _hash(hash), _key(key), _value(), _next(nullptr) {}
+  template<typename... ArgTs>
+  ResourceHashtableNode(unsigned hash, K const& key, ArgTs&&... args) :
+    _hash(hash), _key(key), _value(std::forward<ArgTs>(args)...), _next(nullptr) {}
 };
 
 template<
@@ -152,19 +151,28 @@ class ResourceHashtableBase : public STORAGE {
     }
   }
 
+  // overload for backwards compatibility (where `value` is passed before `p_created`)
+  // This overload is not move-enabled. Use the other overload for that
+  // TODO: remove this, and change all callers
+  V* put_if_absent(K const& key, V const& value, bool* p_created) {
+    return put_if_absent(key, p_created, value);
+  }
+
   // Look up the key.
   // If an entry for the key exists, leave map unchanged and return a pointer to its value.
   // If no entry for the key exists, create a new entry from key and a default-created value
   //  and return a pointer to the value.
   // *p_created is true if entry was created, false if entry pre-existed.
-  V* put_if_absent(K const& key, bool* p_created) {
+  // Any constructor arguments for constructing `V` are passed as trailing arguments
+  template<typename... ArgTs>
+  V* put_if_absent(K const& key, bool* p_created, ArgTs&&... args) {
     unsigned hv = HASH(key);
     Node** ptr = lookup_node(hv, key);
     if (*ptr == nullptr) {
       if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        *ptr = new (MEM_TYPE) Node(hv, key);
+        *ptr = new (MEM_TYPE) Node(hv, key, std::forward<ArgTs>(args)...);
       } else {
-        *ptr = new Node(hv, key);
+        *ptr = new Node(hv, key, std::forward<ArgTs>(args)...);
       }
       *p_created = true;
       _number_of_entries ++;
@@ -173,29 +181,6 @@ class ResourceHashtableBase : public STORAGE {
     }
     return &(*ptr)->_value;
   }
-
-  // Look up the key.
-  // If an entry for the key exists, leave map unchanged and return a pointer to its value.
-  // If no entry for the key exists, create a new entry from key and value and return a
-  //  pointer to the value.
-  // *p_created is true if entry was created, false if entry pre-existed.
-  V* put_if_absent(K const& key, V const& value, bool* p_created) {
-    unsigned hv = HASH(key);
-    Node** ptr = lookup_node(hv, key);
-    if (*ptr == nullptr) {
-      if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        *ptr = new (MEM_TYPE) Node(hv, key, value);
-      } else {
-        *ptr = new Node(hv, key, value);
-      }
-      *p_created = true;
-      _number_of_entries ++;
-    } else {
-      *p_created = false;
-    }
-    return &(*ptr)->_value;
-  }
-
 
   bool remove(K const& key) {
     unsigned hv = HASH(key);

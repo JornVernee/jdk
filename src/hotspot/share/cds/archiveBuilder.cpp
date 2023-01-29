@@ -445,9 +445,9 @@ bool ArchiveBuilder::gather_one_source_obj(MetaspaceClosure::Ref* enclosing_ref,
 
   FollowMode follow_mode = get_follow_mode(ref);
   bool created;
-  SourceObjInfo* p = _src_obj_table.put_if_absent(src_obj, &created);
+  SourceObjInfo* p = _src_obj_table.put_if_absent(src_obj, &created,
+                                                  ref, read_only, follow_mode);
   if (created) {
-    p->init(ref, read_only, follow_mode);
     if (_src_obj_table.maybe_grow()) {
       log_info(cds, hashtables)("Expanded _src_obj_table table to %d", _src_obj_table.table_size());
     }

@@ -152,16 +152,10 @@ private:
                              // later if _ref is relocated.
     address _buffered_addr;  // The copy of _ref->obj() insider the buffer.
   public:
-    SourceObjInfo() : _ref(nullptr) {}
-    void init(MetaspaceClosure::Ref* ref, bool read_only, FollowMode follow_mode) {
-      _ref = ref;
-      _ptrmap_start = 0;
-      _ptrmap_end = 0;
-      _read_only = read_only;
-      _follow_mode = follow_mode;
-      _size_in_bytes = ref->size() * BytesPerWord;
-      _msotype = ref->msotype();
-      _source_addr = ref->obj();
+    SourceObjInfo(MetaspaceClosure::Ref* ref, bool read_only, FollowMode follow_mode) :
+      _ref(ref), _ptrmap_start(0), _ptrmap_end(0), _read_only(read_only), _follow_mode(follow_mode),
+      _size_in_bytes(ref->size() * BytesPerWord), _msotype(ref->msotype()),
+      _source_addr(ref->obj()) {
       if (follow_mode == point_to_it) {
         _buffered_addr = ref->obj();
       } else {
@@ -177,7 +171,7 @@ private:
     // Delete the copy constructor so you can't use put(K const& key, V const& value)
     // or put_if_absent(K const& key, V const& value, bool* p_created) from ResourceHashtable.
     // Otherwise the clean up of _ref will be problematic.
-    SourceObjInfo(const SourceObjInfo& from) = delete;
+    NONCOPYABLE(SourceObjInfo);
 
     bool should_copy() const { return _follow_mode == make_a_copy; }
     MetaspaceClosure::Ref* ref() const { return  _ref; }
