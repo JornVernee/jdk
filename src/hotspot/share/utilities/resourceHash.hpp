@@ -89,6 +89,31 @@ class ResourceHashtableBase : public STORAGE {
         const_cast<ResourceHashtableBase*>(this)->lookup_node(hash, key));
   }
 
+
+  Node* new_node(unsigned hv, K const& key, V const& value) {
+    if (ALLOC_TYPE == AnyObj::C_HEAP) {
+      return new (MEM_TYPE) Node(hv, key, value);
+    } else {
+      return new Node(hv, key, value);
+    }
+  }
+
+  Node* new_node(unsigned hv, K const& key) {
+    if (ALLOC_TYPE == AnyObj::C_HEAP) {
+      return new (MEM_TYPE) Node(hv, key);
+    } else {
+      return new Node(hv, key);
+    }
+  }
+
+  void delete_node(Node* node) {
+    if (ALLOC_TYPE == AnyObj::C_HEAP) {
+      delete node; // destruct and free
+    } else {
+      node->~Node(); // destruct only (memory will be freed by arena/resource area)
+    }
+  }
+
  protected:
   Node** table() const { return STORAGE::table(); }
 
@@ -97,18 +122,16 @@ class ResourceHashtableBase : public STORAGE {
   NONCOPYABLE(ResourceHashtableBase);
 
   ~ResourceHashtableBase() {
-    if (ALLOC_TYPE == AnyObj::C_HEAP) {
-      Node* const* bucket = table();
-      const unsigned sz = table_size();
-      while (bucket < bucket_at(sz)) {
-        Node* node = *bucket;
-        while (node != nullptr) {
-          Node* cur = node;
-          node = node->_next;
-          delete cur;
-        }
-        ++bucket;
+    Node* const* bucket = table();
+    const unsigned sz = table_size();
+    while (bucket < bucket_at(sz)) {
+      Node* node = *bucket;
+      while (node != nullptr) {
+        Node* cur = node;
+        node = node->_next;
+        delete_node(cur);
       }
+      ++bucket;
     }
   }
 
@@ -142,11 +165,7 @@ class ResourceHashtableBase : public STORAGE {
       (*ptr)->_value = value;
       return false;
     } else {
-      if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        *ptr = new (MEM_TYPE) Node(hv, key, value);
-      } else {
-        *ptr = new Node(hv, key, value);
-      }
+      *ptr = new_node(hv, key, value);
       _number_of_entries ++;
       return true;
     }
@@ -161,11 +180,7 @@ class ResourceHashtableBase : public STORAGE {
     unsigned hv = HASH(key);
     Node** ptr = lookup_node(hv, key);
     if (*ptr == nullptr) {
-      if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        *ptr = new (MEM_TYPE) Node(hv, key);
-      } else {
-        *ptr = new Node(hv, key);
-      }
+      *ptr = new_node(hv, key);
       *p_created = true;
       _number_of_entries ++;
     } else {
@@ -183,11 +198,7 @@ class ResourceHashtableBase : public STORAGE {
     unsigned hv = HASH(key);
     Node** ptr = lookup_node(hv, key);
     if (*ptr == nullptr) {
-      if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        *ptr = new (MEM_TYPE) Node(hv, key, value);
-      } else {
-        *ptr = new Node(hv, key, value);
-      }
+      *ptr = new_node(hv, key, value);
       *p_created = true;
       _number_of_entries ++;
     } else {
@@ -204,9 +215,7 @@ class ResourceHashtableBase : public STORAGE {
     Node* node = *ptr;
     if (node != nullptr) {
       *ptr = node->_next;
-      if (ALLOC_TYPE == AnyObj::C_HEAP) {
-        delete node;
-      }
+      delete_node(node);
       _number_of_entries --;
       return true;
     }
@@ -266,9 +275,7 @@ class ResourceHashtableBase : public STORAGE {
         bool clean = iter->do_entry(node->_key, node->_value);
         if (clean) {
           *ptr = node->_next;
-          if (ALLOC_TYPE == AnyObj::C_HEAP) {
-            delete node;
-          }
+          delete_node(node);
           _number_of_entries --;
         } else {
           ptr = &(node->_next);
