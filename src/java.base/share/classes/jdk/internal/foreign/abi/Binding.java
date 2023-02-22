@@ -377,6 +377,8 @@ public interface Binding {
                 return Cast.INT_TO_SHORT;
             } else if (toType == char.class) {
                 return Cast.INT_TO_CHAR;
+            } else if (toType == long.class) {
+                return Cast.INT_TO_LONG;
             }
         } else if (toType == int.class) {
             if (fromType == boolean.class) {
@@ -749,6 +751,7 @@ public interface Binding {
         INT_TO_BYTE(int.class, byte.class),
         INT_TO_CHAR(int.class, char.class),
         INT_TO_SHORT(int.class, short.class),
+        INT_TO_LONG(int.class, long.class),
         BOOLEAN_TO_INT(boolean.class, int.class),
         BYTE_TO_INT(byte.class, int.class),
         CHAR_TO_INT(char.class, int.class),

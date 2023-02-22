@@ -691,6 +691,7 @@ public class BindingSpecializer {
             case INT_TO_BYTE -> mv.visitInsn(I2B);
             case INT_TO_CHAR -> mv.visitInsn(I2C);
             case INT_TO_SHORT -> mv.visitInsn(I2S);
+            case INT_TO_LONG -> mv.visitInsn(I2L);
             case BOOLEAN_TO_INT, BYTE_TO_INT, CHAR_TO_INT, SHORT_TO_INT -> {
                 // no-op in bytecode
             }
