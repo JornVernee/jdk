@@ -33,8 +33,11 @@ import org.testng.annotations.Test;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
 import java.lang.invoke.MethodHandle;
 
+import static java.lang.foreign.MemoryLayout.*;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertNotSame;
 
 public class TestLinker extends NativeTestHelper {
@@ -47,6 +50,33 @@ public class TestLinker extends NativeTestHelper {
         MethodHandle mh2 = linker.downcallHandle(descriptor, Linker.Option.firstVariadicArg(1));
         // assert that these are 2 distinct link request. No caching allowed
         assertNotSame(mh1, mh2);
+    }
+
+    @Test(dataProvider = "namedDescriptors")
+    public void testNamedLinkerCache(FunctionDescriptor f1, FunctionDescriptor f2) {
+        Linker linker = Linker.nativeLinker();
+        MethodHandle mh1 = linker.downcallHandle(f1);
+        MethodHandle mh2 = linker.downcallHandle(f2);
+        // assert that these are the same link request, even though layout names differ
+        assertSame(mh1, mh2);
+    }
+
+    @DataProvider
+    public static Object[][] namedDescriptors() {
+        return new Object[][]{
+            { FunctionDescriptor.ofVoid(C_INT),
+                    FunctionDescriptor.ofVoid(C_INT.withName("x")) },
+            { FunctionDescriptor.ofVoid(structLayout(C_INT)),
+                    FunctionDescriptor.ofVoid(structLayout(C_INT.withName("x"))) },
+            { FunctionDescriptor.ofVoid(structLayout(C_INT, paddingLayout(32), C_LONG_LONG)),
+                    FunctionDescriptor.ofVoid(structLayout(C_INT, paddingLayout(32), C_LONG_LONG.withName("x"))) },
+            { FunctionDescriptor.ofVoid(structLayout(sequenceLayout(1, C_INT))),
+                    FunctionDescriptor.ofVoid(structLayout(sequenceLayout(1, C_INT.withName("x")))) },
+            { FunctionDescriptor.ofVoid(unionLayout(C_INT)),
+                    FunctionDescriptor.ofVoid(unionLayout(C_INT.withName("x"))) },
+            { FunctionDescriptor.ofVoid(C_POINTER.withTargetLayout(C_INT)),
+                    FunctionDescriptor.ofVoid(C_POINTER.withTargetLayout(C_INT.withName("x"))) },
+        };
     }
 
     @DataProvider
