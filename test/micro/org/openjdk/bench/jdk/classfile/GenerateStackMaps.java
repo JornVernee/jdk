@@ -55,7 +55,17 @@ import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.Throughput)
 @State(Scope.Benchmark)
-@Fork(1)
+@Fork(value = 1, jvmArgsAppend = {
+    "--add-exports", "java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.attribute=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.constantpool=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.instruction=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.java.lang.constant=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.components=ALL-UNNAMED",
+    "--add-exports", "java.base/jdk.internal.classfile.impl=ALL-UNNAMED"
+})
 @Warmup(iterations = 2)
 @Measurement(iterations = 10)
 public class GenerateStackMaps {
