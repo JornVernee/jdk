@@ -25,6 +25,7 @@
  */
 package jdk.internal.foreign.abi.x64.sysv;
 
+import jdk.internal.foreign.ExtendedPrecisionFloatImpl;
 import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.ABIDescriptor;
 import jdk.internal.foreign.abi.AbstractLinker.UpcallStubFactory;
@@ -34,11 +35,11 @@ import jdk.internal.foreign.abi.CallingSequenceBuilder;
 import jdk.internal.foreign.abi.DowncallLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
-import jdk.internal.foreign.abi.UpcallLinker;
 import jdk.internal.foreign.abi.VMStorage;
 import jdk.internal.foreign.abi.x64.X86_64Architecture;
 
 import java.lang.foreign.AddressLayout;
+import java.lang.foreign.ExtendedPrecisionFloat;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
@@ -158,6 +159,7 @@ public class CallArranger {
         private int nVectorReg = 0;
         private int nIntegerReg = 0;
         private long stackOffset = 0;
+        private int currentX87Index = 0;
 
         public StorageCalculator(boolean forArguments) {
             this.forArguments = forArguments;
@@ -188,9 +190,13 @@ public class CallArranger {
             }
         }
 
+        VMStorage[] stackAllocStruct(TypeClass typeClass) {
+            return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+        }
+
         VMStorage[] structStorages(TypeClass typeClass) {
             if (typeClass.inMemory()) {
-                return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+                return stackAllocStruct(typeClass);
             }
             long nIntegerReg = typeClass.nIntegerRegs();
 
@@ -228,6 +234,15 @@ public class CallArranger {
                 case StorageType.INTEGER -> nIntegerReg++;
                 case StorageType.VECTOR -> nVectorReg++;
                 default -> throw new IllegalStateException();
+            }
+        }
+
+        VMStorage[] nextX87Storages(TypeClass argumentClass) {
+            if (forArguments) {
+                return stackAllocStruct(argumentClass);
+            } else {
+                int index = currentX87Index++;
+                return new VMStorage[]{X86_64Architecture.x87LoStorage(index), X86_64Architecture.x87HiStorage(index)};
             }
         }
     }
@@ -284,6 +299,16 @@ public class CallArranger {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
                     bindings.vmStore(storage, carrier);
                 }
+                case X87 -> {
+                    VMStorage[] regs = storageCalculator.nextX87Storages(argumentClass);
+                    assert regs.length == 2;
+
+                    bindings.dup()
+                            .fp80LoadMantissa()
+                            .vmStore(regs[0], long.class)
+                            .fp80LoadExponent()
+                            .vmStore(regs[1], long.class);
+                }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }
             return bindings.build();
@@ -331,6 +356,14 @@ public class CallArranger {
                 case FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
                     bindings.vmLoad(storage, carrier);
+                }
+                case X87 -> {
+                    VMStorage[] regs = storageCalculator.nextX87Storages(argumentClass);
+                    assert regs.length == 2;
+
+                    bindings.vmLoad(regs[0], long.class)
+                            .vmLoad(regs[1], long.class)
+                            .boxFP80();
                 }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }

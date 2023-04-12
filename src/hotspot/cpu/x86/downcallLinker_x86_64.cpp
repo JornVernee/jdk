@@ -225,15 +225,21 @@ void DowncallStubGenerator::generate() {
   // this call is assumed not to have killed r15_thread
 
   if (_needs_return_buffer) {
-    __ movptr(rscratch1, Address(rsp, locs.data_offset(StubLocations::RETURN_BUFFER)));
+    assert(!_abi._integer_return_registers.contains(rbx), "need rbx");
+    __ movptr(rbx, Address(rsp, locs.data_offset(StubLocations::RETURN_BUFFER)));
     int offset = 0;
     for (int i = 0; i < _output_registers.length(); i++) {
       VMStorage reg = _output_registers.at(i);
       if (reg.type() == StorageType::INTEGER) {
-        __ movptr(Address(rscratch1, offset), as_Register(reg));
+        __ movptr(Address(rbx, offset), as_Register(reg));
         offset += 8;
       } else if (reg.type() == StorageType::VECTOR) {
-        __ movdqu(Address(rscratch1, offset), as_XMMRegister(reg));
+        __ movdqu(Address(rbx, offset), as_XMMRegister(reg));
+        offset += 16;
+      } else if (reg.type() == StorageType::X87_HALF) {
+        VMStorage next_reg = _output_registers.at(++i);
+        assert(is_x87_pair(reg, next_reg), "expected x87 pair");
+        __ fstp_x(Address(rbx, offset));
         offset += 16;
       } else {
         ShouldNotReachHere();

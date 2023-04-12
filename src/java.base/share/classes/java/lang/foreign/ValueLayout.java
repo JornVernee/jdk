@@ -54,7 +54,7 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
 public sealed interface ValueLayout extends MemoryLayout permits
         ValueLayout.OfBoolean, ValueLayout.OfByte, ValueLayout.OfChar, ValueLayout.OfShort, ValueLayout.OfInt,
-        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, AddressLayout {
+        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, ValueLayout.OfExtendedPrecisionFloat, AddressLayout {
 
     /**
      * {@return the value's byte order}
@@ -448,6 +448,43 @@ public sealed interface ValueLayout extends MemoryLayout permits
     }
 
     /**
+     * A value layout whose carrier is {@code FP80.class}.
+     *
+     * @see #FP80
+     * @see #FP80_UNALIGNED
+     * @since 21
+     */
+    @PreviewFeature(feature = PreviewFeature.Feature.FOREIGN)
+    sealed interface OfExtendedPrecisionFloat extends ValueLayout permits ValueLayouts.OfExtendedPrecisionFloatImpl {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfExtendedPrecisionFloat withName(String name);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfExtendedPrecisionFloat withoutName();
+
+        /**
+         * {@inheritDoc}
+         * @throws IllegalArgumentException {@inheritDoc}
+         */
+        @Override
+        OfExtendedPrecisionFloat withBitAlignment(long bitAlignment);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfExtendedPrecisionFloat withOrder(ByteOrder order);
+
+    }
+
+    /**
      * A value layout constant whose size is the same as that of a machine address ({@code size_t}),
      * bit alignment set to {@code sizeof(size_t) * 8}, byte order set to {@link ByteOrder#nativeOrder()}.
      */
@@ -500,6 +537,11 @@ public sealed interface ValueLayout extends MemoryLayout permits
      * bit alignment set to 64, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
     OfDouble JAVA_DOUBLE = ValueLayouts.OfDoubleImpl.of(ByteOrder.nativeOrder());
+
+    /**
+     * 80 bit float
+     */
+    OfExtendedPrecisionFloat FP80 = ValueLayouts.OfExtendedPrecisionFloatImpl.of(ByteOrder.nativeOrder());
 
     /**
      * An unaligned value layout constant whose size is the same as that of a machine address ({@code size_t}),
@@ -584,5 +626,10 @@ public sealed interface ValueLayout extends MemoryLayout permits
      *          performance and portability issues.
      */
     OfDouble JAVA_DOUBLE_UNALIGNED = JAVA_DOUBLE.withBitAlignment(8);
+
+    /**
+     * 80 bit float unaligned
+     */
+    OfExtendedPrecisionFloat FP80_UNALIGNED = FP80.withBitAlignment(8);
 
 }

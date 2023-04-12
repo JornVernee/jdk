@@ -30,15 +30,18 @@ import jdk.internal.classfile.Label;
 import jdk.internal.classfile.Opcode;
 import jdk.internal.classfile.TypeKind;
 import jdk.internal.foreign.AbstractMemorySegmentImpl;
+import jdk.internal.foreign.ExtendedPrecisionFloatImpl;
 import jdk.internal.foreign.MemorySessionImpl;
 import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.Binding.Allocate;
 import jdk.internal.foreign.abi.Binding.BoxAddress;
+import jdk.internal.foreign.abi.Binding.BoxFP80;
 import jdk.internal.foreign.abi.Binding.BufferLoad;
 import jdk.internal.foreign.abi.Binding.BufferStore;
 import jdk.internal.foreign.abi.Binding.Cast;
 import jdk.internal.foreign.abi.Binding.Copy;
 import jdk.internal.foreign.abi.Binding.Dup;
+import jdk.internal.foreign.abi.Binding.GetComponent;
 import jdk.internal.foreign.abi.Binding.UnboxAddress;
 import jdk.internal.foreign.abi.Binding.VMLoad;
 import jdk.internal.foreign.abi.Binding.VMStore;
@@ -49,6 +52,7 @@ import java.io.IOException;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.foreign.*;
@@ -95,6 +99,7 @@ public class BindingSpecializer {
     private static final ClassDesc CD_ValueLayout_OfFloat = desc(ValueLayout.OfFloat.class);
     private static final ClassDesc CD_ValueLayout_OfDouble = desc(ValueLayout.OfDouble.class);
     private static final ClassDesc CD_AddressLayout = desc(AddressLayout.class);
+    private static final ClassDesc CD_ExtendedPrecisionFloatImpl = desc(ExtendedPrecisionFloatImpl.class);
 
     private static final MethodTypeDesc MTD_NEW_BOUNDED_ARENA = MethodTypeDesc.of(CD_Arena, CD_long);
     private static final MethodTypeDesc MTD_NEW_EMPTY_ARENA = MethodTypeDesc.of(CD_Arena);
@@ -113,6 +118,7 @@ public class BindingSpecializer {
     private static final MethodTypeDesc MTD_SHORT_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_short);
     private static final MethodTypeDesc MTD_BYTE_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_byte);
     private static final MethodTypeDesc MTD_BYTE_TO_BOOLEAN = MethodTypeDesc.of(CD_boolean, CD_byte);
+    private static final MethodTypeDesc MTD_EXTENDED_PRECISION_FLOAT_OF = MethodTypeDesc.of(CD_ExtendedPrecisionFloatImpl, CD_long, CD_long);
 
     private static final ConstantDesc CLASS_DATA_DESC = DynamicConstantDesc.of(BSM_CLASS_DATA);
 
@@ -454,16 +460,18 @@ public class BindingSpecializer {
     private void doBindings(List<Binding> bindings) {
         for (Binding binding : bindings) {
             switch (binding) {
-                case VMStore vmStore         -> emitVMStore(vmStore);
-                case VMLoad vmLoad           -> emitVMLoad(vmLoad);
-                case BufferStore bufferStore -> emitBufferStore(bufferStore);
-                case BufferLoad bufferLoad   -> emitBufferLoad(bufferLoad);
-                case Copy copy               -> emitCopyBuffer(copy);
-                case Allocate allocate       -> emitAllocBuffer(allocate);
-                case BoxAddress boxAddress   -> emitBoxAddress(boxAddress);
-                case UnboxAddress unused     -> emitUnboxAddress();
-                case Dup unused              -> emitDupBinding();
-                case Cast cast               -> emitCast(cast);
+                case VMStore vmStore           -> emitVMStore(vmStore);
+                case VMLoad vmLoad             -> emitVMLoad(vmLoad);
+                case BufferStore bufferStore   -> emitBufferStore(bufferStore);
+                case BufferLoad bufferLoad     -> emitBufferLoad(bufferLoad);
+                case Copy copy                 -> emitCopyBuffer(copy);
+                case Allocate allocate         -> emitAllocBuffer(allocate);
+                case BoxAddress boxAddress     -> emitBoxAddress(boxAddress);
+                case UnboxAddress unused       -> emitUnboxAddress();
+                case Dup unused                -> emitDupBinding();
+                case Cast cast                 -> emitCast(cast);
+                case BoxFP80 unused            -> emitBoxFP80();
+                case GetComponent getComponent -> emitGetComponent(getComponent);
             }
         }
     }
@@ -750,6 +758,23 @@ public class BindingSpecializer {
             default -> throw new IllegalStateException("Unknown cast: " + cast);
         }
         pushType(toType);
+    }
+
+    private void emitBoxFP80() {
+        popType(long.class);
+        popType(long.class);
+        cb.invokestatic(CD_ExtendedPrecisionFloatImpl, "of", MTD_EXTENDED_PRECISION_FLOAT_OF);
+        pushType(ExtendedPrecisionFloat.class);
+    }
+
+    private void emitGetComponent(GetComponent getComponent) {
+        ClassDesc holderCD = desc(getComponent.component().getDeclaringRecord());
+        Class<?> type = getComponent.component().getType();
+
+        popType(getComponent.carrier());
+        cb.checkcast(holderCD);
+        cb.invokevirtual(holderCD, getComponent.component().getName(), MethodTypeDesc.of(desc(type)));
+        pushType(type);
     }
 
     private void emitUnboxAddress() {

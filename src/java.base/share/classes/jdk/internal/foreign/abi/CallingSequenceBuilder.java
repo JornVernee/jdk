@@ -27,11 +27,13 @@ package jdk.internal.foreign.abi;
 import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.Binding.Allocate;
 import jdk.internal.foreign.abi.Binding.BoxAddress;
+import jdk.internal.foreign.abi.Binding.BoxFP80;
 import jdk.internal.foreign.abi.Binding.BufferLoad;
 import jdk.internal.foreign.abi.Binding.BufferStore;
 import jdk.internal.foreign.abi.Binding.Cast;
 import jdk.internal.foreign.abi.Binding.Copy;
 import jdk.internal.foreign.abi.Binding.Dup;
+import jdk.internal.foreign.abi.Binding.GetComponent;
 import jdk.internal.foreign.abi.Binding.UnboxAddress;
 import jdk.internal.foreign.abi.Binding.VMLoad;
 import jdk.internal.foreign.abi.Binding.VMStore;
@@ -221,11 +223,13 @@ public class CallingSequenceBuilder {
             case UnboxAddress unused -> true;
             case Dup          unused -> true;
             case Cast         unused -> true;
+            case GetComponent unused -> true;
 
             case VMLoad       unused -> false;
             case BufferStore  unused -> false;
             case Allocate     unused -> false;
             case BoxAddress   unused -> false;
+            case BoxFP80      unused -> false;
         };
     }
 
@@ -255,10 +259,12 @@ public class CallingSequenceBuilder {
             case BoxAddress   unused -> true;
             case Dup          unused -> true;
             case Cast         unused -> true;
+            case BoxFP80      unused -> true;
 
             case VMStore      unused -> false;
             case BufferLoad   unused -> false;
             case UnboxAddress unused -> false;
+            case GetComponent unused -> false;
         };
     }
 

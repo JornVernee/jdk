@@ -33,6 +33,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
+import java.lang.foreign.ExtendedPrecisionFloat;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.AddressLayout;
@@ -377,6 +378,33 @@ public final class ValueLayouts {
         }
     }
 
+    public static final class OfExtendedPrecisionFloatImpl extends AbstractValueLayout<OfExtendedPrecisionFloatImpl> implements ValueLayout.OfExtendedPrecisionFloat {
+
+        private static final long IN_MEMORY_SIZE = 16 * Byte.SIZE; // 16 bytes
+
+        private OfExtendedPrecisionFloatImpl(ByteOrder order, long bitSize, long bitAlignment, Optional<String> name) {
+            super(ExtendedPrecisionFloat.class, order, bitSize, bitAlignment, name);
+        }
+
+        @Override
+        OfExtendedPrecisionFloatImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
+            return new OfExtendedPrecisionFloatImpl(order, bitSize(), bitAlignment, name);
+        }
+
+        public static OfExtendedPrecisionFloatImpl of(ByteOrder order) {
+            return new OfExtendedPrecisionFloatImpl(order, IN_MEMORY_SIZE, IN_MEMORY_SIZE, Optional.empty());
+        }
+
+        @Override
+        public String toString() {
+            String descriptor = "EPF";
+            if (order() == ByteOrder.LITTLE_ENDIAN) {
+                descriptor = descriptor.toLowerCase();
+            }
+            return decorateLayoutString(String.format("%s%d", descriptor, bitSize()));
+        }
+    }
+
     /**
      * Creates a value layout of given Java carrier and byte order. The type of resulting value layout is determined
      * by the carrier provided:
@@ -389,7 +417,7 @@ public final class ValueLayouts {
      *     <li>{@link ValueLayout.OfFloat}, for {@code float.class}</li>
      *     <li>{@link ValueLayout.OfLong}, for {@code long.class}</li>
      *     <li>{@link ValueLayout.OfDouble}, for {@code double.class}</li>
-     *     <li>{@link ValueLayout.OfAddress}, for {@code MemorySegment.class}</li>
+     *     <li>{@link AddressLayout}, for {@code MemorySegment.class}</li>
      * </ul>
      * @param carrier the value layout carrier.
      * @param order the value layout's byte order.

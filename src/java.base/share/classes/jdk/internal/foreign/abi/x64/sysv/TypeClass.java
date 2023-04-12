@@ -24,6 +24,8 @@
  */
 package jdk.internal.foreign.abi.x64.sysv;
 
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.ExtendedPrecisionFloat;
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
@@ -32,9 +34,11 @@ import java.lang.foreign.SequenceLayout;
 import java.lang.foreign.StructLayout;
 import java.lang.foreign.ValueLayout;
 import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.layout.ValueLayouts;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -43,7 +47,8 @@ class TypeClass {
         STRUCT,
         POINTER,
         INTEGER,
-        FLOAT
+        FLOAT,
+        X87
     }
 
     private final Kind kind;
@@ -56,14 +61,15 @@ class TypeClass {
 
     public static TypeClass ofValue(ValueLayout layout) {
         final Kind kind;
-        ArgumentClassImpl argClass = argumentClassFor(layout);
-        kind = switch (argClass) {
+        List<ArgumentClassImpl> argClasses = argumentClassFor(layout);
+        kind = switch (argClasses.get(0)) {
             case POINTER -> Kind.POINTER;
             case INTEGER -> Kind.INTEGER;
             case SSE -> Kind.FLOAT;
-            default -> throw new IllegalStateException("Unexpected argument class: " + argClass);
+            case X87 -> Kind.X87;
+            default -> throw new IllegalStateException("Unexpected argument classes: " + argClasses.get(0));
         };
-        return new TypeClass(kind, List.of(argClass));
+        return new TypeClass(kind, argClasses);
     }
 
     public static TypeClass ofStruct(GroupLayout layout) {
@@ -108,15 +114,18 @@ class TypeClass {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static ArgumentClassImpl argumentClassFor(ValueLayout layout) {
+    private static List<ArgumentClassImpl> argumentClassFor(ValueLayout layout) {
         Class<?> carrier = layout.carrier();
         if (carrier == boolean.class || carrier == byte.class || carrier == char.class ||
                 carrier == short.class || carrier == int.class || carrier == long.class) {
-            return ArgumentClassImpl.INTEGER;
+            return List.of(ArgumentClassImpl.INTEGER);
         } else if (carrier == float.class || carrier == double.class) {
-            return ArgumentClassImpl.SSE;
+            return List.of(ArgumentClassImpl.SSE);
         } else if (carrier == MemorySegment.class) {
-            return ArgumentClassImpl.POINTER;
+            return List.of(ArgumentClassImpl.POINTER);
+        } else if (carrier == ExtendedPrecisionFloat.class) {
+            assert layout instanceof ValueLayouts.OfExtendedPrecisionFloatImpl;
+            return List.of(ArgumentClassImpl.X87, ArgumentClassImpl.X87UP);
         } else {
             throw new IllegalStateException("Cannot get here: " + carrier.getName());
         }
@@ -199,8 +208,16 @@ class TypeClass {
         }
         @SuppressWarnings({"unchecked", "rawtypes"})
         List<ArgumentClassImpl>[] groups = new List[nEightbytes];
+        LongFunction<List<ArgumentClassImpl>> getGroup = groupOffset -> {
+            List<ArgumentClassImpl> layouts = groups[(int)groupOffset / 8];
+            if (layouts == null) {
+                layouts = new ArrayList<>();
+                groups[(int)groupOffset / 8] = layouts;
+            }
+            return layouts;
+        };
         for (MemoryLayout l : group.memberLayouts()) {
-            groupByEightBytes(l, offset, groups);
+            groupByEightBytes(l, offset, getGroup);
             if (group instanceof StructLayout) {
                 offset += l.byteSize();
             }
@@ -208,7 +225,7 @@ class TypeClass {
         return groups;
     }
 
-    private static void groupByEightBytes(MemoryLayout l, long offset, List<ArgumentClassImpl>[] groups) {
+    private static void groupByEightBytes(MemoryLayout l, long offset, LongFunction<List<ArgumentClassImpl>> groups) {
         if (l instanceof GroupLayout group) {
             for (MemoryLayout m : group.memberLayouts()) {
                 groupByEightBytes(m, offset, groups);
@@ -225,16 +242,18 @@ class TypeClass {
                 offset += elem.byteSize();
             }
         } else if (l instanceof ValueLayout vl) {
-            List<ArgumentClassImpl> layouts = groups[(int)offset / 8];
-            if (layouts == null) {
-                layouts = new ArrayList<>();
-                groups[(int)offset / 8] = layouts;
-            }
+            List<ArgumentClassImpl> layouts = groups.apply(offset);
             // if the aggregate contains unaligned fields, it has class MEMORY
-            ArgumentClassImpl argumentClass = (offset % vl.byteAlignment()) == 0 ?
+            List<ArgumentClassImpl> argumentClass = (offset % vl.byteAlignment()) == 0 ?
                     argumentClassFor(vl) :
-                    ArgumentClassImpl.MEMORY;
-            layouts.add(argumentClass);
+                    List.of(ArgumentClassImpl.MEMORY);
+
+            layouts.add(argumentClass.get(0));
+            if (argumentClass.get(0) == ArgumentClassImpl.X87) {
+                assert argumentClass.get(1) == ArgumentClassImpl.X87UP;
+                List<ArgumentClassImpl> nextLayouts = groups.apply(offset + 8);
+                nextLayouts.add(ArgumentClassImpl.X87UP);
+            }
         } else {
             throw new IllegalStateException("Unexpected layout: " + l);
         }

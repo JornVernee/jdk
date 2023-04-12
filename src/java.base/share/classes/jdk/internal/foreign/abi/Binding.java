@@ -24,6 +24,7 @@
  */
 package jdk.internal.foreign.abi;
 
+import jdk.internal.foreign.ExtendedPrecisionFloatImpl;
 import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.BindingInterpreter.LoadFunc;
 import jdk.internal.foreign.abi.BindingInterpreter.StoreFunc;
@@ -32,7 +33,8 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteOrder;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -301,6 +303,21 @@ public sealed interface Binding {
         throw new IllegalArgumentException("Unknown conversion: " + fromType + " -> " + toType);
     }
 
+    static BoxFP80 boxFP80() {
+        return BoxFP80.INSTANCE;
+    }
+
+    static <T> GetComponent getComponent(Class<T> carrier, Class<? extends T> holder, String name, Class<?> type) {
+        assert holder.isRecord();
+        assert carrier.isAssignableFrom(holder);
+        assert carrier.isSealed() && carrier.getPermittedSubclasses().length == 1 && carrier.getPermittedSubclasses()[0] == holder;
+        for (RecordComponent component : holder.getRecordComponents()) {
+            if (component.getName().equals(name) && component.getType() == type) {
+                return new GetComponent(carrier, component);
+            }
+        }
+        throw new IllegalArgumentException("Could not find component: " + name + " of type: " + type);
+    }
 
     static Binding.Builder builder() {
         return new Binding.Builder();
@@ -310,6 +327,8 @@ public sealed interface Binding {
      * A builder helper class for generating lists of Bindings
      */
     class Builder {
+
+
         private final List<Binding> bindings = new ArrayList<>();
 
         private static boolean isSubIntType(Class<?> type) {
@@ -384,6 +403,21 @@ public sealed interface Binding {
 
         public Binding.Builder dup() {
             bindings.add(Binding.dup());
+            return this;
+        }
+
+        public Binding.Builder boxFP80() {
+            bindings.add(Binding.boxFP80());
+            return this;
+        }
+
+        public <T> Binding.Builder fp80LoadMantissa() {
+            bindings.add(Binding.getComponent(ExtendedPrecisionFloat.class, ExtendedPrecisionFloatImpl.class, "mantissa", long.class));
+            return this;
+        }
+
+        public <T> Binding.Builder fp80LoadExponent() {
+            bindings.add(Binding.getComponent(ExtendedPrecisionFloat.class, ExtendedPrecisionFloatImpl.class, "exponent", long.class));
             return this;
         }
 
@@ -729,6 +763,43 @@ public sealed interface Binding {
                 stack.push(result);
             } catch (Throwable e) {
                 throw new InternalError(e);
+            }
+        }
+    }
+
+    record BoxFP80() implements Binding {
+        static final BoxFP80 INSTANCE = new BoxFP80();
+
+        @Override
+        public void verify(Deque<Class<?>> stack) {
+            SharedUtils.checkType(stack.pop(), long.class);
+            SharedUtils.checkType(stack.pop(), long.class);
+            stack.push(ExtendedPrecisionFloat.class);
+        }
+
+        @Override
+        public void interpret(Deque<Object> stack, StoreFunc storeFunc, LoadFunc loadFunc, SegmentAllocator allocator) {
+            long mantissa = (long) stack.pop();
+            long exponent = (long) stack.pop();
+            stack.push(new ExtendedPrecisionFloatImpl(mantissa, exponent));
+        }
+    }
+
+    record GetComponent(Class<?> carrier, RecordComponent component) implements Binding {
+
+        @Override
+        public void verify(Deque<Class<?>> stack) {
+            SharedUtils.checkType(stack.pop(), carrier);
+            stack.push(component.getType());
+        }
+
+        @Override
+        public void interpret(Deque<Object> stack, StoreFunc storeFunc, LoadFunc loadFunc, SegmentAllocator allocator) {
+            Object recv = component.getDeclaringRecord().cast(stack.pop());
+            try {
+                stack.push(component.getAccessor().invoke(recv));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         }
     }
