@@ -170,7 +170,8 @@ public final class ValueLayouts {
                     || carrier == long.class
                     || carrier == float.class
                     || carrier == double.class
-                    || carrier == MemorySegment.class;
+                    || carrier == MemorySegment.class
+                    || carrier == ExtendedPrecisionFloat.class;
         }
 
         @ForceInline
