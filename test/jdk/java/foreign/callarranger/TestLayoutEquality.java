@@ -25,17 +25,23 @@
 /*
  * @test
  * @enablePreview
- * @compile platform/PlatformLayouts.java
  * @modules java.base/jdk.internal.foreign.abi
  * @modules java.base/jdk.internal.foreign.layout
+ * @modules java.base/jdk.internal.foreign.abi.aarch64
+ * @modules java.base/jdk.internal.foreign.abi.riscv64.linux
+ * @modules java.base/jdk.internal.foreign.abi.x64.sysv
+ * @modules java.base/jdk.internal.foreign.abi.x64.windows
  * @run testng TestLayoutEquality
  */
 
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.ValueLayout;
 
+import jdk.internal.foreign.abi.aarch64.AArch64Layouts;
+import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
+import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
+import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
 import jdk.internal.foreign.layout.ValueLayouts;
-import platform.PlatformLayouts;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -68,10 +74,10 @@ public class TestLayoutEquality {
     public static Object[][] layoutConstants() throws ReflectiveOperationException {
         List<ValueLayout> testValues = new ArrayList<>();
 
-        addLayoutConstants(testValues, PlatformLayouts.SysV.class);
-        addLayoutConstants(testValues, PlatformLayouts.Win64.class);
-        addLayoutConstants(testValues, PlatformLayouts.AArch64.class);
-        addLayoutConstants(testValues, PlatformLayouts.RISCV64.class);
+        addLayoutConstants(testValues, SysVx64Linker.Layouts.class);
+        addLayoutConstants(testValues, Windowsx64Linker.Layouts.class);
+        addLayoutConstants(testValues, AArch64Layouts.class);
+        addLayoutConstants(testValues, LinuxRISCV64Linker.Layouts.class);
 
         return testValues.stream().map(e -> new Object[]{ e }).toArray(Object[][]::new);
     }

@@ -30,6 +30,7 @@ import jdk.internal.foreign.abi.AbstractLinker;
 import jdk.internal.foreign.abi.CapturableState;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
+import jdk.internal.foreign.layout.ValueLayouts;
 
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;
@@ -49,7 +50,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static java.lang.foreign.ValueLayout.ADDRESS;
-import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static java.lang.invoke.MethodHandles.foldArguments;
 
 public final class FallbackLinker extends AbstractLinker {
@@ -77,6 +77,40 @@ public final class FallbackLinker extends AbstractLinker {
 
     public static boolean isSupported() {
         return LibFallback.SUPPORTED;
+    }
+
+    public interface Layouts {
+        ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) ValueLayouts.valueLayout(boolean.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.INTEGER);
+        ValueLayout.OfByte C_CHAR = (ValueLayout.OfByte) ValueLayouts.valueLayout(byte.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.INTEGER);
+        ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) ValueLayouts.valueLayout(short.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.INTEGER);
+        ValueLayout.OfInt C_INT = (ValueLayout.OfInt) ValueLayouts.valueLayout(int.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.INTEGER);
+        ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) ValueLayouts.valueLayout(long.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.INTEGER);
+        ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) ValueLayouts.valueLayout(float.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.FLOAT);
+        ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) ValueLayouts.valueLayout(double.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(jdk.internal.foreign.abi.riscv64.linux.TypeClass.FLOAT);
+        AddressLayout C_POINTER = (AddressLayout) ValueLayouts.valueLayout(MemorySegment.class, ByteOrder.LITTLE_ENDIAN)
+                .withClassifier(TypeClass.POINTER);
+    }
+
+    @Override
+    public MemoryLayout linkerType(String name) {
+        return switch (name) {
+            case "_Bool" -> Layouts.C_BOOL;
+            case "char" -> Layouts.C_CHAR;
+            case "short" -> Layouts.C_SHORT;
+            case "int" -> Layouts.C_INT;
+            case "long long" -> Layouts.C_LONG_LONG;
+            case "float" -> Layouts.C_FLOAT;
+            case "double" -> Layouts.C_DOUBLE;
+            case "void*" -> Layouts.C_POINTER;
+            default -> throw new IllegalStateException("Unknown type: " + name);
+        };
     }
 
     @Override

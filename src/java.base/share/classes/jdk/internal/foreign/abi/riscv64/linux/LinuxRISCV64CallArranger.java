@@ -91,7 +91,7 @@ public class LinuxRISCV64CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = SharedUtils.C_POINTER;
+            MemoryLayout layout = LinuxRISCV64Linker.Layouts.C_POINTER;
             csb.addArgumentBindings(carrier, layout, argCalc.getBindings(carrier, layout, false));
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();

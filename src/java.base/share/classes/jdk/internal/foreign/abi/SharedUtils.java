@@ -78,10 +78,6 @@ public final class SharedUtils {
     private static final MethodHandle MH_REACHABILITY_FENCE;
     public static final MethodHandle MH_CHECK_SYMBOL;
 
-    public static final AddressLayout C_POINTER = ADDRESS
-            .withBitAlignment(64)
-            .withTargetLayout(MemoryLayout.sequenceLayout(JAVA_BYTE));
-
     public static final Arena DUMMY_ARENA = new Arena() {
         @Override
         public Scope scope() {

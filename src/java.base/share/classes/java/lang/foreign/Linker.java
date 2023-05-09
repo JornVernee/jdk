@@ -36,7 +36,6 @@ import jdk.internal.reflect.Reflection;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteOrder;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -562,6 +561,22 @@ public sealed interface Linker permits AbstractLinker {
      * @return a symbol lookup for symbols in a set of commonly used libraries.
      */
     SymbolLookup defaultLookup();
+
+    /**
+     * {@return the memory layout of the type with the given name}
+     * @param name the name of the type
+     */
+    MemoryLayout linkerType(String name);
+
+    /**
+     * Marker interface for ABI classification information
+     */
+    sealed interface Classifier permits
+            jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl,
+            jdk.internal.foreign.abi.x64.windows.TypeClass,
+            jdk.internal.foreign.abi.aarch64.TypeClass,
+            jdk.internal.foreign.abi.riscv64.linux.TypeClass,
+            jdk.internal.foreign.abi.fallback.TypeClass {}
 
     /**
      * A linker option is used to indicate additional linking requirements to the linker,

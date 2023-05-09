@@ -54,7 +54,7 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
 public sealed interface ValueLayout extends MemoryLayout permits
         ValueLayout.OfBoolean, ValueLayout.OfByte, ValueLayout.OfChar, ValueLayout.OfShort, ValueLayout.OfInt,
-        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, AddressLayout {
+        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, AddressLayout, ValueLayouts.AbstractValueLayout {
 
     /**
      * {@return the value's byte order}
@@ -140,6 +140,13 @@ public sealed interface ValueLayout extends MemoryLayout permits
      * {@return the carrier associated with this value layout}
      */
     Class<?> carrier();
+
+    /**
+     * {@return a new layout with the given carrier}
+     * @param carrier the new carrier
+     * @throws IllegalArgumentException if the given carrier is not applicable to this layout
+     */
+    ValueLayout withCarrier(Class<?> carrier);
 
     /**
      * {@inheritDoc}

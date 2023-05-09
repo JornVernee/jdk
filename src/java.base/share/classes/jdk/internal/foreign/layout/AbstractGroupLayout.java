@@ -25,11 +25,11 @@
  */
 package jdk.internal.foreign.layout;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.LongBinaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +51,9 @@ public sealed abstract class AbstractGroupLayout<L extends AbstractGroupLayout<L
     private final List<MemoryLayout> elements;
     final long minBitAlignment;
 
-    AbstractGroupLayout(Kind kind, List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment, Optional<String> name) {
-        super(bitSize, bitAlignment, name); // Subclassing creates toctou problems here
+    AbstractGroupLayout(Kind kind, List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment,
+                        Optional<String> name, Optional<Linker.Classifier> classifier) {
+        super(bitSize, bitAlignment, name, classifier); // Subclassing creates toctou problems here
         this.kind = kind;
         this.elements = List.copyOf(elements);
         this.minBitAlignment = minBitAlignment;

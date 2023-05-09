@@ -25,6 +25,7 @@
 package jdk.internal.foreign.abi.x64.sysv;
 
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.PaddingLayout;
@@ -38,7 +39,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-class TypeClass {
+public final class TypeClass {
     enum Kind {
         STRUCT,
         POINTER,
@@ -109,17 +110,8 @@ class TypeClass {
     }
 
     private static ArgumentClassImpl argumentClassFor(ValueLayout layout) {
-        Class<?> carrier = layout.carrier();
-        if (carrier == boolean.class || carrier == byte.class || carrier == char.class ||
-                carrier == short.class || carrier == int.class || carrier == long.class) {
-            return ArgumentClassImpl.INTEGER;
-        } else if (carrier == float.class || carrier == double.class) {
-            return ArgumentClassImpl.SSE;
-        } else if (carrier == MemorySegment.class) {
-            return ArgumentClassImpl.POINTER;
-        } else {
-            throw new IllegalStateException("Cannot get here: " + carrier.getName());
-        }
+        return (ArgumentClassImpl) layout.classifier()
+                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + layout));
     }
 
     // TODO: handle zero length arrays

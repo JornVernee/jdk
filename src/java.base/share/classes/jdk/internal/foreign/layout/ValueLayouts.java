@@ -26,6 +26,7 @@
 package jdk.internal.foreign.layout;
 
 import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.x64.windows.TypeClass;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
@@ -33,6 +34,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.AddressLayout;
@@ -62,20 +64,22 @@ public final class ValueLayouts {
     // Suppresses default constructor, ensuring non-instantiability.
     private ValueLayouts() {}
 
-    abstract sealed static class AbstractValueLayout<V extends AbstractValueLayout<V> & ValueLayout> extends AbstractLayout<V> {
-
+    static class AddrSizeHolder {
         static final int ADDRESS_SIZE_BITS = Unsafe.ADDRESS_SIZE * 8;
+    }
 
+    public abstract sealed static class AbstractValueLayout<V extends AbstractValueLayout<V> & ValueLayout> extends AbstractLayout<V> implements ValueLayout {
         private final Class<?> carrier;
         private final ByteOrder order;
         @Stable
         private VarHandle handle;
 
-        AbstractValueLayout(Class<?> carrier, ByteOrder order, long bitSize, long bitAlignment, Optional<String> name) {
-            super(bitSize, bitAlignment, name);
+        AbstractValueLayout(Class<?> carrier, ByteOrder order, long bitSize, long bitAlignment, Optional<String> name,
+                            Optional<Linker.Classifier> classifier) {
+            super(bitSize, bitAlignment, name, classifier);
             this.carrier = carrier;
             this.order = order;
-            assertCarrierSize(carrier, bitSize);
+            assert isValidCarrier(carrier, bitSize);
         }
 
         /**
@@ -94,7 +98,7 @@ public final class ValueLayouts {
          */
         public final V withOrder(ByteOrder order) {
             Objects.requireNonNull(order);
-            return dup(order, bitAlignment(), name());
+            return dup(order, bitAlignment(), name(), classifier());
         }
 
         @Override
@@ -143,20 +147,29 @@ public final class ValueLayouts {
         }
 
         @Override
-        final V dup(long bitAlignment, Optional<String> name) {
-            return dup(order(), bitAlignment, name);
+        final V dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return dup(order(), bitAlignment, name, classifier);
         }
 
-        abstract V dup(ByteOrder order, long bitAlignment, Optional<String> name);
+        abstract V dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier);
 
-        static void assertCarrierSize(Class<?> carrier, long bitSize) {
-            assert isValidCarrier(carrier);
-            assert carrier != MemorySegment.class
+        @Override
+        public ValueLayout withCarrier(Class<?> carrier) {
+            Objects.requireNonNull(carrier);
+            if (!isValidCarrier(carrier, bitSize())) {
+                throw new IllegalArgumentException("Not a valid carrier for this layout: " + carrier + ", " + this);
+            }
+            return valueLayout(carrier, order()).dup(order(), bitAlignment(), name(), classifier());
+        }
+
+        static boolean isValidCarrier(Class<?> carrier, long bitSize) {
+            return isValidCarrier(carrier)
+                   && (carrier != MemorySegment.class
                     // MemorySegment bitSize must always equal ADDRESS_SIZE_BITS
-                    || bitSize == ADDRESS_SIZE_BITS;
-            assert !carrier.isPrimitive() ||
+                    || bitSize == AddrSizeHolder.ADDRESS_SIZE_BITS)
+                   && (!carrier.isPrimitive() ||
                     // Primitive class bitSize must always correspond
-                    bitSize == (carrier == boolean.class ? 8 : Wrapper.forPrimitiveType(carrier).bitWidth());
+                    bitSize == (carrier == boolean.class ? 8 : Wrapper.forPrimitiveType(carrier).bitWidth()));
         }
 
         static boolean isValidCarrier(Class<?> carrier) {
@@ -189,129 +202,130 @@ public final class ValueLayouts {
 
     public static final class OfBooleanImpl extends AbstractValueLayout<OfBooleanImpl> implements ValueLayout.OfBoolean {
 
-        private OfBooleanImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(boolean.class, order, Byte.SIZE, bitAlignment, name);
+        private OfBooleanImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(boolean.class, order, Byte.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfBooleanImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfBooleanImpl(order, bitAlignment, name);
+        OfBooleanImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfBooleanImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfBoolean of(ByteOrder order) {
-            return new OfBooleanImpl(order, Byte.SIZE, Optional.empty());
+        public static OfBooleanImpl of(ByteOrder order) {
+            return new OfBooleanImpl(order, Byte.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfByteImpl extends AbstractValueLayout<OfByteImpl> implements ValueLayout.OfByte {
 
-        private OfByteImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(byte.class, order, Byte.SIZE, bitAlignment, name);
+        private OfByteImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(byte.class, order, Byte.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfByteImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfByteImpl(order, bitAlignment, name);
+        OfByteImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfByteImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfByte of(ByteOrder order) {
-            return new OfByteImpl(order, Byte.SIZE, Optional.empty());
+        public static OfByteImpl of(ByteOrder order) {
+            return new OfByteImpl(order, Byte.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfCharImpl extends AbstractValueLayout<OfCharImpl> implements ValueLayout.OfChar {
 
-        private OfCharImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(char.class, order, Character.SIZE, bitAlignment, name);
+        private OfCharImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(char.class, order, Character.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfCharImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfCharImpl(order, bitAlignment, name);
+        OfCharImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfCharImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfChar of(ByteOrder order) {
-            return new OfCharImpl(order, Character.SIZE, Optional.empty());
+        public static OfCharImpl of(ByteOrder order) {
+            return new OfCharImpl(order, Character.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfShortImpl extends AbstractValueLayout<OfShortImpl> implements ValueLayout.OfShort {
 
-        private OfShortImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(short.class, order, Short.SIZE, bitAlignment, name);
+        private OfShortImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(short.class, order, Short.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfShortImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfShortImpl(order, bitAlignment, name);
+        OfShortImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfShortImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfShort of(ByteOrder order) {
-            return new OfShortImpl(order, Short.SIZE, Optional.empty());
+        public static OfShortImpl of(ByteOrder order) {
+            return new OfShortImpl(order, Short.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfIntImpl extends AbstractValueLayout<OfIntImpl> implements ValueLayout.OfInt {
 
-        private OfIntImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(int.class, order, Integer.SIZE, bitAlignment, name);
+        private OfIntImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(int.class, order, Integer.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfIntImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfIntImpl(order, bitAlignment, name);
+        OfIntImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfIntImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfInt of(ByteOrder order) {
-            return new OfIntImpl(order, Integer.SIZE, Optional.empty());
+        public static OfIntImpl of(ByteOrder order) {
+            return new OfIntImpl(order, Integer.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfFloatImpl extends AbstractValueLayout<OfFloatImpl> implements ValueLayout.OfFloat {
 
-        private OfFloatImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(float.class, order, Float.SIZE, bitAlignment, name);
+        private OfFloatImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(float.class, order, Float.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfFloatImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfFloatImpl(order, bitAlignment, name);
+        OfFloatImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfFloatImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfFloat of(ByteOrder order) {
-            return new OfFloatImpl(order, Float.SIZE, Optional.empty());
+        public static OfFloatImpl of(ByteOrder order) {
+            return new OfFloatImpl(order, Float.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfLongImpl extends AbstractValueLayout<OfLongImpl> implements ValueLayout.OfLong {
 
-        private OfLongImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(long.class, order, Long.SIZE, bitAlignment, name);
+        private OfLongImpl(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(long.class, order, Long.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfLongImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfLongImpl(order, bitAlignment, name);
+        OfLongImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfLongImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfLong of(ByteOrder order) {
-            return new OfLongImpl(order, Long.SIZE, Optional.empty());
+        public static OfLongImpl of(ByteOrder order) {
+            return new OfLongImpl(order, Long.SIZE, Optional.empty(), Optional.empty());
         }
     }
 
     public static final class OfDoubleImpl extends AbstractValueLayout<OfDoubleImpl> implements ValueLayout.OfDouble {
 
-        private OfDoubleImpl(ByteOrder order, long bitAlignment, Optional<String> name) {
-            super(double.class, order, Double.SIZE, bitAlignment, name);
+        private OfDoubleImpl(ByteOrder order, long bitAlignment, Optional<String> name,
+                             Optional<Linker.Classifier> classifier) {
+            super(double.class, order, Double.SIZE, bitAlignment, name, classifier);
         }
 
         @Override
-        OfDoubleImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfDoubleImpl(order, bitAlignment, name);
+        OfDoubleImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+            return new OfDoubleImpl(order, bitAlignment, name, classifier);
         }
 
-        public static OfDouble of(ByteOrder order) {
-            return new OfDoubleImpl(order, Double.SIZE, Optional.empty());
+        public static OfDoubleImpl of(ByteOrder order) {
+            return new OfDoubleImpl(order, Double.SIZE, Optional.empty(), Optional.empty());
         }
 
     }
@@ -320,14 +334,16 @@ public final class ValueLayouts {
 
         private final MemoryLayout targetLayout;
 
-        private OfAddressImpl(ByteOrder order, long bitSize, long bitAlignment, MemoryLayout targetLayout, Optional<String> name) {
-            super(MemorySegment.class, order, bitSize, bitAlignment, name);
+        private OfAddressImpl(ByteOrder order, long bitSize, long bitAlignment, MemoryLayout targetLayout,
+                              Optional<String> name, Optional<Linker.Classifier> classifier) {
+            super(MemorySegment.class, order, bitSize, bitAlignment, name, classifier);
             this.targetLayout = targetLayout;
         }
 
         @Override
-        OfAddressImpl dup(ByteOrder order, long bitAlignment, Optional<String> name) {
-            return new OfAddressImpl(order, bitSize(), bitAlignment,targetLayout, name);
+        OfAddressImpl dup(ByteOrder order, long bitAlignment, Optional<String> name,
+                          Optional<Linker.Classifier> classifier) {
+            return new OfAddressImpl(order, bitSize(), bitAlignment,targetLayout, name, classifier);
         }
 
         @Override
@@ -346,12 +362,12 @@ public final class ValueLayouts {
         public AddressLayout withTargetLayout(MemoryLayout layout) {
             Reflection.ensureNativeAccess(Reflection.getCallerClass(), AddressLayout.class, "withTargetLayout");
             Objects.requireNonNull(layout);
-            return new OfAddressImpl(order(), bitSize(), bitAlignment(), layout, name());
+            return new OfAddressImpl(order(), bitSize(), bitAlignment(), layout, name(), classifier());
         }
 
         @Override
         public AddressLayout withoutTargetLayout() {
-            return new OfAddressImpl(order(), bitSize(), bitAlignment(), null, name());
+            return new OfAddressImpl(order(), bitSize(), bitAlignment(), null, name(), classifier());
         }
 
         @Override
@@ -359,8 +375,8 @@ public final class ValueLayouts {
             return Optional.ofNullable(targetLayout);
         }
 
-        public static AddressLayout of(ByteOrder order) {
-            return new OfAddressImpl(order, ADDRESS_SIZE_BITS, ADDRESS_SIZE_BITS, null, Optional.empty());
+        public static OfAddressImpl of(ByteOrder order) {
+            return new OfAddressImpl(order, AddrSizeHolder.ADDRESS_SIZE_BITS, AddrSizeHolder.ADDRESS_SIZE_BITS, null, Optional.empty(), Optional.empty());
         }
 
         @Override
@@ -396,7 +412,7 @@ public final class ValueLayouts {
      * @return a value layout with the given Java carrier and byte-order.
      * @throws IllegalArgumentException if the carrier type is not supported.
      */
-    public static ValueLayout valueLayout(Class<?> carrier, ByteOrder order) {
+    public static AbstractValueLayout<?> valueLayout(Class<?> carrier, ByteOrder order) {
         Objects.requireNonNull(carrier);
         Objects.requireNonNull(order);
         if (carrier == boolean.class) {

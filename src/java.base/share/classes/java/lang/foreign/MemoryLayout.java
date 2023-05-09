@@ -190,6 +190,11 @@ public sealed interface MemoryLayout permits SequenceLayout, GroupLayout, Paddin
     Optional<String> name();
 
     /**
+     * {@return the foreign linker classifier information associate with this layout}
+     */
+    Optional<Linker.Classifier> classifier();
+
+    /**
      * Returns a memory layout of the same type with the same size and alignment constraint as this layout,
      * but with the specified name.
      *

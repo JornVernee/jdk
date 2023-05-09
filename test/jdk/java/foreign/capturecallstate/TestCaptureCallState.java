@@ -46,9 +46,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
-import static java.lang.foreign.ValueLayout.JAVA_DOUBLE;
-import static java.lang.foreign.ValueLayout.JAVA_INT;
-import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static org.testng.Assert.assertEquals;
 
 public class TestCaptureCallState extends NativeTestHelper {
@@ -89,26 +86,26 @@ public class TestCaptureCallState extends NativeTestHelper {
     public static Object[][] cases() {
         List<SaveValuesCase> cases = new ArrayList<>();
 
-        cases.add(new SaveValuesCase("set_errno_V", FunctionDescriptor.ofVoid(JAVA_INT), "errno", o -> {}));
-        cases.add(new SaveValuesCase("set_errno_I", FunctionDescriptor.of(JAVA_INT, JAVA_INT), "errno", o -> assertEquals((int) o, 42)));
-        cases.add(new SaveValuesCase("set_errno_D", FunctionDescriptor.of(JAVA_DOUBLE, JAVA_INT), "errno", o -> assertEquals((double) o, 42.0)));
+        cases.add(new SaveValuesCase("set_errno_V", FunctionDescriptor.ofVoid(C_INT), "errno", o -> {}));
+        cases.add(new SaveValuesCase("set_errno_I", FunctionDescriptor.of(C_INT, C_INT), "errno", o -> assertEquals((int) o, 42)));
+        cases.add(new SaveValuesCase("set_errno_D", FunctionDescriptor.of(C_DOUBLE, C_INT), "errno", o -> assertEquals((double) o, 42.0)));
 
-        cases.add(structCase("SL",  Map.of(JAVA_LONG.withName("x"), 42L)));
-        cases.add(structCase("SLL", Map.of(JAVA_LONG.withName("x"), 42L,
-                                           JAVA_LONG.withName("y"), 42L)));
-        cases.add(structCase("SLLL", Map.of(JAVA_LONG.withName("x"), 42L,
-                                            JAVA_LONG.withName("y"), 42L,
-                                            JAVA_LONG.withName("z"), 42L)));
-        cases.add(structCase("SD",  Map.of(JAVA_DOUBLE.withName("x"), 42D)));
-        cases.add(structCase("SDD", Map.of(JAVA_DOUBLE.withName("x"), 42D,
-                                           JAVA_DOUBLE.withName("y"), 42D)));
-        cases.add(structCase("SDDD", Map.of(JAVA_DOUBLE.withName("x"), 42D,
-                                            JAVA_DOUBLE.withName("y"), 42D,
-                                            JAVA_DOUBLE.withName("z"), 42D)));
+        cases.add(structCase("SL",  Map.of(C_LONG_LONG.withName("x"), 42L)));
+        cases.add(structCase("SLL", Map.of(C_LONG_LONG.withName("x"), 42L,
+                                           C_LONG_LONG.withName("y"), 42L)));
+        cases.add(structCase("SLLL", Map.of(C_LONG_LONG.withName("x"), 42L,
+                                            C_LONG_LONG.withName("y"), 42L,
+                                            C_LONG_LONG.withName("z"), 42L)));
+        cases.add(structCase("SD",  Map.of(C_DOUBLE.withName("x"), 42D)));
+        cases.add(structCase("SDD", Map.of(C_DOUBLE.withName("x"), 42D,
+                                           C_DOUBLE.withName("y"), 42D)));
+        cases.add(structCase("SDDD", Map.of(C_DOUBLE.withName("x"), 42D,
+                                            C_DOUBLE.withName("y"), 42D,
+                                            C_DOUBLE.withName("z"), 42D)));
 
         if (IS_WINDOWS) {
-            cases.add(new SaveValuesCase("SetLastError", FunctionDescriptor.ofVoid(JAVA_INT), "GetLastError", o -> {}));
-            cases.add(new SaveValuesCase("WSASetLastError", FunctionDescriptor.ofVoid(JAVA_INT), "WSAGetLastError", o -> {}));
+            cases.add(new SaveValuesCase("SetLastError", FunctionDescriptor.ofVoid(C_INT), "GetLastError", o -> {}));
+            cases.add(new SaveValuesCase("WSASetLastError", FunctionDescriptor.ofVoid(C_INT), "WSAGetLastError", o -> {}));
         }
 
         return cases.stream().map(tc -> new Object[] {tc}).toArray(Object[][]::new);
@@ -125,7 +122,7 @@ public class TestCaptureCallState extends NativeTestHelper {
             check = check.andThen(o -> assertEquals(fieldHandle.get(o), value));
         }
 
-        return new SaveValuesCase("set_errno_" + name, FunctionDescriptor.of(layout, JAVA_INT), "errno", check);
+        return new SaveValuesCase("set_errno_" + name, FunctionDescriptor.of(layout, C_INT), "errno", check);
     }
 
 }

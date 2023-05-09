@@ -66,8 +66,7 @@ public class TestLinker extends NativeTestHelper {
         FunctionDescriptor fd_II_V = FunctionDescriptor.ofVoid(C_INT, C_INT);
         return new Object[][]{
             {new LinkRequest(fd_II_V), new LinkRequest(fd_II_V, Linker.Option.firstVariadicArg(1))},
-            {new LinkRequest(FunctionDescriptor.ofVoid(JAVA_SHORT)), new LinkRequest(FunctionDescriptor.ofVoid(JAVA_CHAR))},
-            {new LinkRequest(FunctionDescriptor.ofVoid(JAVA_SHORT)), new LinkRequest(FunctionDescriptor.ofVoid(JAVA_CHAR))},
+            {new LinkRequest(FunctionDescriptor.ofVoid(C_SHORT)), new LinkRequest(FunctionDescriptor.ofVoid(C_SHORT.withCarrier(char.class)))},
         };
     }
 

@@ -41,7 +41,7 @@ import java.lang.invoke.MethodHandle;
 
 import static org.testng.Assert.*;
 
-public class TestNULLAddress {
+public class TestNULLAddress extends NativeTestHelper {
 
     static {
         System.loadLibrary("Null");
@@ -66,7 +66,7 @@ public class TestNULLAddress {
     @Test
     public void testNULLReturn_target() throws Throwable {
         MethodHandle mh = LINKER.downcallHandle(SymbolLookup.loaderLookup().find("get_null").get(),
-                FunctionDescriptor.of(ValueLayout.ADDRESS.withTargetLayout(ValueLayout.JAVA_INT)));
+                FunctionDescriptor.of(C_POINTER.withTargetLayout(ValueLayout.JAVA_INT)));
         MemorySegment ret = (MemorySegment)mh.invokeExact();
         assertTrue(ret.equals(MemorySegment.NULL));
     }
@@ -74,7 +74,7 @@ public class TestNULLAddress {
     @Test
     public void testNULLReturn_plain() throws Throwable {
         MethodHandle mh = LINKER.downcallHandle(SymbolLookup.loaderLookup().find("get_null").get(),
-                FunctionDescriptor.of(ValueLayout.ADDRESS));
+                FunctionDescriptor.of(C_POINTER));
         MemorySegment ret = (MemorySegment)mh.invokeExact();
         assertTrue(ret.equals(MemorySegment.NULL));
     }

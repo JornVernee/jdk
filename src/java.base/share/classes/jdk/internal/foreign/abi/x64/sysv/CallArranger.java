@@ -65,11 +65,6 @@ public class CallArranger {
     private static final int MAX_INTEGER_ARGUMENT_REGISTERS = 6;
     private static final int MAX_VECTOR_ARGUMENT_REGISTERS = 8;
 
-    /**
-     * The {@code long} native type.
-     */
-    public static final ValueLayout.OfLong C_LONG = ValueLayout.JAVA_LONG;
-
     private static final ABIDescriptor CSysV = X86_64Architecture.abiFor(
         new VMStorage[] { rdi, rsi, rdx, rcx, r8, r9, rax },
         new VMStorage[] { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7 },
@@ -102,7 +97,7 @@ public class CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = SharedUtils.C_POINTER;
+            MemoryLayout layout = SysVx64Linker.Layouts.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
             csb.addArgumentBindings(carrier, layout, argCalc.getBindings(carrier, layout));
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();
@@ -118,7 +113,7 @@ public class CallArranger {
 
         if (!forUpcall) {
             //add extra binding for number of used vector registers (used for variadic calls)
-            csb.addArgumentBindings(long.class, C_LONG,
+            csb.addArgumentBindings(long.class, SysVx64Linker.Layouts.C_LONG_LONG,
                     List.of(vmStore(rax, long.class)));
         }
 

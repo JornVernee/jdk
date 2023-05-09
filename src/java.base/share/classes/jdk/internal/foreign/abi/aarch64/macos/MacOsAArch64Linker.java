@@ -27,9 +27,11 @@ package jdk.internal.foreign.abi.aarch64.macos;
 
 import jdk.internal.foreign.abi.AbstractLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
+import jdk.internal.foreign.abi.aarch64.AArch64Layouts;
 import jdk.internal.foreign.abi.aarch64.CallArranger;
 
 import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemoryLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteOrder;
@@ -60,6 +62,11 @@ public final class MacOsAArch64Linker extends AbstractLinker {
     @Override
     protected UpcallStubFactory arrangeUpcall(MethodType targetType, FunctionDescriptor function, LinkerOptions options) {
         return CallArranger.MACOS.arrangeUpcall(targetType, function, options);
+    }
+
+    @Override
+    public MemoryLayout linkerType(String name) {
+        return AArch64Layouts.linkerType(name);
     }
 
     @Override

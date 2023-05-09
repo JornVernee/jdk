@@ -41,12 +41,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-import static java.lang.foreign.ValueLayout.ADDRESS;
-import static java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
-import static java.lang.foreign.ValueLayout.JAVA_BYTE;
-import static java.lang.foreign.ValueLayout.JAVA_CHAR;
-import static java.lang.foreign.ValueLayout.JAVA_INT;
-import static java.lang.foreign.ValueLayout.JAVA_SHORT;
 import static org.testng.Assert.assertEquals;
 
 // test normalization of smaller than int primitive types
@@ -87,7 +81,7 @@ public class TestNormalize extends NativeTestHelper {
             SHORT_TO_INT = lookup.findStatic(TestNormalize.class, "shortToInt", MethodType.methodType(int.class, short.class));
             CHAR_TO_INT = lookup.findStatic(TestNormalize.class, "charToInt", MethodType.methodType(int.class, char.class));
 
-            NATIVE_BOOLEAN_TO_INT = LINKER.downcallHandle(findNativeOrThrow("int_identity"), FunctionDescriptor.of(JAVA_INT, JAVA_BOOLEAN));
+            NATIVE_BOOLEAN_TO_INT = LINKER.downcallHandle(findNativeOrThrow("int_identity"), FunctionDescriptor.of(C_INT, C_BOOL));
 
             SAVE_BOOLEAN = lookup.findStatic(TestNormalize.class, "saveBoolean", MethodType.methodType(void.class, boolean.class, boolean[].class));
         } catch (ReflectiveOperationException e) {
@@ -105,7 +99,7 @@ public class TestNormalize extends NativeTestHelper {
         // use actual type as parameter type to test upcall arg normalization
         FunctionDescriptor upcallDesc = FunctionDescriptor.ofVoid(layout);
         // use actual type as return type to test downcall return normalization
-        FunctionDescriptor downcallDesc = FunctionDescriptor.of(layout, ADDRESS, JAVA_INT);
+        FunctionDescriptor downcallDesc = FunctionDescriptor.of(layout, C_POINTER, C_INT);
 
         MemorySegment target = findNativeOrThrow("test");
         MethodHandle downcallHandle = LINKER.downcallHandle(target, downcallDesc);
@@ -164,10 +158,10 @@ public class TestNormalize extends NativeTestHelper {
     @DataProvider
     public static Object[][] cases() {
         return new Object[][] {
-            { JAVA_BOOLEAN, booleanToInt(true),     BOOLEAN_HOB_MASK, BOOLEAN_TO_INT, SAVE_BOOLEAN_AS_INT },
-            { JAVA_BYTE,    byteToInt((byte) 42),   BYTE_HOB_MASK,    BYTE_TO_INT,    SAVE_BYTE_AS_INT    },
-            { JAVA_SHORT,   shortToInt((short) 42), SHORT_HOB_MASK,   SHORT_TO_INT,   SAVE_SHORT_AS_INT   },
-            { JAVA_CHAR,    charToInt('a'),         CHAR_HOB_MASK,    CHAR_TO_INT,    SAVE_CHAR_AS_INT    }
+            { C_BOOL,                           booleanToInt(true),     BOOLEAN_HOB_MASK, BOOLEAN_TO_INT, SAVE_BOOLEAN_AS_INT },
+            { C_CHAR,                           byteToInt((byte) 42),   BYTE_HOB_MASK,    BYTE_TO_INT,    SAVE_BYTE_AS_INT    },
+            { C_SHORT,                          shortToInt((short) 42), SHORT_HOB_MASK,   SHORT_TO_INT,   SAVE_SHORT_AS_INT   },
+            { C_SHORT.withCarrier(char.class),  charToInt('a'),         CHAR_HOB_MASK,    CHAR_TO_INT,    SAVE_CHAR_AS_INT    }
         };
     }
 
@@ -176,13 +170,13 @@ public class TestNormalize extends NativeTestHelper {
     @Test(dataProvider = "bools")
     public void testBool(int testValue, boolean expected) throws Throwable {
         MemorySegment addr = findNativeOrThrow("test");
-        MethodHandle target = LINKER.downcallHandle(addr, FunctionDescriptor.of(JAVA_BOOLEAN, ADDRESS, JAVA_INT));
+        MethodHandle target = LINKER.downcallHandle(addr, FunctionDescriptor.of(C_BOOL, C_POINTER, C_INT));
 
         boolean[] box = new boolean[1];
         MethodHandle upcallTarget = MethodHandles.insertArguments(SAVE_BOOLEAN, 1, box);
 
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment callback = LINKER.upcallStub(upcallTarget, FunctionDescriptor.ofVoid(JAVA_BOOLEAN), arena);
+            MemorySegment callback = LINKER.upcallStub(upcallTarget, FunctionDescriptor.ofVoid(C_BOOL), arena);
             boolean result = (boolean) target.invokeExact(callback, testValue);
             assertEquals(box[0], expected);
             assertEquals(result, expected);

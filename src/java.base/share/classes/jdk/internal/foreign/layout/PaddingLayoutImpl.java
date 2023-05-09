@@ -25,6 +25,7 @@
  */
 package jdk.internal.foreign.layout;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.PaddingLayout;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,11 +33,11 @@ import java.util.Optional;
 public final class PaddingLayoutImpl extends AbstractLayout<PaddingLayoutImpl> implements PaddingLayout {
 
     private PaddingLayoutImpl(long bitSize) {
-        this(bitSize, 8, Optional.empty());
+        this(bitSize, 8, Optional.empty(), Optional.empty());
     }
 
-    private PaddingLayoutImpl(long bitSize, long bitAlignment, Optional<String> name) {
-        super(bitSize, bitAlignment, name);
+    private PaddingLayoutImpl(long bitSize, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+        super(bitSize, bitAlignment, name, classifier);
     }
 
     @Override
@@ -58,8 +59,8 @@ public final class PaddingLayoutImpl extends AbstractLayout<PaddingLayoutImpl> i
     }
 
     @Override
-    PaddingLayoutImpl dup(long bitAlignment, Optional<String> name) {
-        return new PaddingLayoutImpl(bitSize(), bitAlignment, name);
+    PaddingLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+        return new PaddingLayoutImpl(bitSize(), bitAlignment, name, classifier);
     }
 
     @Override

@@ -48,7 +48,7 @@ public class TestPassHeapSegment extends UpcallTestHelper  {
     @Test(expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = ".*Heap segment not allowed.*")
     public void testNoHeapArgs() throws Throwable {
-        MethodHandle handle = downcallHandle("test_args", FunctionDescriptor.ofVoid(ADDRESS));
+        MethodHandle handle = downcallHandle("test_args", FunctionDescriptor.ofVoid(C_POINTER));
         MemorySegment segment = MemorySegment.ofArray(new byte[]{ 0, 1, 2 });
         handle.invoke(segment); // should throw
     }
@@ -65,8 +65,8 @@ public class TestPassHeapSegment extends UpcallTestHelper  {
         }
 
         public static void main(String[] args) throws Throwable {
-            MethodHandle handle = downcallHandle("test_return", FunctionDescriptor.ofVoid(ADDRESS));
-            MemorySegment upcallStub = upcallStub(Runner.class, "target", FunctionDescriptor.of(ADDRESS));
+            MethodHandle handle = downcallHandle("test_return", FunctionDescriptor.ofVoid(C_POINTER));
+            MemorySegment upcallStub = upcallStub(Runner.class, "target", FunctionDescriptor.of(C_POINTER));
             handle.invoke(upcallStub);
         }
 

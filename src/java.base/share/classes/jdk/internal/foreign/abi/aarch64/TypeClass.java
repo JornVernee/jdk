@@ -26,6 +26,7 @@
 package jdk.internal.foreign.abi.aarch64;
 
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SequenceLayout;
@@ -33,7 +34,7 @@ import java.lang.foreign.ValueLayout;
 import java.util.List;
 import java.util.ArrayList;
 
-public enum TypeClass {
+public enum TypeClass implements Linker.Classifier {
     STRUCT_REGISTER,
     STRUCT_REFERENCE,
     STRUCT_HFA,
@@ -44,17 +45,8 @@ public enum TypeClass {
     private static final int MAX_AGGREGATE_REGS_SIZE = 2;
 
     private static TypeClass classifyValueType(ValueLayout type) {
-        Class<?> carrier = type.carrier();
-        if (carrier == boolean.class || carrier == byte.class || carrier == char.class ||
-                carrier == short.class || carrier == int.class || carrier == long.class) {
-            return INTEGER;
-        } else if (carrier == float.class || carrier == double.class) {
-            return FLOAT;
-        } else if (carrier == MemorySegment.class) {
-            return POINTER;
-        } else {
-            throw new IllegalStateException("Cannot get here: " + carrier.getName());
-        }
+        return (TypeClass) type.classifier()
+                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + type));
     }
 
     static boolean isRegisterAggregate(MemoryLayout type) {

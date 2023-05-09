@@ -191,6 +191,7 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
         // we don't care about transferring alignment and byte order here
         // since the linker already restricts those such that they will always be the same
         return switch (ml) {
+            // TODO re-apply classifiers?
             case StructLayout sl -> MemoryLayout.structLayout(stripNames(sl.memberLayouts()));
             case UnionLayout ul -> MemoryLayout.unionLayout(stripNames(ul.memberLayouts()));
             case SequenceLayout sl -> MemoryLayout.sequenceLayout(sl.elementCount(), stripNames(sl.elementLayout()));

@@ -56,7 +56,7 @@ public class TestAddressDereference extends UpcallTestHelper {
         GET_ADDR_SYM = SymbolLookup.loaderLookup().find("get_addr").get();
         GET_ADDR_CB_HANDLE = LINKER.downcallHandle(
                 SymbolLookup.loaderLookup().find("get_addr_cb").get(),
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                FunctionDescriptor.ofVoid(C_POINTER, C_POINTER));
         try {
             TEST_ARG_HANDLE = MethodHandles.lookup().findStatic(TestAddressDereference.class, "testArg",
                     MethodType.methodType(void.class, MemorySegment.class, long.class));
@@ -100,7 +100,7 @@ public class TestAddressDereference extends UpcallTestHelper {
         boolean badAlign = layout.byteAlignment() > alignment;
         try {
             MethodHandle get_addr_handle = LINKER.downcallHandle(GET_ADDR_SYM,
-                    FunctionDescriptor.of(ValueLayout.ADDRESS.withTargetLayout(layout), ValueLayout.ADDRESS));
+                    FunctionDescriptor.of(C_POINTER.withTargetLayout(layout), C_POINTER));
             MemorySegment deref = (MemorySegment)get_addr_handle.invokeExact(MemorySegment.ofAddress(alignment));
             assertFalse(badAlign);
             assertEquals(deref.byteSize(), layout.byteSize());
@@ -115,7 +115,7 @@ public class TestAddressDereference extends UpcallTestHelper {
         boolean badAlign = layout.byteAlignment() > alignment;
         if (badAlign) return; // this will crash the JVM (exception occurs when going into the upcall stub)
         try (Arena arena = Arena.ofConfined()) {
-            FunctionDescriptor testDesc = FunctionDescriptor.ofVoid(ValueLayout.ADDRESS.withTargetLayout(layout));
+            FunctionDescriptor testDesc = FunctionDescriptor.ofVoid(C_POINTER.withTargetLayout(layout));
             MethodHandle upcallHandle = MethodHandles.insertArguments(TEST_ARG_HANDLE, 1, layout.byteSize());
             MemorySegment testStub = LINKER.upcallStub(upcallHandle, testDesc, arena);
             GET_ADDR_CB_HANDLE.invokeExact(MemorySegment.ofAddress(alignment), testStub);
@@ -136,7 +136,7 @@ public class TestAddressDereference extends UpcallTestHelper {
             long alignment = parseAlignment(args[0]);
             ValueLayout layout = parseLayout(args[1]);
             try (Arena arena = Arena.ofConfined()) {
-                FunctionDescriptor testDesc = FunctionDescriptor.ofVoid(ValueLayout.ADDRESS.withTargetLayout(layout));
+                FunctionDescriptor testDesc = FunctionDescriptor.ofVoid(C_POINTER.withTargetLayout(layout));
                 MethodHandle upcallHandle = MethodHandles.insertArguments(TEST_ARG_HANDLE, 1, layout.byteSize());
                 MemorySegment testStub = LINKER.upcallStub(upcallHandle, testDesc, arena);
                 GET_ADDR_CB_HANDLE.invokeExact(MemorySegment.ofAddress(alignment), testStub);

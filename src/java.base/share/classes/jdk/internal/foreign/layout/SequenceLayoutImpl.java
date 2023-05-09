@@ -25,6 +25,7 @@
  */
 package jdk.internal.foreign.layout;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.SequenceLayout;
 import java.util.Objects;
@@ -36,11 +37,12 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     private final MemoryLayout elementLayout;
 
     private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout) {
-        this(elemCount, elementLayout, elementLayout.bitAlignment(), Optional.empty());
+        this(elemCount, elementLayout, elementLayout.bitAlignment(), Optional.empty(), Optional.empty());
     }
 
-    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, long bitAlignment, Optional<String> name) {
-        super(Math.multiplyExact(elemCount, elementLayout.bitSize()), bitAlignment, name);
+    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, long bitAlignment, Optional<String> name,
+                               Optional<Linker.Classifier> classifier) {
+        super(Math.multiplyExact(elemCount, elementLayout.bitSize()), bitAlignment, name, classifier);
         this.elemCount = elemCount;
         this.elementLayout = elementLayout;
     }
@@ -68,7 +70,7 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
      * @throws IllegalArgumentException if {@code elementCount < 0}.
      */
     public SequenceLayout withElementCount(long elementCount) {
-        return new SequenceLayoutImpl(elementCount, elementLayout, bitAlignment(), name());
+        return new SequenceLayoutImpl(elementCount, elementLayout, bitAlignment(), name(), classifier());
     }
 
     /**
@@ -196,8 +198,8 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     }
 
     @Override
-    SequenceLayoutImpl dup(long bitAlignment, Optional<String> name) {
-        return new SequenceLayoutImpl(elementCount(), elementLayout, bitAlignment, name);
+    SequenceLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+        return new SequenceLayoutImpl(elementCount(), elementLayout, bitAlignment, name, classifier);
     }
 
     @Override

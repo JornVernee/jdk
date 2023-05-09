@@ -157,7 +157,7 @@ public abstract class CallArranger {
 
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
-            csb.addArgumentBindings(MemorySegment.class, SharedUtils.C_POINTER,
+            csb.addArgumentBindings(MemorySegment.class, AArch64Layouts.C_POINTER,
                     argCalc.getIndirectBindings());
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();
@@ -429,7 +429,7 @@ public abstract class CallArranger {
                     assert carrier == MemorySegment.class;
                     bindings.copy(layout)
                             .unboxAddress();
-                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, SharedUtils.C_POINTER);
+                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, AArch64Layouts.C_POINTER);
                     bindings.vmStore(storage, long.class);
                 }
                 case POINTER -> {
@@ -490,7 +490,7 @@ public abstract class CallArranger {
                 }
                 case STRUCT_REFERENCE -> {
                     assert carrier == MemorySegment.class;
-                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, SharedUtils.C_POINTER);
+                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, AArch64Layouts.C_POINTER);
                     bindings.vmLoad(storage, long.class)
                             .boxAddress(layout);
                 }

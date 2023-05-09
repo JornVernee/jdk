@@ -104,7 +104,7 @@ public class CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = SharedUtils.C_POINTER;
+            MemoryLayout layout = Windowsx64Linker.Layouts.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
             csb.addArgumentBindings(carrier, layout, false);
             if (forUpcall) {
                 csb.setReturnBindings(carrier, layout);

@@ -113,8 +113,8 @@ public class TestIntrinsics extends NativeTestHelper {
         }
 
         { // high_arity
-            FunctionDescriptor baseFD = FunctionDescriptor.ofVoid(C_INT, C_DOUBLE, C_LONG_LONG, C_FLOAT, C_CHAR,
-                    C_SHORT, JAVA_CHAR);
+            FunctionDescriptor baseFD = FunctionDescriptor.ofVoid(C_INT, C_DOUBLE, C_LONG_LONG, C_FLOAT, C_CHAR, C_SHORT,
+                    C_SHORT.withCarrier(char.class));
             Object[] args = {1, 10D, 2L, 3F, (byte) 0, (short) 13, 'a'};
             for (int i = 0; i < args.length; i++) {
                 MemorySegment ma = findNativeOrThrow("invoke_high_arity" + i);

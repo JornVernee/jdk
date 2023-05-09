@@ -26,7 +26,6 @@
  * @test
  * @enablePreview
  * @requires sun.arch.data.model == "64"
- * @compile platform/PlatformLayouts.java
  * @modules java.base/jdk.internal.foreign
  *          java.base/jdk.internal.foreign.abi
  *          java.base/jdk.internal.foreign.abi.aarch64
@@ -50,11 +49,10 @@ import org.testng.annotations.Test;
 import java.lang.invoke.MethodType;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
-import static java.lang.foreign.ValueLayout.ADDRESS;
 import static jdk.internal.foreign.abi.Binding.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
-import static platform.PlatformLayouts.AArch64.*;
+import static jdk.internal.foreign.abi.aarch64.AArch64Layouts.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -74,7 +72,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) }
@@ -98,7 +96,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -128,7 +126,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -150,7 +148,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -201,7 +199,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testMultipleStructs() {
         MemoryLayout struct1 = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
-        MemoryLayout struct2 = MemoryLayout.structLayout(C_LONG, C_LONG, C_LONG);
+        MemoryLayout struct2 = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG, C_LONG_LONG);
 
         MethodType mt = MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class, int.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct1, struct2, C_INT);
@@ -210,7 +208,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -232,7 +230,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct1() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG, C_LONG, C_FLOAT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG, C_FLOAT);
 
         MethodType mt = MethodType.methodType(MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(struct);
@@ -241,7 +239,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertTrue(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), FunctionDescriptor.ofVoid(ADDRESS, C_POINTER));
+        assertEquals(callingSequence.functionDesc(), FunctionDescriptor.ofVoid(C_POINTER, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -256,7 +254,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct2() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG, C_LONG);
+        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG);
 
         MethodType mt = MethodType.methodType(MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(struct);
@@ -265,7 +263,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(RETURN_BUFFER_STORAGE, long.class) },
@@ -294,7 +292,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(RETURN_BUFFER_STORAGE, long.class) },
@@ -332,7 +330,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -386,7 +384,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertFalse(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), mt.insertParameterTypes(0, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, ADDRESS));
+        assertEquals(callingSequence.functionDesc(), fd.insertArgumentLayouts(0, C_POINTER));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -409,7 +407,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
     public void testVarArgsInRegs() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_FLOAT);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(C_POINTER, C_INT, C_INT, C_FLOAT);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -436,7 +434,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         );
         MethodType mt = MethodType.methodType(MemorySegment.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(S10, S10);
-        FunctionDescriptor fdExpected = FunctionDescriptor.of(S10, ADDRESS, ADDRESS, S10); // uses return buffer
+        FunctionDescriptor fdExpected = FunctionDescriptor.of(S10, C_POINTER, C_POINTER, S10); // uses return buffer
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());

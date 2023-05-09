@@ -25,6 +25,7 @@
  */
 package jdk.internal.foreign.layout;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.UnionLayout;
 import java.util.List;
@@ -32,13 +33,14 @@ import java.util.Optional;
 
 public final class UnionLayoutImpl extends AbstractGroupLayout<UnionLayoutImpl> implements UnionLayout {
 
-    private UnionLayoutImpl(List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment, Optional<String> name) {
-        super(Kind.UNION, elements, bitSize, bitAlignment, minBitAlignment, name);
+    private UnionLayoutImpl(List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment,
+                            Optional<String> name, Optional<Linker.Classifier> classifier) {
+        super(Kind.UNION, elements, bitSize, bitAlignment, minBitAlignment, name, classifier);
     }
 
     @Override
-    UnionLayoutImpl dup(long bitAlignment, Optional<String> name) {
-        return new UnionLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name);
+    UnionLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+        return new UnionLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name, classifier);
     }
 
     public static UnionLayout of(List<MemoryLayout> elements) {
@@ -48,7 +50,7 @@ public final class UnionLayoutImpl extends AbstractGroupLayout<UnionLayoutImpl> 
             size = Math.max(size, elem.bitSize());
             align = Math.max(align, elem.bitAlignment());
         }
-        return new UnionLayoutImpl(elements, size, align, align, Optional.empty());
+        return new UnionLayoutImpl(elements, size, align, align, Optional.empty(), Optional.empty());
     }
 
 }

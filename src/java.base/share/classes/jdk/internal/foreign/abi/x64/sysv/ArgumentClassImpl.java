@@ -24,7 +24,9 @@
  */
 package jdk.internal.foreign.abi.x64.sysv;
 
-public enum ArgumentClassImpl {
+import java.lang.foreign.Linker;
+
+public enum ArgumentClassImpl implements Linker.Classifier {
     POINTER, INTEGER, SSE, SSEUP, X87, X87UP, COMPLEX_X87, NO_CLASS, MEMORY;
 
     public ArgumentClassImpl merge(ArgumentClassImpl other) {

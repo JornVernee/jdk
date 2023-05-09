@@ -27,6 +27,7 @@
 package jdk.internal.foreign.abi.riscv64.linux;
 
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.PaddingLayout;
@@ -36,7 +37,7 @@ import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.List;
 
-public enum TypeClass {
+public enum TypeClass implements Linker.Classifier {
     /*
      * STRUCT_REFERENCE: Aggregates larger than 2 * XLEN bits are passed by reference and are replaced
      *     in the argument list with the address. The address will be passed in a register if at least
@@ -167,17 +168,8 @@ public enum TypeClass {
 
     // ValueLayout will be classified by its carrier type.
     private static TypeClass classifyValueType(ValueLayout type) {
-        Class<?> carrier = type.carrier();
-        if (carrier == boolean.class || carrier == byte.class || carrier == char.class ||
-            carrier == short.class || carrier == int.class || carrier == long.class) {
-            return INTEGER;
-        } else if (carrier == float.class || carrier == double.class) {
-            return FLOAT;
-        } else if (carrier == MemorySegment.class) {
-            return POINTER;
-        } else {
-            throw new IllegalStateException("Cannot get here: " + carrier.getName());
-        }
+        return (TypeClass) type.classifier()
+                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + type));
     }
 
     private static boolean isRegisterAggregate(MemoryLayout type) {

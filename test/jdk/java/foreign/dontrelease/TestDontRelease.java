@@ -50,9 +50,9 @@ public class TestDontRelease extends NativeTestHelper  {
 
     @Test
     public void testDontRelease() {
-        MethodHandle handle = downcallHandle("test_ptr", FunctionDescriptor.ofVoid(ADDRESS));
+        MethodHandle handle = downcallHandle("test_ptr", FunctionDescriptor.ofVoid(C_POINTER));
         try (Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(JAVA_INT);
+            MemorySegment segment = arena.allocate(C_INT);
             ((MemorySessionImpl)arena.scope()).whileAlive(() -> {
                 Thread t = new Thread(() -> {
                     try {

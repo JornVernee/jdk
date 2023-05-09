@@ -37,7 +37,6 @@ import java.lang.foreign.UnionLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.VarHandle;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,7 +56,7 @@ import static java.lang.foreign.ValueLayout.JAVA_SHORT;
  *   struct _ffi_type **elements;
  * } ffi_type;
  */
-class FFIType {
+public class FFIType {
     private static final ValueLayout SIZE_T = switch ((int) ADDRESS.bitSize()) {
             case 64 -> JAVA_LONG;
             case 32 -> JAVA_INT;
@@ -89,16 +88,16 @@ class FFIType {
         return ffiType;
     }
 
-    private static final Map<Class<?>, MemorySegment> CARRIER_TO_TYPE = Map.of(
-        boolean.class, LibFallback.uint8Type(),
-        byte.class, LibFallback.sint8Type(),
-        short.class, LibFallback.sint16Type(),
-        char.class, LibFallback.uint16Type(),
-        int.class, LibFallback.sint32Type(),
-        long.class, LibFallback.sint64Type(),
-        float.class, LibFallback.floatType(),
-        double.class, LibFallback.doubleType(),
-        MemorySegment.class, LibFallback.pointerType()
+    private static final Map<TypeClass, MemorySegment> CLASSIFIER_TO_TYPE = Map.of(
+        TypeClass.UINT8, LibFallback.uint8Type(),
+        TypeClass.SINT8, LibFallback.sint8Type(),
+        TypeClass.SINT16, LibFallback.sint16Type(),
+        TypeClass.UINT16, LibFallback.uint16Type(),
+        TypeClass.SINT32, LibFallback.sint32Type(),
+        TypeClass.SINT64, LibFallback.sint64Type(),
+        TypeClass.FLOAT, LibFallback.floatType(),
+        TypeClass.DOUBLE, LibFallback.doubleType(),
+        TypeClass.POINTER, LibFallback.pointerType()
     );
 
     static MemorySegment toFFIType(MemoryLayout layout, FFIABI abi, Arena scope) {
@@ -119,7 +118,8 @@ class FFIType {
             List<MemoryLayout> elements = Collections.nCopies(Math.toIntExact(sl.elementCount()), sl.elementLayout());
             return make(elements, abi, scope);
         }
-        return Objects.requireNonNull(CARRIER_TO_TYPE.get(((ValueLayout) layout).carrier()));
+        return Objects.requireNonNull(CLASSIFIER_TO_TYPE.get((TypeClass) ((ValueLayout) layout).classifier()
+                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + layout))));
     }
 
     // verify layout against what libffi sets
