@@ -24,13 +24,17 @@
  */
 package jdk.internal.foreign.abi.x64.windows;
 
+import jdk.internal.foreign.abi.AbstractLinker;
+import jdk.internal.foreign.abi.AbstractLinker.LinkerType;
+import jdk.internal.foreign.abi.SharedUtils;
+
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 
-public enum TypeClass implements Linker.Classifier {
+public enum TypeClass {
     STRUCT_REGISTER,
     STRUCT_REFERENCE,
     POINTER,
@@ -48,12 +52,11 @@ public enum TypeClass implements Linker.Classifier {
         // but must be considered volatile across function calls."
         // https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=vs-2019
 
-        TypeClass classifier = (TypeClass) type.classifier()
-                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + type));
-        if (classifier == FLOAT && isVararg) {
-            classifier = VARARG_FLOAT;
-        }
-        return classifier;
+        return switch (SharedUtils.linkerType(type)) {
+            case BOOL, CHAR, SHORT, INT, LONG, LONG_LONG, SIZE_T -> INTEGER;
+            case FLOAT, DOUBLE -> isVararg ? VARARG_FLOAT : FLOAT;
+            case PTR -> POINTER;
+        };
     }
 
     static boolean isRegisterAggregate(MemoryLayout type) {

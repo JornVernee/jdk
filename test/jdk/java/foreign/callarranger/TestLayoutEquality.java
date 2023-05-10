@@ -25,40 +25,38 @@
 /*
  * @test
  * @enablePreview
- * @modules java.base/jdk.internal.foreign.abi
+ * @library ..
  * @modules java.base/jdk.internal.foreign.layout
- * @modules java.base/jdk.internal.foreign.abi.aarch64
- * @modules java.base/jdk.internal.foreign.abi.riscv64.linux
- * @modules java.base/jdk.internal.foreign.abi.x64.sysv
- * @modules java.base/jdk.internal.foreign.abi.x64.windows
  * @run testng TestLayoutEquality
  */
 
-import java.lang.foreign.AddressLayout;
-import java.lang.foreign.ValueLayout;
-
-import jdk.internal.foreign.abi.aarch64.AArch64Layouts;
-import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
-import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
-import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
 import jdk.internal.foreign.layout.ValueLayouts;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Field;
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.testng.Assert.*;
+import static java.lang.foreign.Linker.C_INT32_T;
+import static java.lang.foreign.Linker.C_INT64_T;
+import static org.testng.Assert.assertEquals;
 
-public class TestLayoutEquality {
+public class TestLayoutEquality extends NativeTestHelper {
 
     @Test(dataProvider = "layoutConstants")
     public void testReconstructedEquality(ValueLayout layout) {
         ValueLayout newLayout = ValueLayouts.valueLayout(layout.carrier(), layout.order());
         newLayout = newLayout.withBitAlignment(layout.bitAlignment());
         if (layout instanceof AddressLayout addressLayout && addressLayout.targetLayout().isPresent()) {
-            newLayout = ((AddressLayout)newLayout).withTargetLayout(addressLayout.targetLayout().get());
+            newLayout = ((AddressLayout) newLayout).withTargetLayout(addressLayout.targetLayout().get());
+        }
+        if (layout.name().isPresent()) {
+            newLayout = newLayout.withName(layout.name().get());
+        }
+        if (layout.linkerType().isPresent()) {
+            newLayout = newLayout.withLinkerType(layout.linkerType().get());
         }
 
         // properties should be equal
@@ -74,18 +72,28 @@ public class TestLayoutEquality {
     public static Object[][] layoutConstants() throws ReflectiveOperationException {
         List<ValueLayout> testValues = new ArrayList<>();
 
-        addLayoutConstants(testValues, SysVx64Linker.Layouts.class);
-        addLayoutConstants(testValues, Windowsx64Linker.Layouts.class);
-        addLayoutConstants(testValues, AArch64Layouts.class);
-        addLayoutConstants(testValues, LinuxRISCV64Linker.Layouts.class);
+        testValues.add(ValueLayout.JAVA_BYTE);
+        testValues.add(ValueLayout.JAVA_CHAR);
+        testValues.add(ValueLayout.JAVA_BOOLEAN);
+        testValues.add(ValueLayout.JAVA_SHORT);
+        testValues.add(ValueLayout.JAVA_INT);
+        testValues.add(ValueLayout.JAVA_FLOAT);
+        testValues.add(ValueLayout.JAVA_LONG);
+        testValues.add(ValueLayout.JAVA_DOUBLE);
+        testValues.add(C_BOOL);
+        testValues.add(C_CHAR);
+        testValues.add(C_SHORT);
+        testValues.add(C_INT32_T);
+        testValues.add(C_FLOAT);
+        testValues.add(C_INT64_T);
+        testValues.add(C_DOUBLE);
+        testValues.add(C_POINTER);
 
-        return testValues.stream().map(e -> new Object[]{ e }).toArray(Object[][]::new);
-    }
+        testValues.add(ValueLayout.JAVA_INT);
+        testValues.add(ValueLayout.JAVA_FLOAT);
+        testValues.add(ValueLayout.JAVA_LONG);
+        testValues.add(ValueLayout.JAVA_DOUBLE);
 
-    private static void addLayoutConstants(List<ValueLayout> testValues, Class<?> cls) throws ReflectiveOperationException {
-        for (Field f : cls.getFields()) {
-            if (f.getName().startsWith("C_"))
-                testValues.add(((ValueLayout) f.get(null)).withoutClassifier());
-        }
+        return testValues.stream().map(e -> new Object[]{e}).toArray(Object[][]::new);
     }
 }

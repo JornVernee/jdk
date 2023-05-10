@@ -46,11 +46,11 @@ import org.testng.annotations.Test;
 import java.lang.invoke.MethodType;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
+import static java.lang.foreign.Linker.*;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static jdk.internal.foreign.abi.Binding.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
-import static jdk.internal.foreign.abi.aarch64.AArch64Layouts.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -62,7 +62,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testWindowsArgsInRegs() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class, double.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT, C_DOUBLE);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT, C_DOUBLE);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -84,8 +84,8 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testWindowsVarArgsInRegs() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class, double.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT, C_DOUBLE);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_FLOAT, C_DOUBLE);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT, C_DOUBLE);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT32_T, C_INT32_T, C_FLOAT, C_DOUBLE);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -109,9 +109,9 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
         MethodType mt = MethodType.methodType(void.class, double.class, int.class, float.class,
                                               double.class, float.class, float.class, double.class,
                                               float.class, float.class, float.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_DOUBLE, C_INT, C_FLOAT,
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_DOUBLE, C_INT32_T, C_FLOAT,
                                               C_DOUBLE, C_FLOAT, C_FLOAT, C_DOUBLE,
-                                              C_FLOAT, C_FLOAT, C_FLOAT, C_INT);
+                                              C_FLOAT, C_FLOAT, C_FLOAT, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -142,10 +142,10 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
         MethodType mt = MethodType.methodType(void.class, double.class, int.class, float.class,
                                               double.class, float.class, float.class, double.class,
                                               float.class, float.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_DOUBLE, C_INT, C_FLOAT,
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_DOUBLE, C_INT32_T, C_FLOAT,
                                               C_DOUBLE, C_FLOAT, C_FLOAT, C_DOUBLE,
                                               C_FLOAT, C_FLOAT, C_FLOAT);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_DOUBLE, C_INT, C_FLOAT, C_DOUBLE, C_FLOAT, C_FLOAT, C_DOUBLE, C_FLOAT, C_FLOAT, C_FLOAT);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_DOUBLE, C_INT32_T, C_FLOAT, C_DOUBLE, C_FLOAT, C_FLOAT, C_DOUBLE, C_FLOAT, C_FLOAT, C_FLOAT);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -175,7 +175,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
         MemoryLayout struct = MemoryLayout.structLayout(C_FLOAT, C_FLOAT, C_FLOAT, C_FLOAT);
 
         MethodType mt = MethodType.methodType(void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -209,7 +209,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
         MemoryLayout struct = MemoryLayout.structLayout(C_FLOAT, C_FLOAT, C_FLOAT, C_FLOAT);
 
         MethodType mt = MethodType.methodType(void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(0)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -238,7 +238,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -267,7 +267,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(0)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -296,7 +296,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -328,7 +328,7 @@ public class TestWindowsAArch64CallArranger extends CallArrangerTestBase {
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.WINDOWS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(0)));
 
         assertFalse(bindings.isInMemoryReturn());

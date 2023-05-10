@@ -77,6 +77,16 @@ public sealed interface ValueLayout extends MemoryLayout permits
     ValueLayout withoutName();
 
     /**
+     * {@inheritDoc}
+     */
+    ValueLayout withLinkerType(Linker.Type linkerType);
+
+    /**
+     * {@inheritDoc}
+     */
+    ValueLayout withoutLinkerType();
+
+    /**
      * Creates a <em>strided</em> var handle that can be used to access a memory segment as multi-dimensional
      * array. The layout of this array is a sequence layout with {@code shape.length} nested sequence layouts. The element
      * layout of the sequence layout at depth {@code shape.length} is this value layout.
@@ -160,12 +170,6 @@ public sealed interface ValueLayout extends MemoryLayout permits
      */
     @Override
     ValueLayout withBitAlignment(long bitAlignment);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    ValueLayout withoutClassifier();
 
     /**
      * A value layout whose carrier is {@code boolean.class}.

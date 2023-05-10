@@ -57,4 +57,14 @@ public sealed interface StructLayout extends GroupLayout permits StructLayoutImp
      */
     @Override
     StructLayout withBitAlignment(long bitAlignment);
+
+    /**
+     * {@inheritDoc}
+     */
+    StructLayout withLinkerType(Linker.Type linkerType);
+
+    /**
+     * {@inheritDoc}
+     */
+    StructLayout withoutLinkerType();
 }

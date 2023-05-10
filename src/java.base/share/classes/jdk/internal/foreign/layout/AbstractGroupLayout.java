@@ -52,8 +52,8 @@ public sealed abstract class AbstractGroupLayout<L extends AbstractGroupLayout<L
     final long minBitAlignment;
 
     AbstractGroupLayout(Kind kind, List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment,
-                        Optional<String> name, Optional<Linker.Classifier> classifier) {
-        super(bitSize, bitAlignment, name, classifier); // Subclassing creates toctou problems here
+                        Optional<String> name, Optional<Linker.Type> linkerType) {
+        super(bitSize, bitAlignment, name, linkerType); // Subclassing creates toctou problems here
         this.kind = kind;
         this.elements = List.copyOf(elements);
         this.minBitAlignment = minBitAlignment;

@@ -26,6 +26,7 @@
 package java.lang.foreign;
 
 import jdk.internal.foreign.abi.AbstractLinker;
+import jdk.internal.foreign.abi.AbstractLinker.LinkerType;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.CapturableState;
 import jdk.internal.foreign.abi.SharedUtils;
@@ -566,17 +567,55 @@ public sealed interface Linker permits AbstractLinker {
      * {@return the memory layout of the type with the given name}
      * @param name the name of the type
      */
-    MemoryLayout linkerType(String name);
+    MemoryLayout layoutFor(String name);
 
     /**
-     * Marker interface for ABI classification information
+     * A linker type is used to model linker-specific type information. A linker type can that can be associated with
+     * a memory layout.
      */
-    sealed interface Classifier permits
-            jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl,
-            jdk.internal.foreign.abi.x64.windows.TypeClass,
-            jdk.internal.foreign.abi.aarch64.TypeClass,
-            jdk.internal.foreign.abi.riscv64.linux.TypeClass,
-            jdk.internal.foreign.abi.fallback.TypeClass {}
+    @PreviewFeature(feature = PreviewFeature.Feature.FOREIGN)
+    sealed interface Type permits AbstractLinker.LinkerType {
+        //@@@ Maybe this should extend Predicate<MemoryLayout> ? (e.g. to check whether a linker type applies to given layout)
+
+        /**
+         * {@return the string representation of this linker type}
+         * @apiNote given a linker type {@code T} associated with a linker {@code L}, the following always property always holds:
+         * {@snippet :
+         * L.layoutFor(T.name()).linkerType().get() == T
+         * }
+         */
+        String name();
+    }
+
+    /**
+     * The layout for the {@code bool} C type
+     */
+    ValueLayout.OfByte C_INT8_T = (ValueLayout.OfByte) LinkerType.CHAR.layout();
+    /**
+     * The layout for the {@code char} C type
+     */
+    ValueLayout.OfShort C_INT16_T = (ValueLayout.OfShort) LinkerType.SHORT.layout();
+    /**
+     * The layout for the {@code short} C type
+     */
+    ValueLayout.OfInt C_INT32_T = (ValueLayout.OfInt) LinkerType.INT.layout();
+    /**
+     * The layout for the {@code int} C type
+     */
+    ValueLayout.OfLong C_INT64_T = (ValueLayout.OfLong) LinkerType.LONG_LONG.layout();
+
+    /**
+     * The layout for the {@code float} C type
+     */
+    ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) LinkerType.FLOAT.layout();
+    /**
+     * The layout for the {@code double} C type
+     */
+    ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) LinkerType.DOUBLE.layout();
+    /**
+     * The layout for the {@code void*} C type.
+     */
+    AddressLayout C_POINTER = (AddressLayout) LinkerType.PTR.layout();
 
     /**
      * A linker option is used to indicate additional linking requirements to the linker,
@@ -584,8 +623,7 @@ public sealed interface Linker permits AbstractLinker {
      * @since 20
      */
     @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
-    sealed interface Option
-            permits LinkerOptions.LinkerOptionImpl {
+    sealed interface Option permits LinkerOptions.LinkerOptionImpl {
 
         /**
          * {@return a linker option used to denote the index of the first variadic argument layout in a

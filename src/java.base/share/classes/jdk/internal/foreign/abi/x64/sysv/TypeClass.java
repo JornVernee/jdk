@@ -24,20 +24,24 @@
  */
 package jdk.internal.foreign.abi.x64.sysv;
 
+import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.AbstractLinker.LinkerType;
+import jdk.internal.foreign.abi.SharedUtils;
+
 import java.lang.foreign.GroupLayout;
-import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
 import java.lang.foreign.PaddingLayout;
 import java.lang.foreign.SequenceLayout;
 import java.lang.foreign.StructLayout;
 import java.lang.foreign.ValueLayout;
-import jdk.internal.foreign.Utils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.INTEGER;
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.POINTER;
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.SSE;
 
 public final class TypeClass {
     enum Kind {
@@ -80,11 +84,11 @@ public final class TypeClass {
     }
 
     public long nIntegerRegs() {
-        return numClasses(ArgumentClassImpl.INTEGER) + numClasses(ArgumentClassImpl.POINTER);
+        return numClasses(INTEGER) + numClasses(ArgumentClassImpl.POINTER);
     }
 
     public long nVectorRegs() {
-        return numClasses(ArgumentClassImpl.SSE);
+        return numClasses(SSE);
     }
 
     public Kind kind() {
@@ -110,8 +114,11 @@ public final class TypeClass {
     }
 
     private static ArgumentClassImpl argumentClassFor(ValueLayout layout) {
-        return (ArgumentClassImpl) layout.classifier()
-                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + layout));
+        return switch (SharedUtils.linkerType(layout)) {
+            case BOOL, CHAR, SHORT, INT, LONG, LONG_LONG, SIZE_T -> INTEGER;
+            case FLOAT, DOUBLE -> SSE;
+            case PTR -> POINTER;
+        };
     }
 
     // TODO: handle zero length arrays
@@ -151,7 +158,7 @@ public final class TypeClass {
         }
 
         if (classes.size() > 2) {
-            if (classes.get(0) != ArgumentClassImpl.SSE) {
+            if (classes.get(0) != SSE) {
                 return createMemoryClassArray(classes.size());
             }
 

@@ -258,14 +258,30 @@ public sealed interface MemoryLayout permits SequenceLayout, GroupLayout, Paddin
     MemoryLayout withBitAlignment(long bitAlignment);
 
     /**
-     * {@return the foreign linker classifier information associate with this layout}
+     * Returns a memory layout of the same type with the same size and alignment constraint as this layout,
+     * but with the specified linker type.
+     *
+     * @param linkerType the linker type.
+     * @return a memory layout with the given linker type.
+     * @see MemoryLayout#linkerType()
      */
-    Optional<Linker.Classifier> classifier();
+    MemoryLayout withLinkerType(Linker.Type linkerType);
 
     /**
-     * {@return new layout without any classifier}
+     * Returns a memory layout of the same type with the same size and alignment constraint as this layout,
+     * but without a linker type.
+     *
+     * @return a memory layout without a linker type.
+     * @see MemoryLayout#linkerType()
      */
-    MemoryLayout withoutClassifier();
+    MemoryLayout withoutLinkerType();
+
+    /**
+     * {@return the linker type (if any) associated with this layout}
+     *
+     * @see MemoryLayout#withLinkerType(Linker.Type)
+     */
+    Optional<Linker.Type> linkerType();
 
     /**
      * Computes the offset, in bits, of the layout selected by the given layout path, where the path is considered rooted in this

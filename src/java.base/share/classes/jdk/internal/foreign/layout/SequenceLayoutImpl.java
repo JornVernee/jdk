@@ -41,8 +41,8 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     }
 
     private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, long bitAlignment, Optional<String> name,
-                               Optional<Linker.Classifier> classifier) {
-        super(Math.multiplyExact(elemCount, elementLayout.bitSize()), bitAlignment, name, classifier);
+                               Optional<Linker.Type> linkerType) {
+        super(Math.multiplyExact(elemCount, elementLayout.bitSize()), bitAlignment, name, linkerType);
         this.elemCount = elemCount;
         this.elementLayout = elementLayout;
     }
@@ -70,7 +70,7 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
      * @throws IllegalArgumentException if {@code elementCount < 0}.
      */
     public SequenceLayout withElementCount(long elementCount) {
-        return new SequenceLayoutImpl(elementCount, elementLayout, bitAlignment(), name(), classifier());
+        return new SequenceLayoutImpl(elementCount, elementLayout, bitAlignment(), name(), linkerType());
     }
 
     /**
@@ -198,8 +198,8 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     }
 
     @Override
-    SequenceLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
-        return new SequenceLayoutImpl(elementCount(), elementLayout, bitAlignment, name, classifier);
+    SequenceLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Type> linkerType) {
+        return new SequenceLayoutImpl(elementCount(), elementLayout, bitAlignment, name, linkerType);
     }
 
     @Override

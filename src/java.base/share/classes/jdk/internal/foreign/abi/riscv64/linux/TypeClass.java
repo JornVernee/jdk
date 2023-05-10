@@ -26,6 +26,8 @@
 
 package jdk.internal.foreign.abi.riscv64.linux;
 
+import jdk.internal.foreign.abi.SharedUtils;
+
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
@@ -37,7 +39,11 @@ import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.List;
 
-public enum TypeClass implements Linker.Classifier {
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.INTEGER;
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.POINTER;
+import static jdk.internal.foreign.abi.x64.sysv.ArgumentClassImpl.SSE;
+
+public enum TypeClass {
     /*
      * STRUCT_REFERENCE: Aggregates larger than 2 * XLEN bits are passed by reference and are replaced
      *     in the argument list with the address. The address will be passed in a register if at least
@@ -168,8 +174,11 @@ public enum TypeClass implements Linker.Classifier {
 
     // ValueLayout will be classified by its carrier type.
     private static TypeClass classifyValueType(ValueLayout type) {
-        return (TypeClass) type.classifier()
-                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + type));
+        return switch (SharedUtils.linkerType(type)) {
+            case BOOL, CHAR, SHORT, INT, LONG, LONG_LONG, SIZE_T -> INTEGER;
+            case FLOAT, DOUBLE -> FLOAT;
+            case PTR -> POINTER;
+        };
     }
 
     private static boolean isRegisterAggregate(MemoryLayout type) {

@@ -34,13 +34,13 @@ import java.util.Optional;
 public final class UnionLayoutImpl extends AbstractGroupLayout<UnionLayoutImpl> implements UnionLayout {
 
     private UnionLayoutImpl(List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment,
-                            Optional<String> name, Optional<Linker.Classifier> classifier) {
-        super(Kind.UNION, elements, bitSize, bitAlignment, minBitAlignment, name, classifier);
+                            Optional<String> name, Optional<Linker.Type> linkerType) {
+        super(Kind.UNION, elements, bitSize, bitAlignment, minBitAlignment, name, linkerType);
     }
 
     @Override
-    UnionLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
-        return new UnionLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name, classifier);
+    UnionLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Type> linkerType) {
+        return new UnionLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name, linkerType);
     }
 
     public static UnionLayout of(List<MemoryLayout> elements) {

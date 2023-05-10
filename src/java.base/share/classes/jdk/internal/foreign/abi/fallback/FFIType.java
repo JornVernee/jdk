@@ -25,6 +25,7 @@
 package jdk.internal.foreign.abi.fallback;
 
 import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.AbstractLinker;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.GroupLayout;
@@ -46,6 +47,7 @@ import static java.lang.foreign.ValueLayout.ADDRESS;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static java.lang.foreign.ValueLayout.JAVA_SHORT;
+import static jdk.internal.foreign.abi.AbstractLinker.*;
 
 /**
  * typedef struct _ffi_type
@@ -56,7 +58,7 @@ import static java.lang.foreign.ValueLayout.JAVA_SHORT;
  *   struct _ffi_type **elements;
  * } ffi_type;
  */
-public class FFIType {
+class FFIType {
     private static final ValueLayout SIZE_T = switch ((int) ADDRESS.bitSize()) {
             case 64 -> JAVA_LONG;
             case 32 -> JAVA_INT;
@@ -88,16 +90,15 @@ public class FFIType {
         return ffiType;
     }
 
-    private static final Map<TypeClass, MemorySegment> CLASSIFIER_TO_TYPE = Map.of(
-        TypeClass.UINT8, LibFallback.uint8Type(),
-        TypeClass.SINT8, LibFallback.sint8Type(),
-        TypeClass.SINT16, LibFallback.sint16Type(),
-        TypeClass.UINT16, LibFallback.uint16Type(),
-        TypeClass.SINT32, LibFallback.sint32Type(),
-        TypeClass.SINT64, LibFallback.sint64Type(),
-        TypeClass.FLOAT, LibFallback.floatType(),
-        TypeClass.DOUBLE, LibFallback.doubleType(),
-        TypeClass.POINTER, LibFallback.pointerType()
+    private static final Map<LinkerType, MemorySegment> CLASSIFIER_TO_TYPE = Map.of(
+        LinkerType.BOOL, LibFallback.uint8Type(),
+        LinkerType.CHAR, LibFallback.sint8Type(),
+        LinkerType.SHORT, LibFallback.sint16Type(),
+        LinkerType.INT, LibFallback.sint32Type(),
+        LinkerType.LONG_LONG, LibFallback.sint64Type(),
+        LinkerType.FLOAT, LibFallback.floatType(),
+        LinkerType.DOUBLE, LibFallback.doubleType(),
+        LinkerType.PTR, LibFallback.pointerType()
     );
 
     static MemorySegment toFFIType(MemoryLayout layout, FFIABI abi, Arena scope) {
@@ -118,7 +119,7 @@ public class FFIType {
             List<MemoryLayout> elements = Collections.nCopies(Math.toIntExact(sl.elementCount()), sl.elementLayout());
             return make(elements, abi, scope);
         }
-        return Objects.requireNonNull(CLASSIFIER_TO_TYPE.get((TypeClass) ((ValueLayout) layout).classifier()
+        return Objects.requireNonNull(CLASSIFIER_TO_TYPE.get((LinkerType) layout.linkerType()
                 .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + layout))));
     }
 

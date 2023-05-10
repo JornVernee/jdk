@@ -57,4 +57,14 @@ public sealed interface UnionLayout extends GroupLayout permits UnionLayoutImpl 
      */
     @Override
     UnionLayout withBitAlignment(long bitAlignment);
+
+    /**
+     * {@inheritDoc}
+     */
+    UnionLayout withLinkerType(Linker.Type linkerType);
+
+    /**
+     * {@inheritDoc}
+     */
+    UnionLayout withoutLinkerType();
 }

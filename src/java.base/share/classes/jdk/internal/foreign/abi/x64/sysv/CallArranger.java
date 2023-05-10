@@ -34,16 +34,15 @@ import jdk.internal.foreign.abi.CallingSequenceBuilder;
 import jdk.internal.foreign.abi.DowncallLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
-import jdk.internal.foreign.abi.UpcallLinker;
 import jdk.internal.foreign.abi.VMStorage;
 import jdk.internal.foreign.abi.x64.X86_64Architecture;
 
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -51,8 +50,32 @@ import java.util.List;
 import java.util.Optional;
 
 import static jdk.internal.foreign.abi.Binding.vmStore;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.*;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.*;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r10;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r11;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r8;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r9;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rax;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rcx;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rdi;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rdx;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rsi;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm0;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm1;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm10;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm11;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm12;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm13;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm14;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm15;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm2;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm3;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm4;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm5;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm6;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm7;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm8;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm9;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.StorageType;
 
 /**
  * For the SysV x64 C ABI specifically, this class uses namely CallingSequenceBuilder
@@ -97,7 +120,7 @@ public class CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = SysVx64Linker.Layouts.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
+            MemoryLayout layout = Linker.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
             csb.addArgumentBindings(carrier, layout, argCalc.getBindings(carrier, layout));
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();
@@ -113,7 +136,7 @@ public class CallArranger {
 
         if (!forUpcall) {
             //add extra binding for number of used vector registers (used for variadic calls)
-            csb.addArgumentBindings(long.class, SysVx64Linker.Layouts.C_LONG_LONG,
+            csb.addArgumentBindings(long.class, Linker.C_INT64_T,
                     List.of(vmStore(rax, long.class)));
         }
 

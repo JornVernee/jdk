@@ -24,6 +24,7 @@
  */
 package jdk.internal.foreign.abi;
 
+import jdk.internal.foreign.CABI;
 import jdk.internal.foreign.SystemLookup;
 import jdk.internal.foreign.Utils;
 import jdk.internal.foreign.abi.aarch64.linux.LinuxAArch64Linker;
@@ -49,6 +50,7 @@ import java.lang.foreign.UnionLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
 import java.util.List;
 import java.nio.ByteOrder;
 import java.util.Objects;
@@ -131,7 +133,7 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
     private void checkLayoutRecursive(MemoryLayout layout) {
         checkHasNaturalAlignment(layout);
         if (layout instanceof ValueLayout vl) {
-            checkByteOrder(vl);
+            checkLinkerType(vl);
         } else if (layout instanceof StructLayout sl) {
             long offset = 0;
             long lastUnpaddedOffset = 0;
@@ -214,9 +216,61 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
                 .orElseGet(() -> FunctionDescriptor.ofVoid(stripNames(function.argumentLayouts())));
     }
 
-    private void checkByteOrder(ValueLayout vl) {
-        if (vl.order() != linkerByteOrder()) {
-            throw new IllegalArgumentException("Layout does not have the right byte order: " + vl);
+    private void checkLinkerType(ValueLayout found) {
+        // sanity checks
+        ValueLayout expected = (ValueLayout)LinkerType.from(found).layout();
+        if (found.order() != expected.order()) {
+            throw new IllegalArgumentException("Layout does not have the expected byte order: " + found);
+        }
+        if (found.byteSize() != expected.byteSize()) {
+            throw new IllegalArgumentException("Layout does not have the expected byte size: " + found);
+        }
+    }
+
+    @Override
+    public MemoryLayout layoutFor(String name) {
+        Objects.requireNonNull(name);
+        return Arrays.stream(LinkerType.values())
+                .filter(lt -> lt.name.equals(name))
+                .map(LinkerType::layout)
+                .findFirst()
+                .orElseThrow(() -> new UnsupportedOperationException("Unsupported type name: " + name));
+    }
+
+    public enum LinkerType implements Linker.Type {
+        BOOL("bool", ValueLayout.JAVA_BOOLEAN),
+        CHAR("char", ValueLayout.JAVA_BYTE),
+        SHORT("short", ValueLayout.JAVA_SHORT),
+        INT("int", ValueLayout.JAVA_INT),
+        FLOAT("float", ValueLayout.JAVA_FLOAT),
+        LONG("long", CABI.current() == CABI.WIN_64 ? ValueLayout.JAVA_INT : ValueLayout.JAVA_LONG),
+        LONG_LONG("long long", ValueLayout.JAVA_LONG),
+        DOUBLE("double", ValueLayout.JAVA_DOUBLE),
+        SIZE_T("size_t", ValueLayout.ADDRESS.bitSize() == Integer.SIZE ? ValueLayout.JAVA_INT : ValueLayout.JAVA_LONG),
+        PTR("void*", ValueLayout.ADDRESS);
+
+        final String name;
+        final MemoryLayout layout;
+
+        LinkerType(String name, MemoryLayout unannotatedLayout) {
+            this.name = name;
+            this.layout = unannotatedLayout.withLinkerType(this);
+        }
+
+        public MemoryLayout layout() {
+            return layout;
+        }
+
+        public static LinkerType from(MemoryLayout layout) {
+            return (LinkerType)layout.linkerType().stream()
+                    .filter(a -> a instanceof LinkerType)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Value layout is missing linker attributes: " + layout));
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }

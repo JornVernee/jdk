@@ -93,36 +93,36 @@ public class NativeTestHelper {
     /**
      * The layout for the {@code bool} C type
      */
-    public static final ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) LINKER.linkerType("_Bool");
+    public static final ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) LINKER.layoutFor("bool");
     /**
      * The layout for the {@code char} C type
      */
-    public static final ValueLayout.OfByte C_CHAR = (ValueLayout.OfByte) LINKER.linkerType("char");
+    public static final ValueLayout.OfByte C_CHAR = (ValueLayout.OfByte) LINKER.layoutFor("char");
     /**
      * The layout for the {@code short} C type
      */
-    public static final ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) LINKER.linkerType("short");
+    public static final ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) LINKER.layoutFor("short");
     /**
      * The layout for the {@code int} C type
      */
-    public static final ValueLayout.OfInt C_INT = (ValueLayout.OfInt) LINKER.linkerType("int");
+    public static final ValueLayout.OfInt C_INT = (ValueLayout.OfInt) LINKER.layoutFor("int");
 
     /**
      * The layout for the {@code long long} C type.
      */
-    public static final ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) LINKER.linkerType("long long");
+    public static final ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) LINKER.layoutFor("long long");
     /**
      * The layout for the {@code float} C type
      */
-    public static final ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) LINKER.linkerType("float");
+    public static final ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) LINKER.layoutFor("float");
     /**
      * The layout for the {@code double} C type
      */
-    public static final ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) LINKER.linkerType("double");
+    public static final ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) LINKER.layoutFor("double");
     /**
      * The {@code T*} native type.
      */
-    public static final AddressLayout C_POINTER = ((AddressLayout) LINKER.linkerType("void*"))
+    public static final AddressLayout C_POINTER = ((AddressLayout) LINKER.layoutFor("void*"))
             .withTargetLayout(MemoryLayout.sequenceLayout(C_CHAR));
 
     private static final MethodHandle FREE = LINKER.downcallHandle(

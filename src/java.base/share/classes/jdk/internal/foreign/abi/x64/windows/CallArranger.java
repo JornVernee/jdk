@@ -40,6 +40,7 @@ import jdk.internal.foreign.abi.x64.X86_64Architecture;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -104,7 +105,7 @@ public class CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = Windowsx64Linker.Layouts.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
+            MemoryLayout layout = Linker.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
             csb.addArgumentBindings(carrier, layout, false);
             if (forUpcall) {
                 csb.setReturnBindings(carrier, layout);

@@ -176,6 +176,7 @@ public class TestNulls {
         addDefaultMapping(Supplier.class, () -> null);
         addDefaultMapping(ClassLoader.class, TestNulls.class.getClassLoader());
         addDefaultMapping(Thread.UncaughtExceptionHandler.class, (thread, ex) -> {});
+        addDefaultMapping(Linker.Type.class, Linker.C_INT32_T.linkerType().orElseThrow());
     }
 
     static final Map<Class<?>, Object[]> REPLACEMENT_VALUES = new HashMap<>();

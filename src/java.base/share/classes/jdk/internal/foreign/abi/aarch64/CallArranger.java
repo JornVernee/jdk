@@ -28,6 +28,7 @@ package jdk.internal.foreign.abi.aarch64;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import jdk.internal.foreign.abi.ABIDescriptor;
@@ -157,7 +158,7 @@ public abstract class CallArranger {
 
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
-            csb.addArgumentBindings(MemorySegment.class, AArch64Layouts.C_POINTER,
+            csb.addArgumentBindings(MemorySegment.class, Linker.C_POINTER.withTargetLayout(cDesc.returnLayout().get()),
                     argCalc.getIndirectBindings());
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();
@@ -429,7 +430,7 @@ public abstract class CallArranger {
                     assert carrier == MemorySegment.class;
                     bindings.copy(layout)
                             .unboxAddress();
-                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, AArch64Layouts.C_POINTER);
+                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, ValueLayout.ADDRESS);
                     bindings.vmStore(storage, long.class);
                 }
                 case POINTER -> {
@@ -480,17 +481,15 @@ public abstract class CallArranger {
                     StorageCalculator.StructStorage[] structStorages
                             = storageCalculator.structStorages((GroupLayout) layout, forHFA);
 
-                    for (StorageCalculator.StructStorage(
-                            long offset, Class<?> ca, int byteWidth, VMStorage storage
-                    ) : structStorages) {
+                    for (StorageCalculator.StructStorage storage : structStorages) {
                         bindings.dup();
-                        bindings.vmLoad(storage, ca)
-                                .bufferStore(offset, ca, byteWidth);
+                        bindings.vmLoad(storage.storage(), storage.carrier())
+                                .bufferStore(storage.offset(), storage.carrier(), storage.byteWidth());
                     }
                 }
                 case STRUCT_REFERENCE -> {
                     assert carrier == MemorySegment.class;
-                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, AArch64Layouts.C_POINTER);
+                    VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, ValueLayout.ADDRESS);
                     bindings.vmLoad(storage, long.class)
                             .boxAddress(layout);
                 }

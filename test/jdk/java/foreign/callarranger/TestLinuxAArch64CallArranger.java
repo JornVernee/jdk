@@ -49,11 +49,11 @@ import org.testng.annotations.Test;
 import java.lang.invoke.MethodType;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
+import static java.lang.foreign.Linker.*;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static jdk.internal.foreign.abi.Binding.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
-import static jdk.internal.foreign.abi.aarch64.AArch64Layouts.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -89,9 +89,9 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
                 int.class, int.class, int.class, int.class,
                 int.class, int.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_INT, C_INT, C_INT, C_INT,
-                C_INT, C_INT, C_INT, C_INT,
-                C_INT, C_INT);
+                C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T,
+                C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T,
+                C_INT32_T, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -121,7 +121,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         MethodType mt = MethodType.methodType(void.class,
                 int.class, int.class, float.class, float.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_INT, C_INT, C_FLOAT, C_FLOAT);
+                C_INT32_T, C_INT32_T, C_FLOAT, C_FLOAT);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -161,10 +161,10 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @DataProvider
     public static Object[][] structs() {
-        MemoryLayout struct2 = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
+        MemoryLayout struct2 = MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE, C_INT32_T);
         return new Object[][]{
             // struct s { int32_t a, b; double c; };
-            { MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE), new Binding[] {
+            { MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE), new Binding[] {
                 dup(),
                     // s.a & s.b
                     bufferLoad(0, long.class), vmStore(r0, long.class),
@@ -178,7 +178,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
                 vmStore(r0, long.class)
             }},
             // struct s { int32_t a[2]; float b[2] };
-            { MemoryLayout.structLayout(C_INT, C_INT, C_FLOAT, C_FLOAT), new Binding[] {
+            { MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_FLOAT, C_FLOAT), new Binding[] {
                 dup(),
                     // s.a[0] & s.a[1]
                     bufferLoad(0, long.class), vmStore(r0, long.class),
@@ -199,11 +199,11 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testMultipleStructs() {
-        MemoryLayout struct1 = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
-        MemoryLayout struct2 = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG, C_LONG_LONG);
+        MemoryLayout struct1 = MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE, C_INT32_T);
+        MemoryLayout struct2 = MemoryLayout.structLayout(C_INT64_T, C_INT64_T, C_INT64_T);
 
         MethodType mt = MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class, int.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct1, struct2, C_INT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct1, struct2, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -231,7 +231,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct1() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG, C_FLOAT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT64_T, C_INT64_T, C_FLOAT);
 
         MethodType mt = MethodType.methodType(MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(struct);
@@ -240,7 +240,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         assertTrue(bindings.isInMemoryReturn());
         CallingSequence callingSequence = bindings.callingSequence();
         assertEquals(callingSequence.callerMethodType(), MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class));
-        assertEquals(callingSequence.functionDesc(), FunctionDescriptor.ofVoid(ADDRESS, C_POINTER));
+        assertEquals(callingSequence.functionDesc(), FunctionDescriptor.ofVoid(ADDRESS, C_POINTER.withTargetLayout(struct)));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -255,7 +255,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct2() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT64_T, C_INT64_T);
 
         MethodType mt = MethodType.methodType(MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(struct);
@@ -287,7 +287,7 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         MemoryLayout hfa = MemoryLayout.structLayout(C_FLOAT, C_FLOAT);
 
         MethodType mt = MethodType.methodType(MemorySegment.class, float.class, int.class, MemorySegment.class);
-        FunctionDescriptor fd = FunctionDescriptor.of(hfa, C_FLOAT, C_INT, hfa);
+        FunctionDescriptor fd = FunctionDescriptor.of(hfa, C_FLOAT, C_INT32_T, hfa);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -373,13 +373,13 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
         // stack should be passed as a pointer to a copy and occupy one
         // stack slot.
 
-        MemoryLayout struct = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE, C_INT32_T);
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, MemorySegment.class, int.class, int.class,
             int.class, int.class, int.class, int.class, MemorySegment.class, int.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-            struct, struct, C_INT, C_INT, C_INT, C_INT, C_INT, C_INT, struct, C_INT);
+            struct, struct, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, struct, C_INT32_T);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -407,8 +407,8 @@ public class TestLinuxAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testVarArgsInRegs() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_FLOAT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT32_T, C_INT32_T, C_FLOAT);
         CallArranger.Bindings bindings = CallArranger.LINUX.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());

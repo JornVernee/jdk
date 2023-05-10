@@ -65,40 +65,6 @@ public final class SysVx64Linker extends AbstractLinker {
         return CallArranger.arrangeUpcall(targetType, function, options);
     }
 
-    public interface Layouts {
-        ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) ValueLayouts.valueLayout(boolean.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.INTEGER);
-        ValueLayout.OfByte C_CHAR = (ValueLayout.OfByte) ValueLayouts.valueLayout(byte.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.INTEGER);
-        ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) ValueLayouts.valueLayout(short.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.INTEGER);
-        ValueLayout.OfInt C_INT = (ValueLayout.OfInt) ValueLayouts.valueLayout(int.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.INTEGER);
-        ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) ValueLayouts.valueLayout(long.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.INTEGER);
-        ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) ValueLayouts.valueLayout(float.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.SSE);
-        ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) ValueLayouts.valueLayout(double.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.SSE);
-        AddressLayout C_POINTER = (AddressLayout) ValueLayouts.valueLayout(MemorySegment.class, ByteOrder.LITTLE_ENDIAN)
-                .withClassifier(ArgumentClassImpl.POINTER);
-    }
-
-    @Override
-    public MemoryLayout linkerType(String name) {
-        return switch (name) {
-            case "_Bool" -> Layouts.C_BOOL;
-            case "char" -> Layouts.C_CHAR;
-            case "short" -> Layouts.C_SHORT;
-            case "int" -> Layouts.C_INT;
-            case "long long" -> Layouts.C_LONG_LONG;
-            case "float" -> Layouts.C_FLOAT;
-            case "double" -> Layouts.C_DOUBLE;
-            case "void*" -> Layouts.C_POINTER;
-            default -> throw new IllegalStateException("Unknown type: " + name);
-        };
-    }
-
     @Override
     protected ByteOrder linkerByteOrder() {
         return ByteOrder.LITTLE_ENDIAN;

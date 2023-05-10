@@ -28,6 +28,7 @@ import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.JavaLangInvokeAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.foreign.CABI;
+import jdk.internal.foreign.abi.AbstractLinker.LinkerType;
 import jdk.internal.foreign.abi.AbstractLinker.UpcallStubFactory;
 import jdk.internal.foreign.abi.aarch64.linux.LinuxAArch64Linker;
 import jdk.internal.foreign.abi.aarch64.macos.MacOsAArch64Linker;
@@ -58,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -403,6 +405,11 @@ public final class SharedUtils {
                 throw new UnsupportedOperationException();
             }
         };
+    }
+
+    public static LinkerType linkerType(MemoryLayout layout) {
+        return (LinkerType) layout.linkerType()
+                .orElseThrow(() -> new IllegalArgumentException("No classifier for layout: " + layout));
     }
 
     public static final class SimpleVaArg {

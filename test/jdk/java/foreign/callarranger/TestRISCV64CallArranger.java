@@ -52,10 +52,10 @@ import java.lang.invoke.MethodType;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
 import static java.lang.foreign.ValueLayout.ADDRESS;
+import static java.lang.foreign.Linker.*;
 import static jdk.internal.foreign.abi.Binding.*;
 import static jdk.internal.foreign.abi.riscv64.RISCV64Architecture.*;
 import static jdk.internal.foreign.abi.riscv64.RISCV64Architecture.Regs.*;
-import static jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker.Layouts.*;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -92,9 +92,9 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
             int.class, int.class, long.class, int.class,
             int.class, byte.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-            C_CHAR, C_SHORT, C_INT, C_INT,
-            C_INT, C_INT, C_LONG_LONG, C_INT,
-            C_INT, C_CHAR);
+            C_INT8_T, C_INT16_T, C_INT32_T, C_INT32_T,
+            C_INT32_T, C_INT32_T, C_INT64_T, C_INT32_T,
+            C_INT32_T, C_INT8_T);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -122,7 +122,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
     @Test
     public void testTwoIntTwoFloat() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT, C_FLOAT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT, C_FLOAT);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -162,7 +162,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
 
     @DataProvider
     public static Object[][] structs() {
-        MemoryLayout struct1 = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
+        MemoryLayout struct1 = MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE, C_INT32_T);
         return new Object[][]{
             // struct s { void* a; double c; };
             {
@@ -174,7 +174,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
                 }
             },
             // struct s { int32_t a, b; double c; };
-            { MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE),
+            { MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE),
                 new Binding[]{
                     dup(),
                     // s.a & s.b
@@ -192,7 +192,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
                 }
             },
             // struct s { int32_t a[1]; float b[1]; };
-            { MemoryLayout.structLayout(MemoryLayout.sequenceLayout(1, C_INT),
+            { MemoryLayout.structLayout(MemoryLayout.sequenceLayout(1, C_INT32_T),
                 MemoryLayout.sequenceLayout(1, C_FLOAT)),
                 new Binding[]{
                     dup(),
@@ -220,7 +220,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
         MemoryLayout fa = MemoryLayout.structLayout(C_FLOAT, C_FLOAT);
 
         MethodType mt = MethodType.methodType(MemorySegment.class, float.class, int.class, MemorySegment.class);
-        FunctionDescriptor fd = FunctionDescriptor.of(fa, C_FLOAT, C_INT, fa);
+        FunctionDescriptor fd = FunctionDescriptor.of(fa, C_FLOAT, C_INT32_T, fa);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -258,7 +258,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
         MemoryLayout fa = MemoryLayout.structLayout(C_FLOAT, MemoryLayout.paddingLayout(32), C_DOUBLE);
 
         MethodType mt = MethodType.methodType(MemorySegment.class, float.class, int.class, MemorySegment.class);
-        FunctionDescriptor fd = FunctionDescriptor.of(fa, C_FLOAT, C_INT, fa);
+        FunctionDescriptor fd = FunctionDescriptor.of(fa, C_FLOAT, C_INT32_T, fa);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -327,7 +327,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testStructBoth() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_INT, C_FLOAT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT32_T, C_FLOAT);
 
         MethodType mt = MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(struct, struct, struct);
@@ -372,13 +372,13 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
         // stack should be passed as a pointer to a copy and occupy one
         // stack slot.
 
-        MemoryLayout struct = MemoryLayout.structLayout(C_INT, C_INT, C_DOUBLE, C_INT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT32_T, C_INT32_T, C_DOUBLE, C_INT32_T);
 
         MethodType mt = MethodType.methodType(
             void.class, MemorySegment.class, MemorySegment.class, int.class, int.class,
             int.class, int.class, int.class, int.class, MemorySegment.class, int.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-            struct, struct, C_INT, C_INT, C_INT, C_INT, C_INT, C_INT, struct, C_INT);
+            struct, struct, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T, struct, C_INT32_T);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -406,8 +406,8 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
     @Test
     public void testVarArgsInRegs() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_FLOAT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT32_T, C_INT32_T, C_FLOAT);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -431,12 +431,12 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, int.class, double.class,
             double.class, long.class, long.class, int.class,
             double.class, double.class, long.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_INT, C_DOUBLE, C_DOUBLE,
-            C_LONG_LONG, C_LONG_LONG, C_INT, C_DOUBLE,
-            C_DOUBLE, C_LONG_LONG);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_INT, C_DOUBLE,
-            C_DOUBLE, C_LONG_LONG, C_LONG_LONG, C_INT,
-            C_DOUBLE, C_DOUBLE, C_LONG_LONG);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_INT32_T, C_DOUBLE, C_DOUBLE,
+            C_INT64_T, C_INT64_T, C_INT32_T, C_DOUBLE,
+            C_DOUBLE, C_INT64_T);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT32_T, C_INT32_T, C_INT32_T, C_DOUBLE,
+            C_DOUBLE, C_INT64_T, C_INT64_T, C_INT32_T,
+            C_DOUBLE, C_DOUBLE, C_INT64_T);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -465,10 +465,10 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct1() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG, C_FLOAT);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT64_T, C_INT64_T, C_FLOAT);
 
         MethodType mt = MethodType.methodType(MemorySegment.class, int.class, int.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.of(struct, C_INT, C_INT, C_FLOAT);
+        FunctionDescriptor fd = FunctionDescriptor.of(struct, C_INT32_T, C_INT32_T, C_FLOAT);
         LinuxRISCV64CallArranger.Bindings bindings = LinuxRISCV64CallArranger.getBindings(mt, fd, false);
 
         assertTrue(bindings.isInMemoryReturn());
@@ -477,7 +477,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
             MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class,
                 int.class, int.class, float.class));
         assertEquals(callingSequence.functionDesc(),
-            FunctionDescriptor.ofVoid(ADDRESS, C_POINTER, C_INT, C_INT, C_FLOAT));
+            FunctionDescriptor.ofVoid(ADDRESS, C_POINTER.withTargetLayout(struct), C_INT32_T, C_INT32_T, C_FLOAT));
 
         checkArgumentBindings(callingSequence, new Binding[][]{
             { unboxAddress(), vmStore(TARGET_ADDRESS_STORAGE, long.class) },
@@ -492,7 +492,7 @@ public class TestRISCV64CallArranger extends CallArrangerTestBase {
 
     @Test
     public void testReturnStruct2() {
-        MemoryLayout struct = MemoryLayout.structLayout(C_LONG_LONG, C_LONG_LONG);
+        MemoryLayout struct = MemoryLayout.structLayout(C_INT64_T, C_INT64_T);
 
         MethodType mt = MethodType.methodType(MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.of(struct);

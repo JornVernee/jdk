@@ -48,11 +48,11 @@ import org.testng.annotations.Test;
 import java.lang.invoke.MethodType;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
+import static java.lang.foreign.Linker.*;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 import static jdk.internal.foreign.abi.Binding.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
-import static jdk.internal.foreign.abi.aarch64.AArch64Layouts.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -63,8 +63,8 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testVarArgsOnStack() {
         MethodType mt = MethodType.methodType(void.class, int.class, int.class, float.class);
-        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT, C_INT, C_FLOAT);
-        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT, C_INT, C_FLOAT);
+        FunctionDescriptor fd = FunctionDescriptor.ofVoid(C_INT32_T, C_INT32_T, C_FLOAT);
+        FunctionDescriptor fdExpected = FunctionDescriptor.ofVoid(ADDRESS, C_INT32_T, C_INT32_T, C_FLOAT);
         CallArranger.Bindings bindings = CallArranger.MACOS.getBindings(mt, fd, false, LinkerOptions.forDowncall(fd, firstVariadicArg(1)));
 
         assertFalse(bindings.isInMemoryReturn());
@@ -90,9 +90,9 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 int.class, int.class, int.class, int.class,
                 int.class, int.class, short.class, byte.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_INT, C_INT, C_INT, C_INT,
-                C_INT, C_INT, C_INT, C_INT,
-                C_INT, C_INT, C_SHORT, C_CHAR);
+                C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T,
+                C_INT32_T, C_INT32_T, C_INT32_T, C_INT32_T,
+                C_INT32_T, C_INT32_T, C_INT16_T, C_INT8_T);
         CallArranger.Bindings bindings = CallArranger.MACOS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -132,11 +132,11 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 double.class, double.class, double.class, double.class,
                 int.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
-                C_INT, struct);
+                C_INT32_T, struct);
         CallArranger.Bindings bindings = CallArranger.MACOS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -188,8 +188,8 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 double.class, double.class, double.class, double.class,
                 MemorySegment.class, float.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 struct, C_FLOAT);
@@ -230,8 +230,8 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testMacArgsOnStack4() {
         StructLayout struct = MemoryLayout.structLayout(
-            C_INT,
-            C_INT,
+            C_INT32_T,
+            C_INT32_T,
             C_POINTER
         );
         MethodType mt = MethodType.methodType(void.class,
@@ -241,8 +241,8 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 double.class, double.class, double.class, double.class,
                 float.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_FLOAT, struct);
@@ -293,11 +293,11 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 double.class, double.class, double.class, double.class,
                 MemorySegment.class, int.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
-                struct, C_INT, C_POINTER);
+                struct, C_INT32_T, C_POINTER);
         CallArranger.Bindings bindings = CallArranger.MACOS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());
@@ -338,7 +338,7 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
     @Test
     public void testMacArgsOnStack6() {
         StructLayout struct = MemoryLayout.structLayout(
-            C_INT
+            C_INT32_T
         );
         MethodType mt = MethodType.methodType(void.class,
                 long.class, long.class, long.class, long.class,
@@ -347,11 +347,11 @@ public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
                 double.class, double.class, double.class, double.class,
                 int.class, MemorySegment.class, double.class, MemorySegment.class);
         FunctionDescriptor fd = FunctionDescriptor.ofVoid(
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
-                C_LONG_LONG, C_LONG_LONG, C_LONG_LONG, C_LONG_LONG,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
+                C_INT64_T, C_INT64_T, C_INT64_T, C_INT64_T,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
                 C_DOUBLE, C_DOUBLE, C_DOUBLE, C_DOUBLE,
-                C_INT, struct, C_DOUBLE, C_POINTER);
+                C_INT32_T, struct, C_DOUBLE, C_POINTER);
         CallArranger.Bindings bindings = CallArranger.MACOS.getBindings(mt, fd, false);
 
         assertFalse(bindings.isInMemoryReturn());

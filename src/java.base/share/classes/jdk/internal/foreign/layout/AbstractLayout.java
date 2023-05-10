@@ -26,7 +26,6 @@
 package jdk.internal.foreign.layout;
 
 import jdk.internal.foreign.Utils;
-import jdk.internal.foreign.abi.x64.windows.TypeClass;
 
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.Linker;
@@ -44,41 +43,41 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
     private final long byteSize;
     private final long byteAlignment;
     private final Optional<String> name;
-    private final Optional<Linker.Classifier> classifier;
+    private final Optional<Linker.Type> linkerType;
 
-    AbstractLayout(long bitSize, long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
+    AbstractLayout(long bitSize, long bitAlignment, Optional<String> name, Optional<Linker.Type> linkerType) {
         this.byteSize = MemoryLayoutUtil.requireBitSizeValid(bitSize, true) / 8;
         this.byteAlignment = requirePowerOfTwoAndGreaterOrEqualToEight(bitAlignment) / 8;
         this.name = Objects.requireNonNull(name);
-        this.classifier = classifier;
+        this.linkerType = linkerType;
     }
 
     public final L withName(String name) {
-        return dup(bitAlignment(), Optional.of(name), classifier);
+        return dup(bitAlignment(), Optional.of(name), linkerType);
     }
 
     public final L withoutName() {
-        return dup(bitAlignment(), Optional.empty(), classifier);
+        return dup(bitAlignment(), Optional.empty(), linkerType);
     }
 
     public final Optional<String> name() {
         return name;
     }
 
-    public final Optional<Linker.Classifier> classifier() {
-        return classifier;
+    public final Optional<Linker.Type> linkerType() {
+        return linkerType;
     }
 
-    public L withClassifier(Linker.Classifier classifier) {
-        return dup(bitAlignment(), name, Optional.of(classifier));
+    public L withLinkerType(Linker.Type linkerType) {
+        return dup(bitAlignment(), name, Optional.of(linkerType));
     }
 
-    public L withoutClassifier() {
+    public L withoutLinkerType() {
         return dup(bitAlignment(), name, Optional.empty());
     }
 
     public L withBitAlignment(long bitAlignment) {
-        return dup(bitAlignment, name, classifier);
+        return dup(bitAlignment, name, linkerType);
     }
 
     public final long bitAlignment() {
@@ -109,7 +108,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
      */
     @Override
     public int hashCode() {
-        return Objects.hash(name, byteSize, byteAlignment, classifier);
+        return Objects.hash(name, byteSize, byteAlignment, linkerType);
     }
 
     /**
@@ -135,7 +134,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
                 name.equals(otherLayout.name) &&
                 byteSize == otherLayout.byteSize &&
                 byteAlignment == otherLayout.byteAlignment &&
-                classifier.equals(otherLayout.classifier);
+                linkerType.equals(otherLayout.linkerType);
     }
 
     /**
@@ -144,7 +143,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
     @Override
     public abstract String toString();
 
-    abstract L dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier);
+    abstract L dup(long bitAlignment, Optional<String> name, Optional<Linker.Type> linkerType);
 
     String decorateLayoutString(String s) {
         if (name().isPresent()) {

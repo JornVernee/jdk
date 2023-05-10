@@ -29,6 +29,7 @@ package jdk.internal.foreign.abi.riscv64.linux;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import jdk.internal.foreign.abi.ABIDescriptor;
@@ -91,7 +92,7 @@ public class LinuxRISCV64CallArranger {
         boolean returnInMemory = isInMemoryReturn(cDesc.returnLayout());
         if (returnInMemory) {
             Class<?> carrier = MemorySegment.class;
-            MemoryLayout layout = LinuxRISCV64Linker.Layouts.C_POINTER;
+            MemoryLayout layout = Linker.C_POINTER.withTargetLayout(cDesc.returnLayout().get());
             csb.addArgumentBindings(carrier, layout, argCalc.getBindings(carrier, layout, false));
         } else if (cDesc.returnLayout().isPresent()) {
             Class<?> carrier = mt.returnType();

@@ -34,13 +34,13 @@ import java.util.Optional;
 public final class StructLayoutImpl extends AbstractGroupLayout<StructLayoutImpl> implements StructLayout {
 
     private StructLayoutImpl(List<MemoryLayout> elements, long bitSize, long bitAlignment, long minBitAlignment,
-                             Optional<String> name, Optional<Linker.Classifier> classifier) {
-        super(Kind.STRUCT, elements, bitSize, bitAlignment, minBitAlignment, name, classifier);
+                             Optional<String> name, Optional<Linker.Type> linkerType) {
+        super(Kind.STRUCT, elements, bitSize, bitAlignment, minBitAlignment, name, linkerType);
     }
 
     @Override
-    StructLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Classifier> classifier) {
-        return new StructLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name, classifier);
+    StructLayoutImpl dup(long bitAlignment, Optional<String> name, Optional<Linker.Type> linkerType) {
+        return new StructLayoutImpl(memberLayouts(), bitSize(), bitAlignment, minBitAlignment, name, linkerType);
     }
 
     public static StructLayout of(List<MemoryLayout> elements) {
