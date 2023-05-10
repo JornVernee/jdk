@@ -162,6 +162,12 @@ public sealed interface ValueLayout extends MemoryLayout permits
     ValueLayout withBitAlignment(long bitAlignment);
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    ValueLayout withoutClassifier();
+
+    /**
      * A value layout whose carrier is {@code boolean.class}.
      *
      * @see #JAVA_BOOLEAN

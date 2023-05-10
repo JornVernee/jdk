@@ -85,7 +85,7 @@ public class TestLayoutEquality {
     private static void addLayoutConstants(List<ValueLayout> testValues, Class<?> cls) throws ReflectiveOperationException {
         for (Field f : cls.getFields()) {
             if (f.getName().startsWith("C_"))
-                testValues.add((ValueLayout) f.get(null));
+                testValues.add(((ValueLayout) f.get(null)).withoutClassifier());
         }
     }
 }

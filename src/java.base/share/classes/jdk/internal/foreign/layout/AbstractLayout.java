@@ -65,12 +65,16 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
         return name;
     }
 
+    public final Optional<Linker.Classifier> classifier() {
+        return classifier;
+    }
+
     public L withClassifier(Linker.Classifier classifier) {
         return dup(bitAlignment(), name, Optional.of(classifier));
     }
 
-    public final Optional<Linker.Classifier> classifier() {
-        return classifier;
+    public L withoutClassifier() {
+        return dup(bitAlignment(), name, Optional.empty());
     }
 
     public L withBitAlignment(long bitAlignment) {
@@ -105,7 +109,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
      */
     @Override
     public int hashCode() {
-        return Objects.hash(name, byteSize, byteAlignment);
+        return Objects.hash(name, byteSize, byteAlignment, classifier);
     }
 
     /**
@@ -130,7 +134,8 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
         return other instanceof AbstractLayout<?> otherLayout &&
                 name.equals(otherLayout.name) &&
                 byteSize == otherLayout.byteSize &&
-                byteAlignment == otherLayout.byteAlignment;
+                byteAlignment == otherLayout.byteAlignment &&
+                classifier.equals(otherLayout.classifier);
     }
 
     /**

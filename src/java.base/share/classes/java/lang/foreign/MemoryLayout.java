@@ -190,11 +190,6 @@ public sealed interface MemoryLayout permits SequenceLayout, GroupLayout, Paddin
     Optional<String> name();
 
     /**
-     * {@return the foreign linker classifier information associate with this layout}
-     */
-    Optional<Linker.Classifier> classifier();
-
-    /**
      * Returns a memory layout of the same type with the same size and alignment constraint as this layout,
      * but with the specified name.
      *
@@ -261,6 +256,16 @@ public sealed interface MemoryLayout permits SequenceLayout, GroupLayout, Paddin
      * @throws IllegalArgumentException if {@code bitAlignment} is not a power of two, or if it's less than 8.
      */
     MemoryLayout withBitAlignment(long bitAlignment);
+
+    /**
+     * {@return the foreign linker classifier information associate with this layout}
+     */
+    Optional<Linker.Classifier> classifier();
+
+    /**
+     * {@return new layout without any classifier}
+     */
+    MemoryLayout withoutClassifier();
 
     /**
      * Computes the offset, in bits, of the layout selected by the given layout path, where the path is considered rooted in this
