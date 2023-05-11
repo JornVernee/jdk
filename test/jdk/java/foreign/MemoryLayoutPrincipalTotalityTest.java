@@ -89,6 +89,7 @@ public class MemoryLayoutPrincipalTotalityTest {
             case OfInt oi -> 1; // leaf
             case OfLong ol -> 0; // leaf
             case OfShort os -> 0; // leaf
+            case OfBOB ob -> 0; // leaf
         };
         assertEquals(v3, 1);
     }
@@ -109,6 +110,7 @@ public class MemoryLayoutPrincipalTotalityTest {
             case OfInt oi -> 1; // leaf
             case OfLong ol -> 0; // leaf
             case OfShort os -> 0; // leaf
+            case OfBOB ob -> 0; // leaf
         };
         assertEquals(v4, 1);
     }

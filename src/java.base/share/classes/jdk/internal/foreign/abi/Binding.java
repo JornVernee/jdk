@@ -32,7 +32,6 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -301,6 +300,9 @@ public sealed interface Binding {
         throw new IllegalArgumentException("Unknown conversion: " + fromType + " -> " + toType);
     }
 
+    static ToBOB toBOB(Class<?> carrier, ValueLayout.OfBOB bobLayout) {
+        return new ToBOB(carrier, bobLayout);
+    }
 
     static Binding.Builder builder() {
         return new Binding.Builder();
@@ -390,7 +392,13 @@ public sealed interface Binding {
         public List<Binding> build() {
             return List.copyOf(bindings);
         }
+
+        public Binding.Builder toBOB(Class<?> carrier, ValueLayout.OfBOB bobLayout) {
+            bindings.add(Binding.toBOB(carrier, bobLayout));
+            return this;
+        }
     }
+
 
     sealed interface Move extends Binding {
         VMStorage storage();
@@ -730,6 +738,21 @@ public sealed interface Binding {
             } catch (Throwable e) {
                 throw new InternalError(e);
             }
+        }
+    }
+
+    record ToBOB(Class<?> carrier, ValueLayout.OfBOB layout) implements Binding {
+        @Override
+        public void verify(Deque<Class<?>> stack) {
+            SharedUtils.checkType(stack.pop(), carrier);
+            stack.push(MemorySegment.class);
+        }
+
+        @Override
+        public void interpret(Deque<Object> stack, StoreFunc storeFunc, LoadFunc loadFunc, SegmentAllocator allocator) {
+            MemorySegment buffer = MemorySegment.ofArray(new byte[Math.toIntExact(layout.byteSize())]);
+            SharedUtils.write(buffer, 0, carrier, stack.pop());
+            stack.push(buffer);
         }
     }
 }

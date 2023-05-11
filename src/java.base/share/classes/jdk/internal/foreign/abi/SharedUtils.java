@@ -38,6 +38,8 @@ import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
 import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
 import jdk.internal.vm.annotation.ForceInline;
+import sun.invoke.WrapperInstance;
+import sun.invoke.util.Wrapper;
 
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;

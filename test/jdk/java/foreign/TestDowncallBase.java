@@ -28,6 +28,7 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,7 +43,8 @@ public class TestDowncallBase extends CallGeneratorHelper {
     }
 
     static FunctionDescriptor function(Ret ret, List<ParamType> params, List<StructFieldType> fields, List<MemoryLayout> prefix) {
-        List<MemoryLayout> pLayouts = params.stream().map(p -> p.layout(fields)).toList();
+        List<MemoryLayout> pLayouts = params.stream().map(p -> p.layout(fields))
+                .map(l ->  l instanceof ValueLayout vl ? vl.asBOB() : l).toList();
         MemoryLayout[] paramLayouts = Stream.concat(prefix.stream(), pLayouts.stream()).toArray(MemoryLayout[]::new);
         return ret == Ret.VOID ?
                 FunctionDescriptor.ofVoid(paramLayouts) :

@@ -33,7 +33,6 @@ import jdk.internal.foreign.abi.CallingSequenceBuilder;
 import jdk.internal.foreign.abi.DowncallLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
-import jdk.internal.foreign.abi.UpcallLinker;
 import jdk.internal.foreign.abi.VMStorage;
 import jdk.internal.foreign.abi.x64.X86_64Architecture;
 
@@ -48,6 +47,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static jdk.internal.foreign.abi.x64.X86_64Architecture.*;
 import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.*;
@@ -190,6 +190,15 @@ public class CallArranger {
             this.storageCalculator = new StorageCalculator(forArguments);
         }
 
+        private static Class<?> maybeUnBOB(Binding.Builder bindings, MemoryLayout layout, Class<?> carrier, boolean useFloat) {
+            Class<?> storeCarrier = carrier;
+            if (layout instanceof ValueLayout.OfBOB bobLayout) {
+                storeCarrier = SharedUtils.primitiveCarrierForSize(bobLayout.byteSize(), useFloat);
+                bindings.bufferLoad(0, storeCarrier);
+            }
+            return storeCarrier;
+        }
+
         @Override
         public List<Binding> getBindings(Class<?> carrier, MemoryLayout layout, boolean isVararg) {
             TypeClass argumentClass = TypeClass.typeClassFor(layout, isVararg);
@@ -210,27 +219,36 @@ public class CallArranger {
                     bindings.vmStore(storage, long.class);
                 }
                 case POINTER -> {
-                    bindings.unboxAddress();
+                    // For BOBs the segment points at the address value
+                    // for non-bobs the segment _is_ the address value (it's base address)
+                    if (layout instanceof ValueLayout.OfBOB) {
+                        bindings.bufferLoad(0, long.class);
+                    } else {
+                        bindings.unboxAddress();
+                    }
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
                     bindings.vmStore(storage, long.class);
                 }
                 case INTEGER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
-                    bindings.vmStore(storage, carrier);
+                    Class<?> storeCarrier = maybeUnBOB(bindings, layout, carrier, false);
+                    bindings.vmStore(storage, storeCarrier);
                 }
                 case FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
-                    bindings.vmStore(storage, carrier);
+                    Class<?> storeCarrier = maybeUnBOB(bindings, layout, carrier, true);
+                    bindings.vmStore(storage, storeCarrier);
                 }
                 case VARARG_FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
+                    Class<?> storeCarrier = maybeUnBOB(bindings, layout, carrier, true);
                     if (!INSTANCE.isStackType(storage.type())) { // need extra for register arg
                         VMStorage extraStorage = storageCalculator.extraVarargsStorage();
                         bindings.dup()
-                                .vmStore(extraStorage, carrier);
+                                .vmStore(extraStorage, storeCarrier);
                     }
 
-                    bindings.vmStore(storage, carrier);
+                    bindings.vmStore(storage, storeCarrier);
                 }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }
@@ -243,6 +261,17 @@ public class CallArranger {
 
         BoxBindingCalculator(boolean forArguments) {
             this.storageCalculator = new StorageCalculator(forArguments);
+        }
+
+        private static void maybeToBOB(Binding.Builder bindings, MemoryLayout layout, Class<?> carrier,
+                                       boolean useFloat, Consumer<Class<?>> action) {
+            if (layout instanceof ValueLayout.OfBOB bobLayout) {
+                Class<?> loadType = SharedUtils.primitiveCarrierForSize(bobLayout.byteSize(), useFloat);
+                action.accept(loadType);
+                bindings.toBOB(loadType, bobLayout);
+            } else {
+                action.accept(carrier);
+            }
         }
 
         @Override
@@ -266,18 +295,24 @@ public class CallArranger {
                             .boxAddress(layout);
                 }
                 case POINTER -> {
-                    AddressLayout addressLayout = (AddressLayout) layout;
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
-                    bindings.vmLoad(storage, long.class)
-                            .boxAddressRaw(Utils.pointeeByteSize(addressLayout), Utils.pointeeByteAlign(addressLayout));
+                    bindings.vmLoad(storage, long.class);
+                    if (layout instanceof ValueLayout.OfBOB bobLayout) {
+                        bindings.toBOB(long.class, bobLayout);
+                    } else {
+                        AddressLayout addressLayout = (AddressLayout) layout;
+                        bindings.boxAddressRaw(Utils.pointeeByteSize(addressLayout), Utils.pointeeByteAlign(addressLayout));
+                    }
                 }
                 case INTEGER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
-                    bindings.vmLoad(storage, carrier);
+                    maybeToBOB(bindings, layout, carrier, false,
+                            loadType -> bindings.vmLoad(storage, loadType));
                 }
                 case FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
-                    bindings.vmLoad(storage, carrier);
+                    maybeToBOB(bindings, layout, carrier, true,
+                            loadType -> bindings.vmLoad(storage, loadType));
                 }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }

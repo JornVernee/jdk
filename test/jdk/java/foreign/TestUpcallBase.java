@@ -39,7 +39,9 @@ public abstract class TestUpcallBase extends CallGeneratorHelper {
     }
 
     static FunctionDescriptor function(Ret ret, List<ParamType> params, List<StructFieldType> fields, List<MemoryLayout> prefix) {
-        List<MemoryLayout> paramLayouts = params.stream().map(p -> p.layout(fields)).collect(Collectors.toList());
+        List<MemoryLayout> paramLayouts = params.stream().map(p -> p.layout(fields))
+                .map(l -> l instanceof ValueLayout vl ? vl.asBOB() : l)
+                .collect(Collectors.toList());
         paramLayouts.add(C_POINTER); // the callback
         MemoryLayout[] layouts = Stream.concat(prefix.stream(), paramLayouts.stream()).toArray(MemoryLayout[]::new);
         return ret == Ret.VOID ?

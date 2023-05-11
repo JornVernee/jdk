@@ -42,6 +42,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -52,6 +53,7 @@ import java.util.random.RandomGenerator;
 
 import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 import static java.lang.foreign.MemoryLayout.PathElement.sequenceElement;
+import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 
 public class NativeTestHelper {
 
@@ -230,6 +232,11 @@ public class NativeTestHelper {
         } else if (layout instanceof ValueLayout.OfDouble) {
             double value = random.nextDouble();
             return new TestValue(value, actual -> assertEquals(actual, value));
+        } else if (layout instanceof ValueLayout.OfBOB bob) {
+            byte[] buffer = new byte[(int) bob.byteSize()];
+            random.nextBytes(buffer);
+            MemorySegment value = MemorySegment.ofArray(buffer);
+            return new TestValue(value, actual -> assertSegmentsEqual((MemorySegment) actual, value));
         }
 
         throw new IllegalStateException("Unexpected layout: " + layout);
@@ -270,6 +277,14 @@ public class NativeTestHelper {
         }
         if (!actual.equals(expected)) {
             throw new AssertionError("Not equal: " + actual + " != " + expected);
+        }
+    }
+
+    private static void assertSegmentsEqual(MemorySegment actual, MemorySegment expected) {
+        assert !actual.isNative() : "expected BOB segment (i.e. heap)";
+        if (actual.mismatch(expected) != -1) {
+            throw new AssertionError("Not equal: "
+                    + Arrays.toString(actual.toArray(JAVA_BYTE)) + " != " + Arrays.toString(expected.toArray(JAVA_BYTE)));
         }
     }
 

@@ -67,6 +67,7 @@ import java.util.List;
 import static java.lang.constant.ConstantDescs.*;
 import static jdk.internal.classfile.Classfile.*;
 import static jdk.internal.classfile.TypeKind.*;
+import static jdk.internal.foreign.abi.Binding.*;
 
 public class BindingSpecializer {
     private static final String DUMP_CLASSES_DIR
@@ -113,6 +114,7 @@ public class BindingSpecializer {
     private static final MethodTypeDesc MTD_SHORT_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_short);
     private static final MethodTypeDesc MTD_BYTE_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_byte);
     private static final MethodTypeDesc MTD_BYTE_TO_BOOLEAN = MethodTypeDesc.of(CD_boolean, CD_byte);
+    private static final MethodTypeDesc MTD_OF_BYTE_ARRAY = MethodTypeDesc.of(CD_MemorySegment, CD_byte.arrayType());
 
     private static final ConstantDesc CLASS_DATA_DESC = DynamicConstantDesc.of(BSM_CLASS_DATA);
 
@@ -464,6 +466,7 @@ public class BindingSpecializer {
                 case UnboxAddress unused     -> emitUnboxAddress();
                 case Dup unused              -> emitDupBinding();
                 case Cast cast               -> emitCast(cast);
+                case ToBOB toBOB             -> emitToBOB(toBOB);
             }
         }
     }
@@ -750,6 +753,29 @@ public class BindingSpecializer {
             default -> throw new IllegalStateException("Unknown cast: " + cast);
         }
         pushType(toType);
+    }
+
+    private void emitToBOB(ToBOB toBOB) {
+        Class<?> carrier = toBOB.carrier();
+        TypeKind carrierKind = TypeKind.from(carrier);
+        int byteSize = Math.toIntExact(toBOB.layout().byteSize());
+
+        popType(carrier);
+        int valueIdx = cb.allocateLocal(carrierKind);
+        cb.storeInstruction(carrierKind, valueIdx);
+
+        cb.constantInstruction(byteSize);
+        cb.newarray(ByteType);
+        cb.invokestatic(CD_MemorySegment, "ofArray", MTD_OF_BYTE_ARRAY, true);
+        cb.dup();
+
+        ClassDesc valueLayoutType = emitLoadLayoutConstant(carrier);
+        cb.constantInstruction(retBufOffset);
+        cb.loadInstruction(carrierKind, valueIdx);
+        MethodTypeDesc descriptor = MethodTypeDesc.of(CD_void, valueLayoutType, CD_long, desc(carrier));
+        cb.invokeinterface(CD_MemorySegment, "set", descriptor);
+
+        pushType(MemorySegment.class);
     }
 
     private void emitUnboxAddress() {

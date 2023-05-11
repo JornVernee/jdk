@@ -54,7 +54,8 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.FOREIGN)
 public sealed interface ValueLayout extends MemoryLayout permits
         ValueLayout.OfBoolean, ValueLayout.OfByte, ValueLayout.OfChar, ValueLayout.OfShort, ValueLayout.OfInt,
-        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, AddressLayout, ValueLayouts.AbstractValueLayout {
+        ValueLayout.OfFloat, ValueLayout.OfLong, ValueLayout.OfDouble, ValueLayout.OfBOB, AddressLayout,
+        ValueLayouts.AbstractValueLayout {
 
     /**
      * {@return the value's byte order}
@@ -170,6 +171,11 @@ public sealed interface ValueLayout extends MemoryLayout permits
      */
     @Override
     ValueLayout withBitAlignment(long bitAlignment);
+
+    /**
+     * {@return this layout as BOB}
+     */
+    ValueLayout.OfBOB asBOB();
 
     /**
      * A value layout whose carrier is {@code boolean.class}.
@@ -461,6 +467,39 @@ public sealed interface ValueLayout extends MemoryLayout permits
          */
         @Override
         OfDouble withOrder(ByteOrder order);
+
+    }
+
+    /**
+     * A value layout whose carrier is {@code MemorySegment.class}
+     */
+    @PreviewFeature(feature = PreviewFeature.Feature.FOREIGN)
+    sealed interface OfBOB extends ValueLayout permits ValueLayouts.OfBOBImpl {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfBOB withName(String name);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfBOB withoutName();
+
+        /**
+         * {@inheritDoc}
+         * @throws IllegalArgumentException {@inheritDoc}
+         */
+        @Override
+        OfBOB withBitAlignment(long bitAlignment);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfBOB withOrder(ByteOrder order);
 
     }
 

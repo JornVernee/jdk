@@ -32,6 +32,7 @@ import jdk.internal.foreign.abi.Binding.BufferStore;
 import jdk.internal.foreign.abi.Binding.Cast;
 import jdk.internal.foreign.abi.Binding.Copy;
 import jdk.internal.foreign.abi.Binding.Dup;
+import jdk.internal.foreign.abi.Binding.ToBOB;
 import jdk.internal.foreign.abi.Binding.UnboxAddress;
 import jdk.internal.foreign.abi.Binding.VMLoad;
 import jdk.internal.foreign.abi.Binding.VMStore;
@@ -226,6 +227,7 @@ public class CallingSequenceBuilder {
             case BufferStore  unused -> false;
             case Allocate     unused -> false;
             case BoxAddress   unused -> false;
+            case ToBOB        unused -> false;
         };
     }
 
@@ -255,6 +257,7 @@ public class CallingSequenceBuilder {
             case BoxAddress   unused -> true;
             case Dup          unused -> true;
             case Cast         unused -> true;
+            case ToBOB        unused -> true;
 
             case VMStore      unused -> false;
             case BufferLoad   unused -> false;

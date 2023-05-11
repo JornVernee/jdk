@@ -107,6 +107,9 @@ public class TestUpcallAsync extends TestUpcallBase {
         return INVOKERS.computeIfAbsent(name, symbol -> {
             MemorySegment invokerSymbol = findNativeOrThrow(symbol);
             MemoryLayout returnLayout = returnType.layout(fields);
+            if (returnLayout instanceof ValueLayout vl) {
+                returnLayout = vl.asBOB();
+            }
             FunctionDescriptor desc = FunctionDescriptor.of(returnLayout, C_POINTER);
 
             return LINKER.downcallHandle(invokerSymbol, desc);

@@ -78,7 +78,7 @@ public final class ValueLayouts {
             super(bitSize, bitAlignment, name, classifier);
             this.carrier = carrier;
             this.order = order;
-            assert isValidCarrier(carrier, bitSize);
+            assert this instanceof OfBOBImpl || isValidCarrier(carrier, bitSize);
         }
 
         /**
@@ -196,6 +196,11 @@ public final class ValueLayouts {
         @SuppressWarnings("unchecked")
         final V self() {
             return (V) this;
+        }
+
+        @Override
+        public OfBOB asBOB() {
+            return new OfBOBImpl(order, bitSize(), bitAlignment(), name(), linkerType());
         }
     }
 
@@ -327,6 +332,24 @@ public final class ValueLayouts {
             return new OfDoubleImpl(order, Double.SIZE, Optional.empty(), Optional.empty());
         }
 
+    }
+
+    public static final class OfBOBImpl extends AbstractValueLayout<OfBOBImpl> implements ValueLayout.OfBOB {
+
+        public OfBOBImpl(ByteOrder order, long bitSize, long bitAlignment, Optional<String> name,
+                          Optional<Linker.Type> classifier) {
+            super(MemorySegment.class, order, bitSize, bitAlignment, name, classifier);
+        }
+
+        @Override
+        OfBOBImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Type> classifier) {
+            return new OfBOBImpl(order, bitSize(), bitAlignment, name, classifier);
+        }
+
+        @Override
+        public OfBOB asBOB() {
+            return this;
+        }
     }
 
     public static final class OfAddressImpl extends AbstractValueLayout<OfAddressImpl> implements AddressLayout {
