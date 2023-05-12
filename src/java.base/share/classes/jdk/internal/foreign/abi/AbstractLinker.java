@@ -246,6 +246,7 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
         LONG("long", CABI.current() == CABI.WIN_64 ? ValueLayout.JAVA_INT : ValueLayout.JAVA_LONG),
         LONG_LONG("long long", ValueLayout.JAVA_LONG),
         DOUBLE("double", ValueLayout.JAVA_DOUBLE),
+        LONG_DOUBLE("long double", CABI.current() == CABI.WIN_64 ? ValueLayout.JAVA_DOUBLE : MemoryLayout.bobLayout(128, 128)),
         SIZE_T("size_t", ValueLayout.ADDRESS.bitSize() == Integer.SIZE ? ValueLayout.JAVA_INT : ValueLayout.JAVA_LONG),
         PTR("void*", ValueLayout.ADDRESS);
 

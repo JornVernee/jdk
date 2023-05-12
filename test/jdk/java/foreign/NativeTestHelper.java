@@ -92,38 +92,14 @@ public class NativeTestHelper {
     public static final Linker LINKER = Linker.nativeLinker();
 
     // the constants below are useful aliases for C types. The type/carrier association is only valid for 64-bit platforms.
-    /**
-     * The layout for the {@code bool} C type
-     */
     public static final ValueLayout.OfBoolean C_BOOL = (ValueLayout.OfBoolean) LINKER.layoutFor("bool");
-    /**
-     * The layout for the {@code char} C type
-     */
     public static final ValueLayout.OfByte C_CHAR = (ValueLayout.OfByte) LINKER.layoutFor("char");
-    /**
-     * The layout for the {@code short} C type
-     */
     public static final ValueLayout.OfShort C_SHORT = (ValueLayout.OfShort) LINKER.layoutFor("short");
-    /**
-     * The layout for the {@code int} C type
-     */
     public static final ValueLayout.OfInt C_INT = (ValueLayout.OfInt) LINKER.layoutFor("int");
-
-    /**
-     * The layout for the {@code long long} C type.
-     */
     public static final ValueLayout.OfLong C_LONG_LONG = (ValueLayout.OfLong) LINKER.layoutFor("long long");
-    /**
-     * The layout for the {@code float} C type
-     */
     public static final ValueLayout.OfFloat C_FLOAT = (ValueLayout.OfFloat) LINKER.layoutFor("float");
-    /**
-     * The layout for the {@code double} C type
-     */
     public static final ValueLayout.OfDouble C_DOUBLE = (ValueLayout.OfDouble) LINKER.layoutFor("double");
-    /**
-     * The {@code T*} native type.
-     */
+    public static final ValueLayout.OfBOB C_LONG_DOUBLE = ((ValueLayout) LINKER.layoutFor("long double")).asBOB(); // erase to MS
     public static final AddressLayout C_POINTER = ((AddressLayout) LINKER.layoutFor("void*"))
             .withTargetLayout(MemoryLayout.sequenceLayout(C_CHAR));
 

@@ -326,15 +326,21 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Method* entry,
 #endif
   } else {
     assert(ret_buf_offset != -1, "no return buffer allocated");
-    __ lea(rscratch1, Address(rsp, ret_buf_offset));
+    // rbx is not used by java convention
+    __ lea(rbx, Address(rsp, ret_buf_offset));
     int offset = 0;
     for (int i = 0; i < call_regs._ret_regs.length(); i++) {
       VMStorage reg = call_regs._ret_regs.at(i);
       if (reg.type() == StorageType::INTEGER) {
-        __ movptr(as_Register(reg), Address(rscratch1, offset));
+        __ movptr(as_Register(reg), Address(rbx, offset));
         offset += 8;
       } else if (reg.type() == StorageType::VECTOR) {
-        __ movdqu(as_XMMRegister(reg), Address(rscratch1, offset));
+        __ movdqu(as_XMMRegister(reg), Address(rbx, offset));
+        offset += 16;
+      } else if (reg.type() == StorageType::X87_HALF) {
+        VMStorage next_reg = call_regs._ret_regs.at(++i);
+        assert(is_x87_pair(reg, next_reg), "expected x87 pair");
+        __ fld_x(Address(rbx, offset));
         offset += 16;
       } else {
         ShouldNotReachHere();

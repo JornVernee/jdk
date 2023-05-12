@@ -466,7 +466,6 @@ public class BindingSpecializer {
                 case UnboxAddress unused     -> emitUnboxAddress();
                 case Dup unused              -> emitDupBinding();
                 case Cast cast               -> emitCast(cast);
-                case ToBOB toBOB             -> emitToBOB(toBOB);
             }
         }
     }
@@ -577,13 +576,25 @@ public class BindingSpecializer {
     }
 
     private void emitAllocBuffer(Allocate binding) {
-        if (callingSequence.forDowncall()) {
-            assert returnAllocatorIdx != -1;
-            cb.loadInstruction(ReferenceType, returnAllocatorIdx);
+        Class<?> baseType = binding.baseType();
+
+        if (baseType == null) {
+            // off heap
+            if (callingSequence.forDowncall()) {
+                assert returnAllocatorIdx != -1;
+                cb.loadInstruction(ReferenceType, returnAllocatorIdx);
+            } else {
+                emitLoadInternalAllocator();
+            }
+            emitAllocateCall(binding.size(), binding.alignment());
         } else {
-            emitLoadInternalAllocator();
+            // on heap
+            assert baseType == byte[].class;
+            int size = Math.toIntExact(binding.size());
+            cb.constantInstruction(size);
+            cb.newarray(ByteType);
+            cb.invokestatic(CD_MemorySegment, "ofArray", MTD_OF_BYTE_ARRAY, true);
         }
-        emitAllocateCall(binding.size(), binding.alignment());
         pushType(MemorySegment.class);
     }
 
@@ -753,29 +764,6 @@ public class BindingSpecializer {
             default -> throw new IllegalStateException("Unknown cast: " + cast);
         }
         pushType(toType);
-    }
-
-    private void emitToBOB(ToBOB toBOB) {
-        Class<?> carrier = toBOB.carrier();
-        TypeKind carrierKind = TypeKind.from(carrier);
-        int byteSize = Math.toIntExact(toBOB.layout().byteSize());
-
-        popType(carrier);
-        int valueIdx = cb.allocateLocal(carrierKind);
-        cb.storeInstruction(carrierKind, valueIdx);
-
-        cb.constantInstruction(byteSize);
-        cb.newarray(ByteType);
-        cb.invokestatic(CD_MemorySegment, "ofArray", MTD_OF_BYTE_ARRAY, true);
-        cb.dup();
-
-        ClassDesc valueLayoutType = emitLoadLayoutConstant(carrier);
-        cb.constantInstruction(retBufOffset);
-        cb.loadInstruction(carrierKind, valueIdx);
-        MethodTypeDesc descriptor = MethodTypeDesc.of(CD_void, valueLayoutType, CD_long, desc(carrier));
-        cb.invokeinterface(CD_MemorySegment, "set", descriptor);
-
-        pushType(MemorySegment.class);
     }
 
     private void emitUnboxAddress() {

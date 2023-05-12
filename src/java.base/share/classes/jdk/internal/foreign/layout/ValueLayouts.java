@@ -341,6 +341,10 @@ public final class ValueLayouts {
             super(MemorySegment.class, order, bitSize, bitAlignment, name, classifier);
         }
 
+        public static OfBOB of(long bitSize, long bitAlignment) {
+            return new OfBOBImpl(ByteOrder.nativeOrder(), bitSize, bitAlignment, Optional.empty(), Optional.empty());
+        }
+
         @Override
         OfBOBImpl dup(ByteOrder order, long bitAlignment, Optional<String> name, Optional<Linker.Type> classifier) {
             return new OfBOBImpl(order, bitSize(), bitAlignment, name, classifier);

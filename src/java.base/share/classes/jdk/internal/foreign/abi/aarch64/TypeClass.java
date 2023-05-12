@@ -51,6 +51,7 @@ public enum TypeClass {
             case BOOL, CHAR, SHORT, INT, LONG, LONG_LONG, SIZE_T -> INTEGER;
             case FLOAT, DOUBLE -> FLOAT;
             case PTR -> POINTER;
+            default -> throw new UnsupportedOperationException("Linker type not handled: " + type);
         };
     }
 

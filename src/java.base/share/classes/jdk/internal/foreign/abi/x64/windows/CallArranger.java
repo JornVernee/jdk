@@ -267,8 +267,10 @@ public class CallArranger {
                                        boolean useFloat, Consumer<Class<?>> action) {
             if (layout instanceof ValueLayout.OfBOB bobLayout) {
                 Class<?> loadType = SharedUtils.primitiveCarrierForSize(bobLayout.byteSize(), useFloat);
+                bindings.allocateBOB(layout);
+                bindings.dup();
                 action.accept(loadType);
-                bindings.toBOB(loadType, bobLayout);
+                bindings.bufferStore(0, loadType);
             } else {
                 action.accept(carrier);
             }
@@ -296,10 +298,13 @@ public class CallArranger {
                 }
                 case POINTER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
-                    bindings.vmLoad(storage, long.class);
-                    if (layout instanceof ValueLayout.OfBOB bobLayout) {
-                        bindings.toBOB(long.class, bobLayout);
+                    if (layout instanceof ValueLayout.OfBOB) {
+                        bindings.allocateBOB(layout)
+                                .dup()
+                                .vmLoad(storage, long.class)
+                                .bufferStore(0, long.class);
                     } else {
+                        bindings.vmLoad(storage, long.class);
                         AddressLayout addressLayout = (AddressLayout) layout;
                         bindings.boxAddressRaw(Utils.pointeeByteSize(addressLayout), Utils.pointeeByteAlign(addressLayout));
                     }

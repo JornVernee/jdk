@@ -33,7 +33,7 @@
 enum class StorageType : int8_t {
   INTEGER = 0,
   VECTOR = 1,
-  X87 = 2,
+  X87_HALF = 2,
   STACK = 3,
   PLACEHOLDER = 4,
 // special locations used only by native code
@@ -43,14 +43,18 @@ enum class StorageType : int8_t {
 
 // need to define this before constructing VMStorage (below)
 constexpr inline bool VMStorage::is_reg(StorageType type) {
-   return type == StorageType::INTEGER || type == StorageType::VECTOR || type == StorageType::X87;
+   return type == StorageType::INTEGER || type == StorageType::VECTOR || type == StorageType::X87_HALF;
 }
 constexpr inline StorageType VMStorage::stack_type() { return StorageType::STACK; }
 constexpr inline StorageType VMStorage::placeholder_type() { return StorageType::PLACEHOLDER; }
 constexpr inline StorageType VMStorage::frame_data_type() { return StorageType::FRAME_DATA; }
 
-constexpr uint16_t REG64_MASK = 0b0000000000001111;
-constexpr uint16_t XMM_MASK   = 0b0000000000000001;
+constexpr uint16_t REG64_MASK  = 0b0000000000001111;
+constexpr uint16_t XMM_MASK    = 0b0000000000000001;
+constexpr uint16_t STP_LO_MASK = 0b0000000000000001;
+constexpr uint16_t STP_HI_MASK = 0b0000000000000010;
+
+bool is_x87_pair(VMStorage r1, VMStorage r2);
 
 inline Register as_Register(VMStorage vms) {
   assert(vms.type() == StorageType::INTEGER, "not the right type");

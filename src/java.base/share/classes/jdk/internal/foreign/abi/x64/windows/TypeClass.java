@@ -54,7 +54,7 @@ public enum TypeClass {
 
         return switch (SharedUtils.linkerType(type)) {
             case BOOL, CHAR, SHORT, INT, LONG, LONG_LONG, SIZE_T -> INTEGER;
-            case FLOAT, DOUBLE -> isVararg ? VARARG_FLOAT : FLOAT;
+            case FLOAT, DOUBLE, LONG_DOUBLE -> isVararg ? VARARG_FLOAT : FLOAT;
             case PTR -> POINTER;
         };
     }

@@ -252,7 +252,11 @@ public sealed interface Binding {
     }
 
     static Allocate allocate(MemoryLayout layout) {
-        return new Allocate(layout.byteSize(), layout.byteAlignment());
+        return new Allocate(layout.byteSize(), layout.byteAlignment(), null);
+    }
+
+    static Binding allocateBOB(MemoryLayout layout) {
+        return new Allocate(layout.byteSize(), layout.byteAlignment(), byte[].class);
     }
 
     static BoxAddress boxAddressRaw(long size, long align) {
@@ -298,10 +302,6 @@ public sealed interface Binding {
             }
         }
         throw new IllegalArgumentException("Unknown conversion: " + fromType + " -> " + toType);
-    }
-
-    static ToBOB toBOB(Class<?> carrier, ValueLayout.OfBOB bobLayout) {
-        return new ToBOB(carrier, bobLayout);
     }
 
     static Binding.Builder builder() {
@@ -393,8 +393,8 @@ public sealed interface Binding {
             return List.copyOf(bindings);
         }
 
-        public Binding.Builder toBOB(Class<?> carrier, ValueLayout.OfBOB bobLayout) {
-            bindings.add(Binding.toBOB(carrier, bobLayout));
+        public Binding.Builder allocateBOB(MemoryLayout layout) {
+            bindings.add(Binding.allocateBOB(layout));
             return this;
         }
     }
@@ -594,7 +594,7 @@ public sealed interface Binding {
      * ALLOCATE([size], [alignment])
      *   Creates a new MemorySegment with the give [size] and [alignment], and pushes it onto the operand stack.
      */
-    record Allocate(long size, long alignment) implements Binding {
+    record Allocate(long size, long alignment, Class<?> baseType) implements Binding {
         private static MemorySegment allocateBuffer(long size, long alignment, SegmentAllocator allocator) {
             return allocator.allocate(size, alignment);
         }
@@ -607,7 +607,12 @@ public sealed interface Binding {
         @Override
         public void interpret(Deque<Object> stack, StoreFunc storeFunc,
                               LoadFunc loadFunc, SegmentAllocator allocator) {
-            stack.push(allocateBuffer(size, alignment, allocator));
+            if (baseType == null) {
+                stack.push(allocateBuffer(size, alignment, allocator));
+            } else {
+                assert baseType == byte[].class;
+                stack.push(MemorySegment.ofArray(new byte[Math.toIntExact(size)])); // FIXME alignment ignored
+            }
         }
     }
 
@@ -738,21 +743,6 @@ public sealed interface Binding {
             } catch (Throwable e) {
                 throw new InternalError(e);
             }
-        }
-    }
-
-    record ToBOB(Class<?> carrier, ValueLayout.OfBOB layout) implements Binding {
-        @Override
-        public void verify(Deque<Class<?>> stack) {
-            SharedUtils.checkType(stack.pop(), carrier);
-            stack.push(MemorySegment.class);
-        }
-
-        @Override
-        public void interpret(Deque<Object> stack, StoreFunc storeFunc, LoadFunc loadFunc, SegmentAllocator allocator) {
-            MemorySegment buffer = MemorySegment.ofArray(new byte[Math.toIntExact(layout.byteSize())]);
-            SharedUtils.write(buffer, 0, carrier, stack.pop());
-            stack.push(buffer);
         }
     }
 }

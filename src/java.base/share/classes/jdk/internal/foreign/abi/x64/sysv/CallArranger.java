@@ -88,6 +88,10 @@ public class CallArranger {
     private static final int MAX_INTEGER_ARGUMENT_REGISTERS = 6;
     private static final int MAX_VECTOR_ARGUMENT_REGISTERS = 8;
 
+    private static final long FP80_MANTISSA_OFFSET = 0;
+    private static final long FP80_EXPONENT_OFFSET = 8;
+    private static final MemoryLayout FP80_LAYOUT = MemoryLayout.bobLayout(128, 128);
+
     private static final ABIDescriptor CSysV = X86_64Architecture.abiFor(
         new VMStorage[] { rdi, rsi, rdx, rcx, r8, r9, rax },
         new VMStorage[] { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7 },
@@ -176,6 +180,7 @@ public class CallArranger {
         private int nVectorReg = 0;
         private int nIntegerReg = 0;
         private long stackOffset = 0;
+        private int currentX87Index = 0;
 
         public StorageCalculator(boolean forArguments) {
             this.forArguments = forArguments;
@@ -206,9 +211,13 @@ public class CallArranger {
             }
         }
 
+        VMStorage[] stackAllocStruct(TypeClass typeClass) {
+            return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+        }
+
         VMStorage[] structStorages(TypeClass typeClass) {
             if (typeClass.inMemory()) {
-                return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+                return stackAllocStruct(typeClass);
             }
             long nIntegerReg = typeClass.nIntegerRegs();
 
@@ -246,6 +255,15 @@ public class CallArranger {
                 case StorageType.INTEGER -> nIntegerReg++;
                 case StorageType.VECTOR -> nVectorReg++;
                 default -> throw new IllegalStateException();
+            }
+        }
+
+        VMStorage[] nextX87Storages(TypeClass argumentClass) {
+            if (forArguments) {
+                return stackAllocStruct(argumentClass);
+            } else {
+                int index = currentX87Index++;
+                return new VMStorage[]{X86_64Architecture.x87LoStorage(index), X86_64Architecture.x87HiStorage(index)};
             }
         }
     }
@@ -302,6 +320,16 @@ public class CallArranger {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
                     bindings.vmStore(storage, carrier);
                 }
+                case X87 -> {
+                    VMStorage[] regs = storageCalculator.nextX87Storages(argumentClass);
+                    assert regs.length == 2;
+
+                    bindings.dup()
+                            .bufferLoad(FP80_MANTISSA_OFFSET, long.class)
+                            .vmStore(regs[0], long.class)
+                            .bufferLoad(FP80_EXPONENT_OFFSET, long.class)
+                            .vmStore(regs[1], long.class);
+                }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }
             return bindings.build();
@@ -349,6 +377,18 @@ public class CallArranger {
                 case FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);
                     bindings.vmLoad(storage, carrier);
+                }
+                case X87 -> {
+                    VMStorage[] regs = storageCalculator.nextX87Storages(argumentClass);
+                    assert regs.length == 2;
+
+                    bindings.allocateBOB(FP80_LAYOUT)
+                            .dup()
+                            .vmLoad(regs[0], long.class)
+                            .bufferStore(FP80_MANTISSA_OFFSET, long.class)
+                            .dup()
+                            .vmLoad(regs[1], long.class)
+                            .bufferStore(FP80_EXPONENT_OFFSET, long.class);
                 }
                 default -> throw new UnsupportedOperationException("Unhandled class " + argumentClass);
             }

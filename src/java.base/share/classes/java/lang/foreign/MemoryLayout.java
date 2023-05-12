@@ -28,6 +28,7 @@ package java.lang.foreign;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,6 +45,7 @@ import jdk.internal.foreign.layout.PaddingLayoutImpl;
 import jdk.internal.foreign.layout.SequenceLayoutImpl;
 import jdk.internal.foreign.layout.StructLayoutImpl;
 import jdk.internal.foreign.layout.UnionLayoutImpl;
+import jdk.internal.foreign.layout.ValueLayouts;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -807,6 +809,17 @@ public sealed interface MemoryLayout permits SequenceLayout, GroupLayout, Paddin
         return UnionLayoutImpl.of(Stream.of(elements)
                 .map(Objects::requireNonNull)
                 .toList());
+    }
+
+    /**
+     * Creates a BOB layout
+     *
+     * @param bitSize the size
+     * @param bitAlignment the alignment
+     * @return the new BOB layout
+     */
+    static ValueLayout.OfBOB bobLayout(long bitSize, long bitAlignment) {
+        return ValueLayouts.OfBOBImpl.of(bitSize, bitAlignment);
     }
 
     private static <L extends MemoryLayout> L wrapOverflow(Supplier<L> layoutSupplier) {
