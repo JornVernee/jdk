@@ -30,7 +30,6 @@ import jdk.internal.foreign.abi.AbstractLinker;
 import jdk.internal.foreign.abi.CapturableState;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
-import jdk.internal.foreign.layout.ValueLayouts;
 
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;

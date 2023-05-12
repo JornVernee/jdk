@@ -50,32 +50,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static jdk.internal.foreign.abi.Binding.vmStore;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r10;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r11;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r8;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.r9;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rax;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rcx;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rdi;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rdx;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.rsi;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm0;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm1;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm10;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm11;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm12;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm13;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm14;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm15;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm2;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm3;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm4;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm5;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm6;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm7;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm8;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.xmm9;
-import static jdk.internal.foreign.abi.x64.X86_64Architecture.StorageType;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.*;
+import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.*;
 
 /**
  * For the SysV x64 C ABI specifically, this class uses namely CallingSequenceBuilder

@@ -27,13 +27,8 @@ package jdk.internal.foreign.abi.x64.sysv;
 
 import jdk.internal.foreign.abi.AbstractLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
-import jdk.internal.foreign.layout.ValueLayouts;
 
-import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteOrder;
