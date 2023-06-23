@@ -39,6 +39,7 @@
 
 		// Files that may be interesting to browse manually, but avoided during searches
 		"search.exclude": {
+			"**/support/src/**": true, // exclude files for the source bundle in the build output
 			"**/*.class": true,
 			"**/*.jsa": true,
 			"**/*.vardeps": true,
