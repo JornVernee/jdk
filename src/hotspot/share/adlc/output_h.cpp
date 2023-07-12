@@ -1213,6 +1213,13 @@ void ArchDesc::declareClasses(FILE *fp) {
       fprintf(fp,"  };\n");
     }
 
+    // make BoolTest::mask accessible
+    if( oper->is_ideal_bool() ) {
+      fprintf(fp,"  virtual BoolTest::mask bool_test() { \n");
+      fprintf(fp,"    return _c0; \n");
+      fprintf(fp,"  };\n");
+    }
+
     // Declare constructor.
     // Parameters start with condition code, then all other constants
     //

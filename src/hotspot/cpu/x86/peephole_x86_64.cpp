@@ -26,6 +26,7 @@
 #ifdef COMPILER2
 
 #include "peephole_x86_64.hpp"
+#include "adfiles/ad_x86.hpp"
 
 // This function transforms the shapes
 // mov d, s1; add d, s2 into
@@ -140,6 +141,106 @@ bool Peephole::lea_coalesce_reg(Block* block, int block_index, PhaseCFG* cfg_, P
 bool Peephole::lea_coalesce_imm(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
                                 MachNode* (*new_root)(), uint inst0_rule) {
   return lea_coalesce_helper(block, block_index, cfg_, ra_, new_root, inst0_rule, true);
+}
+
+enum StatusFlags {
+  Flag_OF, Flag_CF, Flag_SF, Flag_ZF, Flag_PF, Flag_AF
+};
+
+static BoolTest::mask bool_test_for(MachOper* oper) {
+  switch (oper->opcode()) {
+    case CMPOP:     return static_cast<cmpOpOper*>(oper)->bool_test();
+    case CMPOPU:    return static_cast<cmpOpUOper*>(oper)->bool_test();
+    case CMPOPUCF:  return static_cast<cmpOpUCFOper*>(oper)->bool_test();
+    case CMPOPUCF2: return static_cast<cmpOpUCF2Oper*>(oper)->bool_test();
+    default: ShouldNotReachHere(); // should be compare op
+  }
+}
+
+static int required_flags_mask_for(MachOper* oper) {
+  switch (bool_test_for(oper)) {
+    case  BoolTest::eq:
+    case  BoolTest::ne:
+      return Flag_ZF;
+
+    case  BoolTest::lt:
+    case  BoolTest::ge:
+      return Flag_SF | Flag_OF;
+
+    case  BoolTest::le:
+    case  BoolTest::gt:
+      return Flag_ZF | Flag_SF | Flag_OF;
+
+    case  BoolTest::overflow:
+    case  BoolTest::no_overflow:
+      return Flag_OF;
+
+    default: ShouldNotReachHere();
+  }
+}
+
+static int node_set_flags_mask_for(MachNode* node) {
+  switch (node->rule()) {
+    case orI_rReg_imm_rule: return Flag_OF | Flag_CF | Flag_SF | Flag_ZF | Flag_PF;
+    default: return 0;
+  }
+}
+
+static bool conditional_coalesce_helper(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
+                                        MachNode* (*new_root)(), uint inst0_rule, uint cmpOp_idx) {
+  MachNode* inst0 = block->get_node(block_index)->as_Mach();
+  assert(inst0->rule() == inst0_rule, "sanity");
+
+  // look for pattern:
+  //
+  // inst1_1 (sets status flag)
+  // MachProj
+  // inst1 (testI_reg or testL_reg)
+  // ... (other things can be scheduled here, as long as they don't kill the status register)
+  // inst0 (uses status flag)
+
+  Node* inst1 = inst0->in(1);
+  if (!inst1->is_Mach()) {
+    return false;
+  }
+
+  uint inst1_rule = inst1->as_Mach()->rule();
+  if (inst1_rule != testI_reg_rule && inst1_rule != testL_reg_rule) {
+    return false;
+  }
+
+  uint test_idx = block->find_node(inst1);
+  Node* inst1_1 = inst1->in(1);
+  if (!inst1_1->is_Mach()
+      || !block->get_node(test_idx - 1)->is_MachProj()
+      || block->get_node(test_idx - 2) != inst1_1) {
+    return false;
+  }
+
+  int required_flags_mask = required_flags_mask_for(inst0->_opnds[cmpOp_idx]);
+  int node_set_flags_mask = node_set_flags_mask_for(inst1_1->as_Mach());
+
+  bool node_sets_required_flags = (node_set_flags_mask & required_flags_mask) == required_flags_mask;
+  if (!node_sets_required_flags) {
+    return false;
+  }
+
+  // replace test with arithmetic node result
+  inst1->replace_by(inst1_1);
+
+  // Modify the block
+  inst1->as_Mach()->set_removed();
+  block->remove_node(block_index - 1);
+
+  // Modify the CFG
+  cfg_->map_node_to_block(inst1, nullptr);
+
+  return true;
+}
+
+bool Peephole::jmpCon_coalesce(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
+                               MachNode* (*new_root)(), uint inst0_rule) {
+  return conditional_coalesce_helper(block, block_index, cfg_, ra_, new_root, inst0_rule, 1);
 }
 
 #endif // COMPILER2

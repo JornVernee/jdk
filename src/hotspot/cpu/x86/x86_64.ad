@@ -13863,6 +13863,13 @@ peephole
   peepreplace (leaL_rReg_immI2_peep());
 %}
 
+peephole
+%{
+  peepmatch(jmpCon);
+  peepprocedure(jmpCon_coalesce);
+  peepreplace(jmpCon()); // unused
+%}
+
 //----------SMARTSPILL RULES---------------------------------------------------
 // These must follow all instruction definitions as they use the names
 // defined in the instructions definitions.
