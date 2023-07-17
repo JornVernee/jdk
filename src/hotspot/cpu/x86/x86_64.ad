@@ -13865,9 +13865,14 @@ peephole
 
 peephole
 %{
-  peepmatch(jmpCon);
-  peepprocedure(jmpCon_coalesce);
-  peepreplace(jmpCon()); // unused
+  peepmatch(testI_reg);
+  peepprocedure(test_coalesce);
+%}
+
+peephole
+%{
+  peepmatch(testL_reg);
+  peepprocedure(test_coalesce);
 %}
 
 //----------SMARTSPILL RULES---------------------------------------------------
