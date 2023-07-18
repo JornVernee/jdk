@@ -35,7 +35,7 @@ public:
   static bool lea_coalesce_imm(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
                                MachNode* (*new_root)(), uint inst0_rule);
   static bool test_coalesce(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
-                           MachNode* (*new_root)(), uint inst0_rule);
+                            MachNode* (*new_root)(), uint inst0_rule);
 };
 
 #endif // CPU_X86_PEEPHOLE_X86_64_HPP

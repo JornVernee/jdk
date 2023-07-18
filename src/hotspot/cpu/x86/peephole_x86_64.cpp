@@ -152,35 +152,26 @@ static bool is_cmpOp(MachOper* oper) {
   return opcode == CMPOP || opcode == CMPOPU || opcode == CMPOPUCF || opcode == CMPOPUCF2;
 }
 
-static BoolTest::mask bool_test_for(MachOper* oper) {
-  switch (oper->opcode()) {
-    case CMPOP:     return static_cast<cmpOpOper*>(oper)->bool_test();
-    case CMPOPU:    return static_cast<cmpOpUOper*>(oper)->bool_test();
-    case CMPOPUCF:  return static_cast<cmpOpUCFOper*>(oper)->bool_test();
-    case CMPOPUCF2: return static_cast<cmpOpUCF2Oper*>(oper)->bool_test();
-    default: ShouldNotReachHere(); // should be compare op
-  }
-}
-
 static int flags_use_mask_for(MachNode* n) {
   // iterate all operands until we find the first cmpOp
   for (int i = n->oper_input_base(); i < n->num_opnds(); i++) {
-    if (is_cmpOp(n->_opnds[i])) {
-      switch (bool_test_for(n->_opnds[i])) {
-        case  BoolTest::eq:
-        case  BoolTest::ne:
+    MachOper* oper = n->_opnds[i];
+    if (is_cmpOp(oper)) {
+      switch (oper->ccode()) {
+        case Assembler::zero:
+        case Assembler::notZero:
           return Flag_ZF;
 
-        case  BoolTest::lt:
-        case  BoolTest::ge:
+        case Assembler::less:
+        case Assembler::greaterEqual:
           return Flag_SF | Flag_OF;
 
-        case  BoolTest::le:
-        case  BoolTest::gt:
+        case Assembler::lessEqual:
+        case Assembler::greater:
           return Flag_ZF | Flag_SF | Flag_OF;
 
-        case  BoolTest::overflow:
-        case  BoolTest::no_overflow:
+        case Assembler::overflow:
+        case Assembler::noOverflow:
           return Flag_OF;
 
         default: ShouldNotReachHere();
@@ -190,45 +181,41 @@ static int flags_use_mask_for(MachNode* n) {
   return 0;
 }
 
-static int flags_def_mask_for(MachNode* node, bool test_is_long) {
-  if (test_is_long) {
-    switch (node->rule()) {
-      case andL_rReg_rule:
-      case andL_rReg_imm_rule:
-      case andL_rReg_mem_rule:
-      case andL_mem_rReg_rule:
-      case andL_mem_imm_rule:
-      case orL_rReg_rule:
-      case orL_rReg_imm_rule:
-      case orL_rReg_mem_rule:
-      case orL_mem_rReg_rule:
-      case orL_mem_imm_rule:
-      case xorL_rReg_imm_rule:
-      case xorL_rReg_mem_rule:
-      case xorL_mem_rReg_rule:
-      case xorL_mem_imm_rule:
-        return Flag_OF | Flag_CF | Flag_SF | Flag_ZF | Flag_PF;
-    }
-  } else {
-    switch (node->rule()) {
-      case andI_rReg_rule:
-      case andI_rReg_imm_rule:
-      case andI_rReg_mem_rule:
-      case andI_mem_rReg_rule:
-      case andI_mem_imm_rule:
-      case orI_rReg_rule:
-      case orI_rReg_imm_rule:
-      case orI_rReg_mem_rule:
-      case orI_mem_rReg_rule:
-      case orI_mem_imm_rule:
-      case xorI_rReg_imm_rule:
-      case xorI_rReg_mem_rule:
-      case xorI_mem_rReg_rule:
-      case xorI_mem_imm_rule:
-        return Flag_OF | Flag_CF | Flag_SF | Flag_ZF | Flag_PF;
-    }
+static int flags_def_mask_for(MachNode* node) {
+  switch (node->rule()) {
+    case andL_rReg_rule:
+    case andL_rReg_imm_rule:
+    case andL_rReg_mem_rule:
+    case andL_mem_rReg_rule:
+    case andL_mem_imm_rule:
+    case orL_rReg_rule:
+    case orL_rReg_imm_rule:
+    case orL_rReg_mem_rule:
+    case orL_mem_rReg_rule:
+    case orL_mem_imm_rule:
+    case xorL_rReg_imm_rule:
+    case xorL_rReg_mem_rule:
+    case xorL_mem_rReg_rule:
+    case xorL_mem_imm_rule:
+
+    case andI_rReg_rule:
+    case andI_rReg_imm_rule:
+    case andI_rReg_mem_rule:
+    case andI_mem_rReg_rule:
+    case andI_mem_imm_rule:
+    case orI_rReg_rule:
+    case orI_rReg_imm_rule:
+    case orI_rReg_mem_rule:
+    case orI_mem_rReg_rule:
+    case orI_mem_imm_rule:
+    case xorI_rReg_imm_rule:
+    case xorI_rReg_mem_rule:
+    case xorI_mem_rReg_rule:
+    case xorI_mem_imm_rule:
+      return Flag_OF | Flag_CF | Flag_SF | Flag_ZF | Flag_PF;
+
+    default: return 0;
   }
-  return 0;
 }
 
 bool Peephole::test_coalesce(Block* block, int block_index, PhaseCFG* cfg_, PhaseRegAlloc* ra_,
@@ -238,11 +225,11 @@ bool Peephole::test_coalesce(Block* block, int block_index, PhaseCFG* cfg_, Phas
 
   // look for pattern:
   //
-  // inst1_1 (sets status flag)
-  // MachProj
+  // prev (sets status flag)
+  // MachProj (from KILL cr)
   // inst0 (testI_reg or testL_reg)
-  // ... (other things can be scheduled here, as long as they don't kill the status register)
-  // user (uses status flag)
+  // ... (other things can be scheduled here, we know they don't kill the status register)
+  // user (cr user(s))
 
   Node* prev = test->in(1);
   if (!prev->is_Mach()
@@ -258,9 +245,7 @@ bool Peephole::test_coalesce(Block* block, int block_index, PhaseCFG* cfg_, Phas
     user_use_mask |= flags_use_mask_for(user);
   }
 
-  bool test_is_long = inst0_rule == testL_reg_rule;
-  int prev_def_mask = flags_def_mask_for(prev->as_Mach(), test_is_long);
-
+  int prev_def_mask = flags_def_mask_for(prev->as_Mach());
   bool prev_defs_flags = (prev_def_mask & user_use_mask) == user_use_mask;
   if (!prev_defs_flags) {
     return false;
