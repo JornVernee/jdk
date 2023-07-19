@@ -182,36 +182,33 @@ static int flags_use_mask_for(MachNode* n) {
 }
 
 static int flags_def_mask_for(MachNode* node) {
+  // since we only coalesce testI_reg and testL_reg
+  // we don't care about rules that store to memory.
+  // those will never be direct inputs.
   switch (node->rule()) {
     case andL_rReg_rule:
     case andL_rReg_imm_rule:
     case andL_rReg_mem_rule:
-    case andL_mem_rReg_rule:
-    case andL_mem_imm_rule:
+    case andL_rReg_mem_0_rule:
     case orL_rReg_rule:
     case orL_rReg_imm_rule:
     case orL_rReg_mem_rule:
-    case orL_mem_rReg_rule:
-    case orL_mem_imm_rule:
+    case orL_rReg_mem_0_rule:
     case xorL_rReg_imm_rule:
     case xorL_rReg_mem_rule:
-    case xorL_mem_rReg_rule:
-    case xorL_mem_imm_rule:
+    case xorL_rReg_mem_0_rule:
 
     case andI_rReg_rule:
     case andI_rReg_imm_rule:
     case andI_rReg_mem_rule:
-    case andI_mem_rReg_rule:
-    case andI_mem_imm_rule:
+    case andI_rReg_mem_0_rule:
     case orI_rReg_rule:
     case orI_rReg_imm_rule:
     case orI_rReg_mem_rule:
-    case orI_mem_rReg_rule:
-    case orI_mem_imm_rule:
+    case orI_rReg_mem_0_rule:
     case xorI_rReg_imm_rule:
     case xorI_rReg_mem_rule:
-    case xorI_mem_rReg_rule:
-    case xorI_mem_imm_rule:
+    case xorI_rReg_mem_0_rule:
       return Flag_OF | Flag_CF | Flag_SF | Flag_ZF | Flag_PF;
 
     default: return 0;
