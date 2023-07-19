@@ -22,7 +22,6 @@
  */
 package compiler.c2.irTests;
 
-import jdk.test.lib.Asserts;
 import compiler.lib.ir_framework.*;
 
 /*
@@ -40,7 +39,7 @@ public class TestCoalesceTest {
     long lFld2 = 0;
 
     public static void main(String[] args) {
-        TestFramework.run(); // The framework runs all tests of this class.
+        TestFramework.run();
     }
 
     // OR
