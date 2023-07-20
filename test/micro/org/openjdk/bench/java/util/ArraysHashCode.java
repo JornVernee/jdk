@@ -55,6 +55,9 @@ import java.lang.reflect.Method;
 @Fork(value = 3)
 public class ArraysHashCode {
 
+    @Param({"true", "false"})
+    private boolean pollute;
+
     @Param({"1", "10", "100", "10000"})
     private int size;
 
@@ -67,6 +70,8 @@ public class ArraysHashCode {
     private short[][] multishorts;
     private int[][] multiints;
 
+    private Object[] objects;
+
     @Setup
     public void setup() throws UnsupportedEncodingException, ClassNotFoundException, NoSuchMethodException, Throwable {
         Random rnd = new Random(42);
@@ -75,12 +80,32 @@ public class ArraysHashCode {
         chars = new char[size];
         shorts = new short[size];
         ints = new int[size];
+        objects = new Object[size];
+
+        if (pollute) {
+            // pollute with at least 2 other types besides int.
+            Random polluteRandom = new Random(0);
+            for (int i = 0; i < size; i++) {
+                objects[i] = polluteRandom.nextDouble();
+            }
+            for (int i = 0; i < 10_000; i++) {
+                Arrays.hashCode(objects);
+            }
+            for (int i = 0; i < size; i++) {
+                objects[i] = polluteRandom.nextLong();
+            }
+            for (int i = 0; i < 10_000; i++) {
+                Arrays.hashCode(objects);
+            }
+        }
+
         for (int i = 0; i < size; i++) {
             int next = rnd.nextInt();
             bytes[i] = (byte)next;
             chars[i] = (char)next;
             shorts[i] = (short)next;
             ints[i] = next;
+            objects[i] = next;
         }
 
         multibytes = new byte[100][];
@@ -101,6 +126,11 @@ public class ArraysHashCode {
                 multiints[i][j] = nextj;
             }
         }
+    }
+
+    @Benchmark
+    public int objects() throws Throwable {
+        return Arrays.hashCode(objects);
     }
 
     @Benchmark
