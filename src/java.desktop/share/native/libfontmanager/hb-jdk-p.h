@@ -82,6 +82,19 @@ JDKEXPORT int jdk_hb_shape(
      store_layoutdata_func_t store_layout_data_upcall
 );
 
+typedef int (*GetTableDataFn) (int tag, char **dataPtr);
+
+JDKEXPORT hb_font_funcs_t *
+HBCreateFontFuncs(hb_font_get_nominal_glyph_func_t nominal_fn,
+                  hb_font_get_variation_glyph_func_t variation_fn,
+                  hb_font_get_glyph_h_advance_func_t h_advance_fn,
+                  hb_font_get_glyph_v_advance_func_t v_advance_fn,
+                  hb_font_get_glyph_contour_point_func_t contour_pt_fn);
+
+JDKEXPORT hb_face_t* HBCreateFace(GetTableDataFn *get_data_upcall_fn);
+
+JDKEXPORT void HBDisposeFace(hb_face_t* face);
+
 # ifdef __cplusplus
 }
 #endif

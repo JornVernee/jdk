@@ -172,8 +172,6 @@ HBCreateFontFuncs(hb_font_get_nominal_glyph_func_t nominal_fn,
 static void _do_nothing(void) {
 }
 
-typedef int (*GetTableDataFn) (int tag, char **dataPtr);
-
 static hb_blob_t *
 reference_table(hb_face_t *face HB_UNUSED, hb_tag_t tag, void *user_data) {
 
