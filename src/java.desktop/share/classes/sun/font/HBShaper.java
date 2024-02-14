@@ -377,7 +377,7 @@ public class HBShaper {
              int x_offset = hb_glyph_position_t.x_offset(glyphPosSeg);
              int y_offset = hb_glyph_position_t.y_offset(glyphPosSeg);
              gvdata._positions[(storei*2)]   = startX + x + (x_offset * scale);
-             gvdata._positions[(storei*2)+1] = startY + y + (y_offset * scale);
+             gvdata._positions[(storei*2)+1] = startY + y - (y_offset * scale);
              int x_advance = hb_glyph_position_t.x_advance(glyphPosSeg);
              int y_advance = hb_glyph_position_t.y_advance(glyphPosSeg);
              x += x_advance * scale;
@@ -398,7 +398,6 @@ public class HBShaper {
         gvdata._positions[(storeadv*2)+1] = advY;
         startPt.x = advX;
         startPt.y = advY;
-        startPt.x = advX;
 
         return 0;
   }
