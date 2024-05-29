@@ -63,6 +63,7 @@ import jdk.internal.javac.ParticipatesInPreview;
 module jdk.jdeps {
     requires java.compiler;
     requires jdk.compiler;
+    requires jdk.internal.opt;
 
     exports com.sun.tools.classfile to jdk.jlink;
 
