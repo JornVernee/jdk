@@ -18,6 +18,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
@@ -47,14 +48,14 @@ public class JScanRestricted {
     public void run() throws MalformedURLException {
         ClassLoader loader = new URLClassLoader(classPathURLs.toArray(URL[]::new));
 
-        Map<Path, Map<ClassDesc, Map<MethodRef, List<MethodRef>>>> allRestrictedMethods = new HashMap<>();
+        Map<Path, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
         for (Path jar : jarFiles) {
             if (!Files.exists(jar)) {
                 log.error("Jar file does not exist: " + jar);
                 continue;
             }
 
-            Map<ClassDesc, Map<MethodRef, List<MethodRef>>> restrictedMethods = findRestrictedMethodReferences(jar, loader);
+            Map<ClassDesc, List<RestrictedUse>> restrictedMethods = findRestrictedMethodReferences(jar, loader);
             allRestrictedMethods.put(jar, restrictedMethods);
         }
 
@@ -63,42 +64,50 @@ public class JScanRestricted {
             if (perClass.isEmpty()) {
                 log.println("  <no restricted methods>");
             } else {
-                perClass.forEach((classDesc, perMethod) -> {
+                perClass.forEach((classDesc, restrictedUses) -> {
                     log.println("  " + classDesc.packageName() + "." + classDesc.displayName() + ":");
-                    perMethod.forEach((referrent, referrees) -> {
-                        log.println("    " + referrent + ":");
-                        referrees.forEach(methodRef -> {
-                            log.println("      " + methodRef);
-                        });
+                    restrictedUses.forEach(use -> {
+                        switch (use) {
+                            case RestrictedUse.NativeMethodDecl(MethodRef nmd) ->
+                                    log.println("    " + nmd + " is a native method declaration");
+                            case RestrictedUse.RestrictedMethodRef(MethodRef referent, Set<MethodRef> referees) -> {
+                                log.println("    " + referent + " references restricted methods:");
+                                referees.forEach(referee -> log.println("      " + referee));
+                            }
+                        }
                     });
                 });
             }
         });
     }
 
-    private Map<ClassDesc, Map<MethodRef, List<MethodRef>>> findRestrictedMethodReferences(Path jar, ClassLoader loader) {
-        Map<ClassDesc, Map<MethodRef, List<MethodRef>>> restrictedMethods = new HashMap<>();
+    private Map<ClassDesc, List<RestrictedUse>> findRestrictedMethodReferences(Path jar, ClassLoader loader) {
+        Map<ClassDesc, List<RestrictedUse>> restrictedMethods = new HashMap<>();
         forEachClassFile(jar, model -> {
-            Map<MethodRef, List<MethodRef>> perClass = new HashMap<>();
+            List<RestrictedUse> perClass = new ArrayList<>();
             model.methods().forEach(method -> {
-                List<MethodRef> perMethod = new ArrayList<>();
-                method.code()
-                        .ifPresent(code -> {
-                            code.forEach(e -> {
-                                switch (e) {
-                                    case InvokeInstruction invoke -> {
-                                        Method referent = loadMethod(invoke.method(), loader);
-                                        if (referent != null && isRestrictedMethod(referent)) {
-                                            perMethod.add(MethodRef.ofMethod(referent));
+                if (method.flags().has(AccessFlag.NATIVE)) {
+                    perClass.add(new RestrictedUse.NativeMethodDecl(MethodRef.ofModel(method)));
+                } else {
+                    Set<MethodRef> perMethod = new HashSet<>();
+                    method.code()
+                            .ifPresent(code -> {
+                                code.forEach(e -> {
+                                    switch (e) {
+                                        case InvokeInstruction invoke -> {
+                                            Method referent = loadMethod(invoke.method(), loader);
+                                            if (referent != null && isRestrictedMethod(referent)) {
+                                                perMethod.add(MethodRef.ofMethod(referent));
+                                            }
+                                        }
+                                        default -> {
                                         }
                                     }
-                                    default -> {
-                                    }
-                                }
+                                });
                             });
-                        });
-                if (!perMethod.isEmpty()) {
-                    perClass.put(MethodRef.ofModel(method), perMethod);
+                    if (!perMethod.isEmpty()) {
+                        perClass.add(new RestrictedUse.RestrictedMethodRef(MethodRef.ofModel(method), Set.copyOf(perMethod)));
+                    }
                 }
             });
             if (!perClass.isEmpty()) {
@@ -108,16 +117,13 @@ public class JScanRestricted {
         return restrictedMethods;
     }
 
+    private sealed interface RestrictedUse {
+        record RestrictedMethodRef(MethodRef referent, Set<MethodRef> referees) implements RestrictedUse {}
+        record NativeMethodDecl(MethodRef decl) implements RestrictedUse {}
+    }
+
     private boolean isRestrictedMethod(Method referent) {
-        if (Modifier.isNative(referent.getModifiers())) {
-            return true;
-        }
-
-        if (referent.getAnnotation(Restricted.class) != null) {
-            return true;
-        }
-
-        return false;
+        return referent.getAnnotation(Restricted.class) != null;
     }
 
     private Method loadMethod(MemberRefEntry method, ClassLoader loader) {
