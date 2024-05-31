@@ -7,7 +7,6 @@ import jdk.internal.joptsimple.OptionSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.MethodModel;
@@ -25,15 +24,11 @@ import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 public class JScanRestricted {
@@ -42,12 +37,14 @@ public class JScanRestricted {
     private final List<Path> classPaths;
     private final List<Path> modulePaths;
     private final Runtime.Version version;
+    private final Action action;
 
-    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, Runtime.Version version) {
+    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, Runtime.Version version, Action action) {
         this.log = log;
         this.classPaths = classPaths;
         this.modulePaths = modulePaths;
         this.version = version;
+        this.action = action;
     }
 
     public void run() throws MalformedURLException {
@@ -55,18 +52,18 @@ public class JScanRestricted {
         // only needs to find system classes
         ClassLoader loader = ClassLoader.getSystemClassLoader();
 
-        List<ModuleToScan> modulesToScan = new ArrayList<>();
+        List<ScannedModule> modulesToScan = new ArrayList<>();
         for (Path classPath : classPaths) {
-            modulesToScan.add(new ModuleToScan(classPath, "ALL-UNNAMED"));
+            modulesToScan.add(new ScannedModule(classPath, "ALL-UNNAMED"));
         }
         for (ModuleReference ref : ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll()) {
             URI location = ref.location().orElseThrow();
             Path path = Path.of(location.getPath());
-            modulesToScan.add(new ModuleToScan(path, ref.descriptor().name()));
+            modulesToScan.add(new ScannedModule(path, ref.descriptor().name()));
         }
 
-        Map<ModuleToScan, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
-        for (ModuleToScan mod : modulesToScan) {
+        Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
+        for (ScannedModule mod : modulesToScan) {
             Path jar = mod.path();
             // jar files only for now
             if (!(Files.exists(jar) && Files.isRegularFile(jar) && jar.toString().endsWith(".jar"))) {
@@ -75,13 +72,26 @@ public class JScanRestricted {
             }
 
             Map<ClassDesc, List<RestrictedUse>> restrictedMethods = findRestrictedMethodReferences(jar, loader);
-            allRestrictedMethods.put(mod, restrictedMethods);
+            if (!restrictedMethods.isEmpty()) {
+                allRestrictedMethods.put(mod, restrictedMethods);
+            }
         }
 
-        dumpAll(allRestrictedMethods);
+        switch (action) {
+            case PRINT -> printNativeAccess(allRestrictedMethods);
+            case DUMP_ALL -> dumpAll(allRestrictedMethods);
+        }
     }
 
-    private void dumpAll(Map<ModuleToScan, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
+    private void printNativeAccess(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
+        StringJoiner sj = new StringJoiner(",");
+        for (ScannedModule mod : allRestrictedMethods.keySet()) {
+            sj.add(mod.moduleName());
+        }
+        log.println(sj.toString());
+    }
+
+    private void dumpAll(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
         allRestrictedMethods.forEach((module, perClass) -> {
             log.println(module.moduleName() + ":");
             if (perClass.isEmpty()) {
@@ -104,7 +114,7 @@ public class JScanRestricted {
         });
     }
 
-    private record ModuleToScan(Path path, String moduleName) {}
+    private record ScannedModule(Path path, String moduleName) {}
 
     private Map<ClassDesc, List<RestrictedUse>> findRestrictedMethodReferences(Path jar, ClassLoader loader) {
         Map<ClassDesc, List<RestrictedUse>> restrictedMethods = new HashMap<>();
@@ -238,6 +248,12 @@ public class JScanRestricted {
         parser.accepts("class-path", "The class path as used at runtime").withRequiredArg();
         parser.accepts("module-path", "The module path as used at runtime").withRequiredArg();
         parser.accepts("release", "The runtime version that will run the application").withRequiredArg();
+        parser.mutuallyExclusive(
+            parser.accepts("print-native-access",
+                "print a command separated list of modules that can be passed directly to --enable-native-access"),
+            parser.accepts("dump-all",
+                "dump all uses of restricted elements")
+        );
         parser.nonOptions("modules to scan");
 
         OptionSet optionSet;
@@ -273,9 +289,29 @@ public class JScanRestricted {
 
         Runtime.Version version = Runtime.version();
         if (optionSet.has("release")) {
-            version = Runtime.Version.parse(optionSet.valueOf("release").toString());
+            String release = optionSet.valueOf("release").toString();
+            try {
+                version = Runtime.Version.parse(release);
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid release: " + release + ", " + e.getMessage());
+            }
         }
 
-        new JScanRestricted(log, classPathJars, modulePaths, version).run();
+        Action action = null;
+        if (optionSet.has("print-native-access")) {
+            action = Action.PRINT;
+        } else if (optionSet.has("dump-all")) {
+            action = Action.DUMP_ALL;
+        } else {
+            log.error("At least one of '--print-native-access', or '--dump-all' must be specified");
+            return;
+        }
+
+        new JScanRestricted(log, classPathJars, modulePaths, version, action).run();
+    }
+
+    private enum Action {
+        DUMP_ALL,
+        PRINT
     }
 }
