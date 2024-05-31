@@ -3,7 +3,7 @@ package com.sun.tools.jscan;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-public class Log {
+class Log {
 
     private final PrintWriter out;
     private final PrintWriter err;
