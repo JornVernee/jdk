@@ -7,6 +7,7 @@ import jdk.internal.joptsimple.OptionSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.MethodModel;
@@ -18,49 +19,71 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
+import java.util.zip.ZipFile;
 
 public class JScanRestricted {
 
     private final Log log;
-    private final List<Path> jarFiles;
-    private final List<URL> classPathURLs;
+    private final List<Path> classPaths;
+    private final List<Path> modulePaths;
+    private final Runtime.Version version;
 
-    private JScanRestricted(Log log, List<Path> jarFiles, List<URL> classPathURLs) {
+    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, Runtime.Version version) {
         this.log = log;
-        this.jarFiles = jarFiles;
-        this.classPathURLs = classPathURLs;
+        this.classPaths = classPaths;
+        this.modulePaths = modulePaths;
+        this.version = version;
     }
 
     public void run() throws MalformedURLException {
-        ClassLoader loader = new URLClassLoader(classPathURLs.toArray(URL[]::new));
+        // loader to check for presence of @Restricted
+        // only needs to find system classes
+        ClassLoader loader = ClassLoader.getSystemClassLoader();
 
-        Map<Path, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
-        for (Path jar : jarFiles) {
-            if (!Files.exists(jar)) {
-                log.error("Jar file does not exist: " + jar);
+        List<ModuleToScan> modulesToScan = new ArrayList<>();
+        for (Path classPath : classPaths) {
+            modulesToScan.add(new ModuleToScan(classPath, "ALL-UNNAMED"));
+        }
+        for (ModuleReference ref : ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll()) {
+            URI location = ref.location().orElseThrow();
+            Path path = Path.of(location.getPath());
+            modulesToScan.add(new ModuleToScan(path, ref.descriptor().name()));
+        }
+
+        Map<ModuleToScan, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
+        for (ModuleToScan mod : modulesToScan) {
+            Path jar = mod.path();
+            // jar files only for now
+            if (!(Files.exists(jar) && Files.isRegularFile(jar) && jar.toString().endsWith(".jar"))) {
+                log.error("Jar file does not exist, or does not appear to be a regular jar file: " + jar);
                 continue;
             }
 
             Map<ClassDesc, List<RestrictedUse>> restrictedMethods = findRestrictedMethodReferences(jar, loader);
-            allRestrictedMethods.put(jar, restrictedMethods);
+            allRestrictedMethods.put(mod, restrictedMethods);
         }
 
-        allRestrictedMethods.forEach((jarFile, perClass) -> {
-            log.println(jarFile.toString() + ":");
+        dumpAll(allRestrictedMethods);
+    }
+
+    private void dumpAll(Map<ModuleToScan, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
+        allRestrictedMethods.forEach((module, perClass) -> {
+            log.println(module.moduleName() + ":");
             if (perClass.isEmpty()) {
                 log.println("  <no restricted methods>");
             } else {
@@ -80,6 +103,8 @@ public class JScanRestricted {
             }
         });
     }
+
+    private record ModuleToScan(Path path, String moduleName) {}
 
     private Map<ClassDesc, List<RestrictedUse>> findRestrictedMethodReferences(Path jar, ClassLoader loader) {
         Map<ClassDesc, List<RestrictedUse>> restrictedMethods = new HashMap<>();
@@ -190,20 +215,16 @@ public class JScanRestricted {
         }
     }
 
-    private static void forEachClassFile(Path jarFile, Consumer<ClassModel> action) {
-        try (FileSystem fs = FileSystems.newFileSystem(jarFile)) {
-            fs.getRootDirectories().forEach(root -> {
-                try (Stream<Path> stream = Files.walk(root)) {
-                    stream.filter(p -> p.toString().endsWith(".class"))
-                            .forEach(classFile -> {
-                                try {
-                                    action.accept(ClassFile.of().parse(classFile));
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+    private void forEachClassFile(Path jarFile, Consumer<ClassModel> action) {
+        try (JarFile jf = new JarFile(jarFile.toFile(), false, ZipFile.OPEN_READ, version)) {
+            jf.versionedStream().forEach(je -> {
+                if (je.getName().endsWith(".class")) {
+                    try {
+                        ClassModel model = ClassFile.of().parse(jf.getInputStream(je).readAllBytes());
+                        action.accept(model);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
         } catch (IOException e) {
@@ -214,8 +235,10 @@ public class JScanRestricted {
     public static void run(Log log, String[] args) throws MalformedURLException {
         OptionParser parser = new OptionParser(false);
         parser.acceptsAll(List.of("?", "h", "help"), "help").forHelp();
-        parser.accepts("class-path").withRequiredArg();
-        parser.nonOptions("jar files");
+        parser.accepts("class-path", "The class path as used at runtime").withRequiredArg();
+        parser.accepts("module-path", "The module path as used at runtime").withRequiredArg();
+        parser.accepts("release", "The runtime version that will run the application").withRequiredArg();
+        parser.nonOptions("modules to scan");
 
         OptionSet optionSet;
         try {
@@ -232,25 +255,27 @@ public class JScanRestricted {
             }
         }
 
-        List<URL> classPathURLs = new ArrayList<>();
+        List<Path> classPathJars = new ArrayList<>();
         if (optionSet.has("class-path")) {
             String[] parts = optionSet.valueOf("class-path").toString().split(File.pathSeparator);
             for (String part : parts) {
-                classPathURLs.add(URI.create(part).toURL());
+                classPathJars.add(Path.of(part));
             }
         }
 
-        List<Path> jarFiles = new ArrayList<>();
-        for (Object o : optionSet.nonOptionArguments()) {
-            Path jarPath = Path.of(o.toString());
-            jarFiles.add(jarPath);
-            classPathURLs.add(jarPath.toUri().toURL());
+        List<Path> modulePaths = new ArrayList<>();
+        if (optionSet.has("module-path")) {
+            String[] parts = optionSet.valueOf("module-path").toString().split(File.pathSeparator);
+            for (String part : parts) {
+                modulePaths.add(Path.of(part));
+            }
         }
 
-        if (jarFiles.isEmpty()) {
-            log.error("Need at least one jar file to scan");
+        Runtime.Version version = Runtime.version();
+        if (optionSet.has("release")) {
+            version = Runtime.Version.parse(optionSet.valueOf("release").toString());
         }
 
-        new JScanRestricted(log, jarFiles, classPathURLs).run();
+        new JScanRestricted(log, classPathJars, modulePaths, version).run();
     }
 }
