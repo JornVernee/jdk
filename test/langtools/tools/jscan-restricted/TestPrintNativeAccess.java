@@ -42,7 +42,8 @@ class TestPrintNativeAccess extends JScanTestBase {
     public void before() {
         singleJarClassPath = Path.of("singleJar.jar");
         Path classes = Path.of(System.getProperty("test.classes", ""));
-        assertSuccess(jar("--create", "--file", singleJarClassPath.toString(), "-C", classes.toString(), "main/Main.class"));
+        assertSuccess(jar("--create", "--file", singleJarClassPath.toString(),
+                "-C", classes.toString(), "main/Main.class"));
 
         singleJarModular = Path.of("singleJar_modular.jar");
         Path singleJarRoot = findModuleRoot("org.singlejar");

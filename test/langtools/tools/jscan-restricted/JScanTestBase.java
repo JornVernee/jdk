@@ -67,7 +67,7 @@ public class JScanTestBase {
     }
 
     public static Path findModuleRoot(String name) {
-        return Path.of(System.getProperty("test.classes")).resolve("..", "cases", "modular", name);
+        return Path.of(System.getProperty("test.module.path")).resolve(name);
     }
 
     public static OutputAnalyzer assertSuccess(OutputAnalyzer output) {

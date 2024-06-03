@@ -167,6 +167,8 @@ class JScanRestricted {
                 "dump all uses of restricted elements");
         parser.mutuallyExclusive(printNativeAccessOpt, dumpAllOpt);
 
+        // TODO --add-reads?
+
         OptionSet optionSet;
         try {
             optionSet = parser.parse(args);
