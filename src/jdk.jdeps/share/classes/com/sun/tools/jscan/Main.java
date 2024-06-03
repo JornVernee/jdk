@@ -93,7 +93,7 @@ public class Main {
 
         @Override
         public String name() {
-            return "jget";
+            return "jscan";
         }
 
         @Override

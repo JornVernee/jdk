@@ -24,13 +24,12 @@
  */
 package com.sun.tools.jscan;
 
-import jdk.internal.joptsimple.OptionException;
-import jdk.internal.joptsimple.OptionParser;
-import jdk.internal.joptsimple.OptionSet;
+import jdk.internal.joptsimple.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.constant.ClassDesc;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
@@ -44,15 +43,17 @@ class JScanRestricted {
     private final Log log;
     private final List<Path> classPaths;
     private final List<Path> modulePaths;
+    private final List<String> rootModules;
     private final Runtime.Version version;
     private final Action action;
 
-    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, Runtime.Version version, Action action) {
+    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, List<String> rootModules, Runtime.Version version, Action action) {
         this.log = log;
         this.classPaths = classPaths;
         this.modulePaths = modulePaths;
         this.version = version;
         this.action = action;
+        this.rootModules = rootModules;
     }
 
     public void run() throws MalformedURLException {
@@ -60,10 +61,28 @@ class JScanRestricted {
         for (Path classPath : classPaths) {
             modulesToScan.add(new ScannedModule(classPath, "ALL-UNNAMED"));
         }
-        for (ModuleReference ref : ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll()) {
+        ModuleFinder moduleFinder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
+        ModuleFinder systemModuleFinder = ModuleFinder.ofSystem();
+        Deque<String> modulesToAdd = new ArrayDeque<>(rootModules);
+        while(!modulesToAdd.isEmpty()) {
+            String modName = modulesToAdd.poll();
+            Optional<ModuleReference> refOpt = moduleFinder.find(modName);
+            if (refOpt.isEmpty()) {
+                log.error("Module not found: " + modName);
+                continue;
+            }
+            ModuleReference ref = refOpt.get();
             URI location = ref.location().orElseThrow();
             Path path = Path.of(location.getPath());
-            modulesToScan.add(new ScannedModule(path, ref.descriptor().name()));
+            ModuleDescriptor descriptor = ref.descriptor();
+            modulesToScan.add(new ScannedModule(path, descriptor.name()));
+            descriptor.requires().forEach(r -> {
+                // system modules are exempt from --enable-native-access (and they are not jar files)
+                boolean isSystemModule = systemModuleFinder.find(r.name()).isPresent();
+                if (!isSystemModule) {
+                    modulesToAdd.add(r.name());
+                }
+            });
         }
 
         RestrictedMethodFinder finder = new RestrictedMethodFinder(version);
@@ -123,17 +142,30 @@ class JScanRestricted {
 
     public static void run(Log log, String[] args) throws MalformedURLException {
         OptionParser parser = new OptionParser(false);
-        parser.acceptsAll(List.of("?", "h", "help"), "help").forHelp();
-        parser.accepts("class-path", "The class path as used at runtime").withRequiredArg();
-        parser.accepts("module-path", "The module path as used at runtime").withRequiredArg();
-        parser.accepts("release", "The runtime version that will run the application").withRequiredArg();
-        parser.mutuallyExclusive(
-            parser.accepts("print-native-access",
-                "print a comma separated list of modules that can be passed directly to --enable-native-access"),
-            parser.accepts("dump-all",
-                "dump all uses of restricted elements")
-        );
-        parser.nonOptions("modules to scan");
+        OptionSpec<Void> helpOpt = parser.acceptsAll(List.of("?", "h", "help"), "help").forHelp();
+        OptionSpec<String> classPathOpt = parser.accepts(
+                "class-path",
+                "The class path as used at runtime")
+                .withRequiredArg();
+        OptionSpec<String> modulePathOpt = parser.accepts(
+                "module-path",
+                "The module path as used at runtime")
+                .withRequiredArg();
+        OptionSpec<String> releaseOpt = parser.accepts(
+                "release",
+                "The runtime version that will run the application")
+                .withRequiredArg();
+        OptionSpec<String> addModulesOpt = parser.accepts(
+                "add-modules",
+                "List of root modules to scan")
+                .withRequiredArg();
+        OptionSpecBuilder printNativeAccessOpt = parser.accepts(
+                "print-native-access",
+                "print a comma separated list of modules that can be passed directly to --enable-native-access");
+        OptionSpecBuilder dumpAllOpt = parser.accepts(
+                "dump-all",
+                "dump all uses of restricted elements");
+        parser.mutuallyExclusive(printNativeAccessOpt, dumpAllOpt);
 
         OptionSet optionSet;
         try {
@@ -142,7 +174,7 @@ class JScanRestricted {
             throw new IllegalArgumentException("parsing options failed", oe);
         }
 
-        if (optionSet.has("h")) {
+        if (optionSet.has(helpOpt)) {
             try {
                 parser.printHelpOn(log.out());
             } catch (IOException e) {
@@ -151,24 +183,24 @@ class JScanRestricted {
         }
 
         List<Path> classPathJars = new ArrayList<>();
-        if (optionSet.has("class-path")) {
-            String[] parts = optionSet.valueOf("class-path").toString().split(File.pathSeparator);
+        if (optionSet.has(classPathOpt)) {
+            String[] parts = optionSet.valueOf(classPathOpt).split(File.pathSeparator);
             for (String part : parts) {
                 classPathJars.add(Path.of(part));
             }
         }
 
         List<Path> modulePaths = new ArrayList<>();
-        if (optionSet.has("module-path")) {
-            String[] parts = optionSet.valueOf("module-path").toString().split(File.pathSeparator);
+        if (optionSet.has(modulePathOpt)) {
+            String[] parts = optionSet.valueOf(modulePathOpt).split(File.pathSeparator);
             for (String part : parts) {
                 modulePaths.add(Path.of(part));
             }
         }
 
         Runtime.Version version = Runtime.version();
-        if (optionSet.has("release")) {
-            String release = optionSet.valueOf("release").toString();
+        if (optionSet.has(releaseOpt)) {
+            String release = optionSet.valueOf(releaseOpt);
             try {
                 version = Runtime.Version.parse(release);
             } catch (IllegalArgumentException e) {
@@ -176,17 +208,22 @@ class JScanRestricted {
             }
         }
 
-        Action action = null;
-        if (optionSet.has("print-native-access")) {
+        Action action;
+        if (optionSet.has(printNativeAccessOpt)) {
             action = Action.PRINT;
-        } else if (optionSet.has("dump-all")) {
+        } else if (optionSet.has(dumpAllOpt)) {
             action = Action.DUMP_ALL;
         } else {
             log.error("At least one of '--print-native-access', or '--dump-all' must be specified");
             return;
         }
 
-        new JScanRestricted(log, classPathJars, modulePaths, version, action).run();
+        List<String> rootModules = List.of();
+        if (optionSet.has(addModulesOpt)) {
+            rootModules = List.of(optionSet.valueOf(addModulesOpt).split(","));
+        }
+
+        new JScanRestricted(log, classPathJars, modulePaths, rootModules, version, action).run();
     }
 
     private enum Action {
