@@ -21,12 +21,15 @@
  * questions.
  */
 
-import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import java.io.StringWriter;
+import java.util.List;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
@@ -66,7 +69,26 @@ public class JScanTestBase {
         return output;
     }
 
-    public static Path findModuleRoot(String name) {
+    public static Path makeModularJar(String moduleName) throws IOException {
+        Path jarPath = Path.of(moduleName + ".jar");
+        Path moduleRoot = moduleRoot(moduleName);
+        List<String> command = new ArrayList<>();
+        command.add("--create");
+        command.add("--file");
+        command.add(jarPath.toString());
+        try (Stream<Path> files = Files.walk(moduleRoot)) {
+            files.filter(Files::isRegularFile)
+                .forEach(p -> {
+                    command.add("-C");
+                    command.add(moduleRoot.toString());
+                    command.add(moduleRoot.relativize(p).toString());
+                });
+        }
+        assertSuccess(jar(command.toArray(String[]::new)));
+        return jarPath;
+    }
+
+    private static Path moduleRoot(String name) {
         return Path.of(System.getProperty("test.module.path")).resolve(name);
     }
 

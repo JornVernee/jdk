@@ -23,33 +23,33 @@
 
 /*
  * @test
- * @library /test/lib ./cases/modular
- * @build JScanTestBase org.singlejar/* cases.classpath.singlejar.main.Main
+ * @library /test/lib ./cases/modules
+ * @build JScanTestBase org.singlejar/* org.lib/* org.myapp/* cases.classpath.singlejar.main.Main
  * @run testng TestPrintNativeAccess
  */
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 class TestPrintNativeAccess extends JScanTestBase {
 
     Path singleJarClassPath;
     Path singleJarModular;
+    Path orgMyapp;
 
     @BeforeClass
-    public void before() {
+    public void before() throws IOException {
         singleJarClassPath = Path.of("singleJar.jar");
         Path classes = Path.of(System.getProperty("test.classes", ""));
         assertSuccess(jar("--create", "--file", singleJarClassPath.toString(),
                 "-C", classes.toString(), "main/Main.class"));
 
-        singleJarModular = Path.of("singleJar_modular.jar");
-        Path singleJarRoot = findModuleRoot("org.singlejar");
-        assertSuccess(jar("--create", "--file", singleJarModular.toString(),
-                "-C", singleJarRoot.toString(), "main/Main.class",
-                "-C", singleJarRoot.toString(), "module-info.class"));
+        singleJarModular = makeModularJar("org.singlejar");
+        orgMyapp = makeModularJar("org.myapp");
+        makeModularJar("org.lib");
     }
 
     @Test
@@ -61,8 +61,15 @@ class TestPrintNativeAccess extends JScanTestBase {
 
     @Test
     public void testSingleJarModulePath() {
-        assertSuccess(jscanRestricted("--module-path", singleJarModular.toString(), "--print-native-access", "--add-modules", "org.singlejar"))
+        assertSuccess(jscanRestricted("--module-path", ".", "--print-native-access", "--add-modules", "org.singlejar"))
                 .stderrShouldBeEmpty()
                 .stdoutShouldContain("org.singlejar");
+    }
+
+    @Test
+    public void testWithDepModule() {
+        assertSuccess(jscanRestricted("--module-path", ".", "--print-native-access", "--add-modules", "org.myapp"))
+                .stderrShouldBeEmpty()
+                .stdoutShouldContain("org.lib");
     }
 }

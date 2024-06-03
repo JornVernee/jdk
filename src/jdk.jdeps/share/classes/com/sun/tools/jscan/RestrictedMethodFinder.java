@@ -110,6 +110,10 @@ class RestrictedMethodFinder {
         return CACHE.computeIfAbsent(new Key(owner, name, type), k -> {
             // file path we need looks like /packages/<package name>/<module name>/com/foo/Widget.class
             Path packagePath = jrtfs.getPath("/packages/" + k.owner().packageName());
+            if (!Files.exists(packagePath)) {
+                return false; // not a JDK package. Can not be restricted
+            }
+
             Path moduleRoot;
             // infer module name
             try (Stream<Path> modules = Files.list(packagePath)) {
