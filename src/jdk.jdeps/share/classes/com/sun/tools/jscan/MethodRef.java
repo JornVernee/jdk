@@ -26,19 +26,22 @@ package com.sun.tools.jscan;
 
 import java.lang.classfile.MethodModel;
 import java.lang.classfile.constantpool.MemberRefEntry;
+import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 
-record MethodRef(String methodName, MethodTypeDesc mtd) {
+record MethodRef(ClassDesc owner, String name, MethodTypeDesc type) {
     public static MethodRef ofModel(MethodModel model) {
-        return new MethodRef(model.methodName().stringValue(), model.methodTypeSymbol());
+        return new MethodRef(model.parent().orElseThrow().thisClass().asSymbol(),
+                model.methodName().stringValue(), model.methodTypeSymbol());
     }
 
     public static MethodRef ofMethodRef(MemberRefEntry method) {
-        return new MethodRef(method.name().stringValue(), MethodTypeDesc.ofDescriptor(method.type().stringValue()));
+        return new MethodRef(method.owner().asSymbol(),
+                method.name().stringValue(), MethodTypeDesc.ofDescriptor(method.type().stringValue()));
     }
 
     @Override
     public String toString() {
-        return methodName + mtd.displayDescriptor();
+        return owner.packageName() + '.' + owner.displayName() + "::" + name + type.displayDescriptor();
     }
 }

@@ -54,22 +54,34 @@ class TestPrintNativeAccess extends JScanTestBase {
 
     @Test
     public void testSingleJarClassPath() {
-        assertSuccess(jscanRestricted("--class-path", singleJarClassPath.toString(), "--print-native-access"))
+        assertSuccess(jscanRestricted("--class-path", singleJarClassPath.toString(), "--dump-all"))
                 .stderrShouldBeEmpty()
-                .stdoutShouldContain("ALL-UNNAMED");
+                .stdoutShouldContain("ALL-UNNAMED")
+                .stdoutShouldContain("main.Main")
+                .stdoutShouldContain("main.Main::m()void is a native method declaration")
+                .stdoutShouldContain("main.Main::main(String[])void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 
     @Test
     public void testSingleJarModulePath() {
-        assertSuccess(jscanRestricted("--module-path", ".", "--print-native-access", "--add-modules", "org.singlejar"))
+        assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "org.singlejar"))
                 .stderrShouldBeEmpty()
-                .stdoutShouldContain("org.singlejar");
+                .stdoutShouldContain("org.singlejar")
+                .stdoutShouldContain("org.singlejar.main.Main")
+                .stdoutShouldContain("org.singlejar.main.Main::m()void is a native method declaration")
+                .stdoutShouldContain("org.singlejar.main.Main::main(String[])void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 
     @Test
     public void testWithDepModule() {
-        assertSuccess(jscanRestricted("--module-path", ".", "--print-native-access", "--add-modules", "org.myapp"))
+        assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "org.myapp"))
                 .stderrShouldBeEmpty()
-                .stdoutShouldContain("org.lib");
+                .stdoutShouldContain("org.lib")
+                .stdoutShouldContain("org.lib.Lib")
+                .stdoutShouldContain("org.lib.Lib::m()void is a native method declaration")
+                .stdoutShouldContain("org.lib.Lib::doIt()void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 }

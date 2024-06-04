@@ -51,8 +51,7 @@ class RestrictedMethodFinder {
 
     private static final ClassDesc RESTRICTED_DESC = ClassDesc.of("jdk.internal.javac.Restricted");
 
-    private record Key(ClassDesc owner, String name, MethodTypeDesc type) {}
-    private final Map<Key, Boolean> CACHE = new HashMap<>();
+    private final Map<MethodRef, Boolean> CACHE = new HashMap<>();
     private final FileSystem jrtfs;
     private final Runtime.Version version;
 
@@ -107,7 +106,7 @@ class RestrictedMethodFinder {
     }
 
     public boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
-        return CACHE.computeIfAbsent(new Key(owner, name, type), k -> {
+        return CACHE.computeIfAbsent(new MethodRef(owner, name, type), k -> {
             // file path we need looks like /packages/<package name>/<module name>/com/foo/Widget.class
             Path packagePath = jrtfs.getPath("/packages/" + k.owner().packageName());
             if (!Files.exists(packagePath)) {
