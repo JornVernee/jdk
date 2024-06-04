@@ -65,6 +65,8 @@ module jdk.jdeps {
     requires jdk.compiler;
     requires jdk.internal.opt;
 
+    uses com.sun.tools.javac.platform.PlatformProvider;
+
     exports com.sun.tools.classfile to jdk.jlink;
 
     provides java.util.spi.ToolProvider with

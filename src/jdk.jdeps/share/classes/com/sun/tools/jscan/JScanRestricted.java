@@ -85,7 +85,7 @@ class JScanRestricted {
             });
         }
 
-        RestrictedMethodFinder finder = new RestrictedMethodFinder(version);
+        RestrictedMethodFinder finder = RestrictedMethodFinder.create(version);
         Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
         for (ScannedModule mod : modulesToScan) {
             Path jar = mod.path();

@@ -24,6 +24,12 @@
  */
 package com.sun.tools.jscan;
 
+import com.sun.tools.javac.platform.PlatformDescription;
+import com.sun.tools.javac.platform.PlatformProvider;
+
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
@@ -36,15 +42,10 @@ import java.lang.classfile.instruction.InvokeInstruction;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.AccessFlag;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
-import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 class RestrictedMethodFinder {
@@ -52,12 +53,25 @@ class RestrictedMethodFinder {
     private static final ClassDesc RESTRICTED_DESC = ClassDesc.of("jdk.internal.javac.Restricted");
 
     private final Map<MethodRef, Boolean> CACHE = new HashMap<>();
-    private final FileSystem jrtfs;
     private final Runtime.Version version;
+    private final JavaFileManager platformFileManager;
 
-    public RestrictedMethodFinder(Runtime.Version version) {
-        this.jrtfs = FileSystems.getFileSystem(URI.create("jrt:/"));
+    private RestrictedMethodFinder(Runtime.Version version, JavaFileManager platformFileManager) {
         this.version = version;
+        this.platformFileManager = platformFileManager;
+    }
+
+    public static RestrictedMethodFinder create(Runtime.Version version) {
+        String platformName = String.valueOf(version.feature());
+        PlatformProvider platformProvider = ServiceLoader.load(PlatformProvider.class).findFirst().orElseThrow();
+        PlatformDescription platform;
+        try {
+            platform = platformProvider.getPlatform(platformName, null);
+        } catch (PlatformProvider.PlatformNotSupported e) {
+            throw new IllegalArgumentException("Release: " + platformName + " not supported", e);
+        }
+        JavaFileManager fm = platform.getFileManager();
+        return new RestrictedMethodFinder(version, fm);
     }
 
     public Map<ClassDesc, List<RestrictedUse>> findRestrictedMethodReferences(Path jar) {
@@ -107,26 +121,22 @@ class RestrictedMethodFinder {
 
     public boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
         return CACHE.computeIfAbsent(new MethodRef(owner, name, type), k -> {
-            // file path we need looks like /packages/<package name>/<module name>/com/foo/Widget.class
-            Path packagePath = jrtfs.getPath("/packages/" + k.owner().packageName());
-            if (!Files.exists(packagePath)) {
-                return false; // not a JDK package. Can not be restricted
-            }
-
-            Path moduleRoot;
-            // infer module name
-            try (Stream<Path> modules = Files.list(packagePath)) {
-                moduleRoot = modules.findAny().orElseThrow();
+            String qualName = k.owner().packageName() + '.' + k.owner().displayName();
+            JavaFileObject jfo;
+            try {
+                JavaFileManager.Location loc = platformFileManager.getLocationForModule(StandardLocation.SYSTEM_MODULES, "java.base");
+                jfo = platformFileManager.getJavaFileForInput(loc, qualName, JavaFileObject.Kind.CLASS);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            String ownerDescriptor = k.owner().descriptorString();
-            String ownerBinaryName = ownerDescriptor.substring(1, ownerDescriptor.length() - 1);
-            Path classFile = moduleRoot.resolve(ownerBinaryName + ".class");
+
+            if (jfo == null) {
+                return false; // not found in java.base, can not be restricted
+            }
 
             ClassModel classModel;
             try {
-                classModel = ClassFile.of().parse(classFile);
+                classModel = ClassFile.of().parse(jfo.openInputStream().readAllBytes());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
