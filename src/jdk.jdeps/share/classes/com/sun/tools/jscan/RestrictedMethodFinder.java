@@ -50,7 +50,9 @@ import java.util.zip.ZipFile;
 
 class RestrictedMethodFinder {
 
-    private static final ClassDesc RESTRICTED_DESC = ClassDesc.of("jdk.internal.javac.Restricted");
+    // ct.sym uses this fake name for the restricted annotation instead
+    // see make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java
+    private static final String RESTRICTED_NAME = "Ljdk/internal/javac/Restricted+Annotation;";
 
     private final Map<MethodRef, Boolean> CACHE = new HashMap<>();
     private final Runtime.Version version;
@@ -147,7 +149,8 @@ class RestrictedMethodFinder {
                     .orElseThrow();
 
             return method.findAttribute(Attributes.runtimeVisibleAnnotations())
-                    .map(rva -> rva.annotations().stream().anyMatch(ann -> ann.classSymbol().equals(RESTRICTED_DESC)))
+                    .map(rva -> rva.annotations().stream().anyMatch(ann ->
+                            ann.className().stringValue().equals(RESTRICTED_NAME)))
                     .orElse(false);
         });
     }

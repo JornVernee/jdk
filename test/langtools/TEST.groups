@@ -65,7 +65,7 @@ langtools_jdeps = \
 
 langtools_jscan_restricted = \
     tools/all \
-    tools/jscan-restricted
+    tools/jscan/restricted
 
 langtools_slow = \
     jdk/internal/shellsupport/doc/FullJavadocHelperTest.java
