@@ -53,6 +53,7 @@ class RestrictedMethodFinder {
     // ct.sym uses this fake name for the restricted annotation instead
     // see make/langtools/src/classes/build/tools/symbolgenerator/CreateSymbols.java
     private static final String RESTRICTED_NAME = "Ljdk/internal/javac/Restricted+Annotation;";
+    private static final List<String> RESTRICTED_MODULES = List.of("java.base");
 
     private final Map<MethodRef, Boolean> CACHE = new HashMap<>();
     private final Runtime.Version version;
@@ -86,19 +87,19 @@ class RestrictedMethodFinder {
                 } else {
                     Set<MethodRef> perMethod = new HashSet<>();
                     method.code()
-                            .ifPresent(code -> {
-                                code.forEach(e -> {
-                                    switch (e) {
-                                        case InvokeInstruction invoke -> {
-                                            if (isRestrictedMethod(invoke.method())) {
-                                                perMethod.add(MethodRef.ofMethodRef(invoke.method()));
-                                            }
-                                        }
-                                        default -> {
+                        .ifPresent(code -> {
+                            code.forEach(e -> {
+                                switch (e) {
+                                    case InvokeInstruction invoke -> {
+                                        if (isRestrictedMethod(invoke.method())) {
+                                            perMethod.add(MethodRef.ofMethodRef(invoke.method()));
                                         }
                                     }
-                                });
+                                    default -> {
+                                    }
+                                }
                             });
+                        });
                     if (!perMethod.isEmpty()) {
                         perClass.add(new RestrictedUse.RestrictedMethodRefs(MethodRef.ofModel(method), Set.copyOf(perMethod)));
                     }
@@ -121,19 +122,27 @@ class RestrictedMethodFinder {
         };
     }
 
-    public boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
-        return CACHE.computeIfAbsent(new MethodRef(owner, name, type), k -> {
-            String qualName = k.owner().packageName() + '.' + k.owner().displayName();
-            JavaFileObject jfo;
+    private JavaFileObject findFileFor(String qualName) {
+        for (String moduleName : RESTRICTED_MODULES) {
             try {
-                JavaFileManager.Location loc = platformFileManager.getLocationForModule(StandardLocation.SYSTEM_MODULES, "java.base");
-                jfo = platformFileManager.getJavaFileForInput(loc, qualName, JavaFileObject.Kind.CLASS);
+                JavaFileManager.Location loc = platformFileManager.getLocationForModule(StandardLocation.SYSTEM_MODULES, moduleName);
+                JavaFileObject jfo = platformFileManager.getJavaFileForInput(loc, qualName, JavaFileObject.Kind.CLASS);
+                if (jfo != null) {
+                    return jfo;
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+        return null; // not found
+    }
 
+    public boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
+        return CACHE.computeIfAbsent(new MethodRef(owner, name, type), k -> {
+            String qualName = k.owner().packageName() + '.' + k.owner().displayName();
+            JavaFileObject jfo = findFileFor(qualName);
             if (jfo == null) {
-                return false; // not found in java.base, can not be restricted
+                return false;
             }
 
             ClassModel classModel;
