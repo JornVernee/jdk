@@ -36,6 +36,7 @@ import jdk.test.lib.util.JarUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.jar.Attributes;
@@ -43,28 +44,31 @@ import java.util.jar.Manifest;
 
 class TestJScanRestricted extends JScanTestBase {
 
+    Path testClasses;
+
     Path classPathApp;
     Path singleJarClassPath;
     Path singleJarModular;
     Path orgMyapp;
+    Path orgLib;
 
     @BeforeClass
     public void before() throws IOException {
         singleJarClassPath = Path.of("singleJar.jar");
-        Path classes = Path.of(System.getProperty("test.classes", ""));
-        JarUtils.createJarFile(singleJarClassPath, classes, Path.of("main", "Main.class"));
+        testClasses = Path.of(System.getProperty("test.classes", ""));
+        JarUtils.createJarFile(singleJarClassPath, testClasses, Path.of("main", "Main.class"));
 
-        JarUtils.createJarFile(Path.of("lib.jar"), classes, Path.of("lib", "Lib.class"));
+        JarUtils.createJarFile(Path.of("lib.jar"), testClasses, Path.of("lib", "Lib.class"));
         Manifest manifest = new Manifest();
         Attributes mainAttrs = manifest.getMainAttributes();
         mainAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0"); // need version or other attributes will be ignored
         mainAttrs.putValue("Class-Path", "lib.jar non-existent.jar");
         classPathApp = Path.of("app.jar");
-        JarUtils.createJarFile(classPathApp, manifest, classes, Path.of("app", "App.class"));
+        JarUtils.createJarFile(classPathApp, manifest, testClasses, Path.of("app", "App.class"));
 
         singleJarModular = makeModularJar("org.singlejar");
         orgMyapp = makeModularJar("org.myapp");
-        makeModularJar("org.lib");
+        orgLib = makeModularJar("org.lib");
     }
 
     @Test
@@ -122,5 +126,29 @@ class TestJScanRestricted extends JScanTestBase {
                 .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 
-    // TODO negative test cases
+    @Test
+    public void testInvalidRelease() {
+        assertFailure(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "asdf"))
+                .stderrShouldContain("Invalid release");
+    }
+
+    @Test
+    public void testFileDoesNotExist() {
+        assertFailure(jscanRestricted("--class-path", "non-existent.jar", "--dump-all"))
+                .stderrShouldContain("File does not exist, or does not appear to be a regular jar file");
+    }
+
+    @Test
+    public void testModuleNotAJarFile() {
+        String modulePath = moduleRoot("org.myapp").toString() + File.pathSeparator + orgLib.toString();
+        assertFailure(jscanRestricted("--module-path", modulePath, "--dump-all",
+                        "--add-modules", "ALL-MODULE-PATH"))
+                .stderrShouldContain("File does not exist, or does not appear to be a regular jar file");
+    }
+
+    @Test
+    public void testNoActionSpecified() {
+        assertFailure(jscanRestricted("--class-path", singleJarClassPath.toString()))
+                .stderrShouldContain("At least one of '--print-native-access', or '--dump-all' must be specified");
+    }
 }

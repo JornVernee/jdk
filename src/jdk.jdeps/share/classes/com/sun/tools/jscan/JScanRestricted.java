@@ -75,9 +75,6 @@ class JScanRestricted {
         Configuration config = Configuration.resolveAndBind(moduleFinder, List.of(systemConfiguration()), ModuleFinder.of(), rootModules);
         for (ResolvedModule m : config.modules()) {
             URI location = m.reference().location().orElseThrow();
-            if (!location.getScheme().equals("file")) {
-                throw new JScanFatalError("Module is not located in a jar file: " + m.name());
-            }
             Path path = Path.of(location.getPath());
             checkRegularJar(path);
             modulesToScan.add(new ScannedModule(path, m.name()));

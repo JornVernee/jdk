@@ -88,7 +88,7 @@ public class JScanTestBase {
         return jarPath;
     }
 
-    private static Path moduleRoot(String name) {
+    public static Path moduleRoot(String name) {
         return Path.of(System.getProperty("test.module.path")).resolve(name);
     }
 

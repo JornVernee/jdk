@@ -31,6 +31,9 @@ import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 
 public class Main {
+
+    private static boolean DEBUG = Boolean.getBoolean("com.sun.tools.jscan.DEBUG");
+
     private static final int SUCCESS_CODE = 0;
     private static final int FATAL_ERROR_CODE = 1;
 
@@ -82,6 +85,9 @@ public class Main {
             }
         } catch (JScanFatalError fatalError) {
             log.error(fatalError.getMessage());
+            if (DEBUG) {
+                fatalError.printStackTrace(log.err());
+            }
             return FATAL_ERROR_CODE;
         } catch (Throwable e) {
             log.error("Unexpected exception encountered");
