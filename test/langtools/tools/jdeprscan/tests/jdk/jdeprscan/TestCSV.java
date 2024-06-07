@@ -33,6 +33,7 @@ package jdk.jdeprscan;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
 import java.util.List;
@@ -50,12 +51,12 @@ import com.sun.tools.jdeprscan.CSVParseException;
 public class TestCSV {
     static String NL = System.lineSeparator();
     ByteArrayOutputStream baos;
-    PrintStream out;
+    PrintWriter out;
 
     @BeforeMethod
     public void setup() throws UnsupportedEncodingException {
         baos = new ByteArrayOutputStream();
-        out = new PrintStream(baos, true, "UTF-8");
+        out = new PrintWriter(new PrintStream(baos, true, "UTF-8"));
     }
 
     String result() {

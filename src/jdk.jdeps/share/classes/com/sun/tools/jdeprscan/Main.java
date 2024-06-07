@@ -28,6 +28,7 @@ package com.sun.tools.jdeprscan;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -96,8 +97,8 @@ import javax.lang.model.element.TypeElement;
  *  - multi-version jar
  */
 public class Main implements DiagnosticListener<JavaFileObject> {
-    final PrintStream out;
-    final PrintStream err;
+    final PrintWriter out;
+    final PrintWriter err;
     final List<File> bootClassPath = new ArrayList<>();
     final List<File> classPath = new ArrayList<>();
     final List<File> systemModules = new ArrayList<>();
@@ -469,7 +470,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
      * @param out the stream to which the tool's output is sent
      * @param err the stream to which error messages are sent
      */
-    Main(PrintStream out, PrintStream err) {
+    Main(PrintWriter out, PrintWriter err) {
         this.out = out;
         this.err = err;
         compiler = ToolProvider.getSystemJavaCompiler();
@@ -699,7 +700,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
         return scanStatus;
     }
 
-    private void printHelp(PrintStream out) {
+    private void printHelp(PrintWriter out) {
         JDKPlatformProvider pp = new JDKPlatformProvider();
         String supportedReleases =
                 String.join("|", pp.getSupportedPlatformNames());
@@ -713,8 +714,22 @@ public class Main implements DiagnosticListener<JavaFileObject> {
      *
      * @return true on success, false otherwise
      */
-    public static boolean call(PrintStream out, PrintStream err, String... args) {
+    public static boolean call(PrintWriter out, PrintWriter err, String... args) {
         return new Main(out, err).run(args);
+    }
+
+    public static boolean call(PrintStream out, PrintStream err, String... args) {
+        PrintWriter outWriter = new PrintWriter(out);
+        PrintWriter errWriter = new PrintWriter(err);
+        try {
+            try {
+                return call(outWriter, errWriter, args);
+            } finally {
+                outWriter.flush();
+            }
+        } finally {
+            errWriter.flush();
+        }
     }
 
     /**

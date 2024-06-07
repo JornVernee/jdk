@@ -27,6 +27,7 @@ package com.sun.tools.jdeprscan.scan;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.classfile.AccessFlags;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
@@ -60,8 +61,8 @@ import com.sun.tools.jdeprscan.Messages;
  * file, or individual class for uses of deprecated APIs.
  */
 public class Scan {
-    final PrintStream out;
-    final PrintStream err;
+    final PrintWriter out;
+    final PrintWriter err;
     final List<String> classPath;
     final DeprDB db;
     final boolean verbose;
@@ -70,8 +71,8 @@ public class Scan {
     final Set<String> classesNotFound = new HashSet<>();
     boolean errorOccurred = false;
 
-    public Scan(PrintStream out,
-                PrintStream err,
+    public Scan(PrintWriter out,
+                PrintWriter err,
                 List<String> classPath,
                 DeprDB db,
                 boolean verbose) {

@@ -47,19 +47,13 @@ public class Main {
 
     private void printHelp()  {
         out.print("""
-            Placeholder
+            USAGE: jscan <restricted|dependencies|deprecations> [options...]
+            Use jscan <action> --help for more info about an action
             """);
     }
 
-    private void printError(String message) {
-        printError(message, null);
-    }
-
-    private void printError(String message, Throwable t) {
-        err.println("ERROR: " + message);
-        if (t != null) {
-            t.printStackTrace(err);
-        }
+    private void printVersion() {
+        out.print("jscan " + Runtime.version());
     }
 
     public int run(String[] args) {
@@ -77,7 +71,10 @@ public class Main {
             String[] expandedArgs = expandArgFiles(remainingArgs);
             switch (action) {
                 case "restricted" -> JScanRestricted.run(log, expandedArgs);
-                // TODO implement e.g. --version
+                case "dependencies" -> com.sun.tools.jdeps.Main.run(expandedArgs, out);
+                case "deprecations" -> com.sun.tools.jdeprscan.Main.call(out, err, expandedArgs);
+                case "-h", "-?", "-help", "--help" -> printHelp();
+                case "--version" -> printVersion();
                 default -> {
                     log.error("Unknown action: " + action);
                     return FATAL_ERROR_CODE;
