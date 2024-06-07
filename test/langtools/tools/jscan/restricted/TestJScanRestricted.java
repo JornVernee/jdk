@@ -58,7 +58,7 @@ class TestJScanRestricted extends JScanTestBase {
         Manifest manifest = new Manifest();
         Attributes mainAttrs = manifest.getMainAttributes();
         mainAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0"); // need version or other attributes will be ignored
-        mainAttrs.putValue("Class-Path", "lib.jar");
+        mainAttrs.putValue("Class-Path", "lib.jar non-existent.jar");
         classPathApp = Path.of("app.jar");
         JarUtils.createJarFile(classPathApp, manifest, classes, Path.of("app", "App.class"));
 

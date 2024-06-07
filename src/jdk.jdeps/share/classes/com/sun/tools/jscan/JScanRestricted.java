@@ -109,12 +109,16 @@ class JScanRestricted {
             Path jar = classPathJars.poll();
             checkRegularJar(jar);
             String[] classPathAttribute = classPathAttribute(jar);
+            Path parentDir = jar.getParent();
             for (String classPathEntry : classPathAttribute) {
-                Path parentDir = jar.getParent();
                 Path otherJar = parentDir != null
                         ? parentDir.resolve(classPathEntry)
                         : Path.of(classPathEntry);
-                classPathJars.offer(otherJar);
+                if (Files.exists(otherJar)) {
+                    // Class-Path attribute specifies that jars that
+                    // are not found are simply ignored. Do the same here
+                    classPathJars.offer(otherJar);
+                }
             }
             builder.add(new ScannedModule(jar, "ALL-UNNAMED"));
         }
