@@ -23,9 +23,9 @@
 
 /*
  * @test
- * @library /test/lib ./cases/modules
+ * @library /test/lib .. ./cases/modules
  * @build JScanTestBase
- *     org.singlejar/* org.lib/* org.myapp/*
+ *     org.singlejar/* org.lib/* org.myapp/* org.service/*
  *     cases.classpath.singlejar.main.Main
  *     cases.classpath.lib.Lib
  *     cases.classpath.app.App
@@ -69,6 +69,7 @@ class TestJScanRestricted extends JScanTestBase {
         singleJarModular = makeModularJar("org.singlejar");
         orgMyapp = makeModularJar("org.myapp");
         orgLib = makeModularJar("org.lib");
+        makeModularJar("org.service");
     }
 
     @Test
@@ -101,6 +102,11 @@ class TestJScanRestricted extends JScanTestBase {
                 .stdoutShouldContain("org.lib.Lib")
                 .stdoutShouldContain("org.lib.Lib::m()void is a native method declaration")
                 .stdoutShouldContain("org.lib.Lib::doIt()void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment")
+                .stdoutShouldContain("org.service")
+                .stdoutShouldContain("org.service.ServiceImpl")
+                .stdoutShouldContain("org.service.ServiceImpl::m()void is a native method declaration")
+                .stdoutShouldContain("org.service.ServiceImpl::doIt()void references restricted methods")
                 .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 
@@ -108,11 +114,9 @@ class TestJScanRestricted extends JScanTestBase {
     public void testAllModulePath() {
         assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH"))
                 .stderrShouldBeEmpty()
+                .stdoutShouldContain("org.singlejar")
                 .stdoutShouldContain("org.lib")
-                .stdoutShouldContain("org.lib.Lib")
-                .stdoutShouldContain("org.lib.Lib::m()void is a native method declaration")
-                .stdoutShouldContain("org.lib.Lib::doIt()void references restricted methods")
-                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
+                .stdoutShouldContain("org.service");
     }
 
     @Test

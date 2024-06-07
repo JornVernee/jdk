@@ -20,9 +20,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package org.service;
 
-module org.myapp {
-    requires org.lib;
+import org.lib.Service;
 
-    uses org.lib.Service;
+import java.lang.foreign.MemorySegment;
+
+public class ServiceImpl implements Service {
+    public void doIt() {
+        MemorySegment.ofAddress(1234).reinterpret(10);
+    }
+
+    private native void m();
 }

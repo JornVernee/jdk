@@ -23,15 +23,11 @@
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import java.io.StringWriter;
-import java.util.List;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 
 import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.util.JarUtils;
@@ -46,6 +42,10 @@ public class JScanTestBase {
         newArgs[0] = "restricted";
         System.arraycopy(args, 0, newArgs, 1, args.length);
         return run(JSCAN_TOOL, newArgs);
+    }
+
+    public static OutputAnalyzer jscan(String... args) {
+        return run(JSCAN_TOOL, args);
     }
 
     private static OutputAnalyzer run(ToolProvider tp, String[] commands) {

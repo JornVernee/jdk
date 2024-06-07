@@ -20,9 +20,8 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
-module org.myapp {
+module org.service {
     requires org.lib;
 
-    uses org.lib.Service;
+    provides org.lib.Service with org.service.ServiceImpl;
 }

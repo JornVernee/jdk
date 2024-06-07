@@ -63,6 +63,10 @@ langtools_jdeps = \
     tools/all \
     tools/jdeps
 
+langtools_jscan = \
+    tools/all \
+    tools/jscan
+
 langtools_jscan_restricted = \
     tools/all \
     tools/jscan/restricted

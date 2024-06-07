@@ -21,8 +21,34 @@
  * questions.
  */
 
-module org.myapp {
-    requires org.lib;
+/*
+ * @test
+ * @library /test/lib
+ * @build JScanTestBase
+ * @run testng TestJScanTool
+ */
 
-    uses org.lib.Service;
+import org.testng.annotations.Test;
+
+class TestJScanTool extends JScanTestBase {
+
+    @Test
+    public void testBasicDependencies() {
+        assertSuccess(jscan("dependencies", "--help"));
+    }
+
+    @Test
+    public void testBasicDeprecations() {
+        assertSuccess(jscan("deprecations", "--help"));
+    }
+
+    @Test
+    public void testBasicHelp() {
+        assertSuccess(jscan("--help"));
+    }
+
+    @Test
+    public void testBasicVersion() {
+        assertSuccess(jscan("--version"));
+    }
 }
