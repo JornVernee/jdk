@@ -29,9 +29,8 @@ import jdk.internal.joptsimple.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.constant.ClassDesc;
-import java.lang.module.ModuleDescriptor;
+import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -43,47 +42,37 @@ class JScanRestricted {
     private final Log log;
     private final List<Path> classPaths;
     private final List<Path> modulePaths;
-    private final List<String> rootModules;
+    private final List<String> cmdRootModules;
     private final Runtime.Version version;
     private final Action action;
 
-    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, List<String> rootModules, Runtime.Version version, Action action) {
+    private JScanRestricted(Log log, List<Path> classPaths, List<Path> modulePaths, List<String> cmdRootModules, Runtime.Version version, Action action) {
         this.log = log;
         this.classPaths = classPaths;
         this.modulePaths = modulePaths;
         this.version = version;
         this.action = action;
-        this.rootModules = rootModules;
+        this.cmdRootModules = cmdRootModules;
     }
 
     public void run() throws MalformedURLException {
         List<ScannedModule> modulesToScan = new ArrayList<>();
         for (Path classPath : classPaths) {
+            // TODO recursive look at Class-Path attribute
             modulesToScan.add(new ScannedModule(classPath, "ALL-UNNAMED"));
         }
+
         ModuleFinder moduleFinder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
-        ModuleFinder systemModuleFinder = ModuleFinder.ofSystem();
-        Deque<String> modulesToAdd = new ArrayDeque<>(rootModules);
-        while(!modulesToAdd.isEmpty()) {
-            String modName = modulesToAdd.poll();
-            Optional<ModuleReference> refOpt = moduleFinder.find(modName);
-            if (refOpt.isEmpty()) {
-                log.error("Module not found: " + modName);
-                continue;
-            }
-            ModuleReference ref = refOpt.get();
-            URI location = ref.location().orElseThrow();
-            Path path = Path.of(location.getPath());
-            ModuleDescriptor descriptor = ref.descriptor();
-            modulesToScan.add(new ScannedModule(path, descriptor.name()));
-            descriptor.requires().forEach(r -> {
-                // system modules are exempt from --enable-native-access (and they are not jar files)
-                boolean isSystemModule = systemModuleFinder.find(r.name()).isPresent();
-                if (!isSystemModule) {
-                    modulesToAdd.add(r.name());
-                }
-            });
+        List<String> rootModules = cmdRootModules;
+        if (rootModules.contains("ALL-MODULE-PATH")) {
+            rootModules = allModuleNames(moduleFinder);
         }
+        Configuration config = Configuration.resolveAndBind(moduleFinder, List.of(systemConfiguration()), ModuleFinder.of(), rootModules);
+        config.modules().forEach(m -> {
+            URI location = m.reference().location().orElseThrow();
+            Path path = Path.of(location.getPath());
+            modulesToScan.add(new ScannedModule(path, m.name()));
+        });
 
         RestrictedMethodFinder finder = RestrictedMethodFinder.create(version);
         Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
@@ -105,6 +94,17 @@ class JScanRestricted {
             case PRINT -> printNativeAccess(allRestrictedMethods);
             case DUMP_ALL -> dumpAll(allRestrictedMethods);
         }
+    }
+
+    private Configuration systemConfiguration() {
+        ModuleFinder systemFinder = ModuleFinder.ofSystem();
+        Configuration system = Configuration.resolve(systemFinder, List.of(Configuration.empty()), ModuleFinder.of(),
+                allModuleNames(systemFinder)); // resolve all of them
+        return system;
+    }
+
+    private List<String> allModuleNames(ModuleFinder finder) {
+        return finder.findAll().stream().map(mr -> mr.descriptor().name()).toList();
     }
 
     private void printNativeAccess(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
