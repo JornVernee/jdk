@@ -28,18 +28,14 @@ import jdk.internal.joptsimple.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.ClassModel;
 import java.lang.constant.ClassDesc;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
@@ -223,8 +219,8 @@ class JScanRestricted {
             }
         }
 
-        List<Path> classPathJars = parseJarPaths(optionSet, classPathOpt);
-        List<Path> modulePaths = parseJarPaths(optionSet, modulePathOpt);
+        List<Path> classPathJars = parsePath(optionSet, classPathOpt);
+        List<Path> modulePaths = parsePath(optionSet, modulePathOpt);
 
         Runtime.Version version = Runtime.version();
         if (optionSet.has(releaseOpt)) {
@@ -253,7 +249,7 @@ class JScanRestricted {
         new JScanRestricted(log, classPathJars, modulePaths, rootModules, version, action).run();
     }
 
-    private static List<Path> parseJarPaths(OptionSet optionSet, OptionSpec<String> opt) throws JScanFatalError {
+    private static List<Path> parsePath(OptionSet optionSet, OptionSpec<String> opt) throws JScanFatalError {
         List<Path> paths = new ArrayList<>();
         if (optionSet.has(opt)) {
             String[] parts = optionSet.valueOf(opt).split(File.pathSeparator);

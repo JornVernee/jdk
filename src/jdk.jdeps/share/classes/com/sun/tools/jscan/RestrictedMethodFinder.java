@@ -122,7 +122,7 @@ class RestrictedMethodFinder {
         };
     }
 
-    private JavaFileObject findFileFor(String qualName) {
+    private JavaFileObject findFileForSystemClass(String qualName) {
         for (String moduleName : RESTRICTED_MODULES) {
             try {
                 JavaFileManager.Location loc = platformFileManager.getLocationForModule(StandardLocation.SYSTEM_MODULES, moduleName);
@@ -137,10 +137,10 @@ class RestrictedMethodFinder {
         return null; // not found
     }
 
-    public boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
-        return CACHE.computeIfAbsent(new MethodRef(owner, name, type), k -> {
-            String qualName = k.owner().packageName() + '.' + k.owner().displayName();
-            JavaFileObject jfo = findFileFor(qualName);
+    private boolean isRestrictedMethod(ClassDesc owner, String name, MethodTypeDesc type) {
+        return CACHE.computeIfAbsent(new MethodRef(owner, name, type), methodRef -> {
+            String qualName = methodRef.owner().packageName() + '.' + methodRef.owner().displayName();
+            JavaFileObject jfo = findFileForSystemClass(qualName);
             if (jfo == null) {
                 return false;
             }
@@ -151,17 +151,24 @@ class RestrictedMethodFinder {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            MethodModel method = classModel.methods().stream()
-                    .filter(m -> m.methodName().stringValue().equals(k.name())
-                        && m.methodType().stringValue().equals(k.type().descriptorString()))
-                    .findFirst()
-                    .orElseThrow();
-
-            return method.findAttribute(Attributes.runtimeVisibleAnnotations())
-                    .map(rva -> rva.annotations().stream().anyMatch(ann ->
-                            ann.className().stringValue().equals(RESTRICTED_NAME)))
-                    .orElse(false);
+            MethodModel method = findMethod(classModel, methodRef.name(), methodRef.type());
+            return hasRestrictedAnnotation(method);
         });
+    }
+
+    private static boolean hasRestrictedAnnotation(MethodModel method) {
+        return method.findAttribute(Attributes.runtimeVisibleAnnotations())
+                .map(rva -> rva.annotations().stream().anyMatch(ann ->
+                        ann.className().stringValue().equals(RESTRICTED_NAME)))
+                .orElse(false);
+    }
+
+    private static MethodModel findMethod(ClassModel classModel, String name, MethodTypeDesc type) {
+        return classModel.methods().stream()
+                .filter(m -> m.methodName().stringValue().equals(name)
+                        && m.methodType().stringValue().equals(type.descriptorString()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private void forEachClassFile(Path jarFile, Consumer<ClassModel> action) {
