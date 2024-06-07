@@ -228,7 +228,7 @@ class JScanRestricted {
             try {
                 version = Runtime.Version.parse(release);
             } catch (IllegalArgumentException e) {
-                throw new JScanFatalError("Invalid release: " + release + ", " + e.getMessage());
+                throw new JScanFatalError("Invalid release: " + release + ": " + e.getMessage());
             }
         }
 

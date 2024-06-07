@@ -83,7 +83,14 @@ public class JDKPlatformProvider implements PlatformProvider {
     }
 
     @Override
-    public PlatformDescription getPlatform(String platformName, String options) {
+    public PlatformDescription getPlatform(String platformName, String options) throws PlatformNotSupported {
+        if (Source.lookup(platformName) == null) {
+            throw new PlatformNotSupported();
+        }
+        return getPlatformTrusted(platformName);
+    }
+
+    public PlatformDescription getPlatformTrusted(String platformName) {
         return new PlatformDescriptionImpl(platformName);
     }
 

@@ -415,7 +415,7 @@ public class Main implements DiagnosticListener<JavaFileObject> {
                              .noneMatch(n -> n.equals(release))) {
                 return false;
             }
-            JavaFileManager fm = pp.getPlatform(release, "").getFileManager();
+            JavaFileManager fm = pp.getPlatformTrusted(release).getFileManager();
             List<String> classNames = new ArrayList<>();
             for (JavaFileObject fo : fm.list(StandardLocation.PLATFORM_CLASS_PATH,
                                              "",

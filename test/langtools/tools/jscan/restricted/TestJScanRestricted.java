@@ -137,6 +137,12 @@ class TestJScanRestricted extends JScanTestBase {
     }
 
     @Test
+    public void testReleaseNotSupported() {
+        assertFailure(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "9999999"))
+                .stderrShouldContain("Release: 9999999 not supported");
+    }
+
+    @Test
     public void testFileDoesNotExist() {
         assertFailure(jscanRestricted("--class-path", "non-existent.jar", "--dump-all"))
                 .stderrShouldContain("File does not exist, or does not appear to be a regular jar file");
