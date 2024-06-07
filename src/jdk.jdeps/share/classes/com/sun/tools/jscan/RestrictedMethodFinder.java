@@ -64,14 +64,14 @@ class RestrictedMethodFinder {
         this.platformFileManager = platformFileManager;
     }
 
-    public static RestrictedMethodFinder create(Runtime.Version version) {
+    public static RestrictedMethodFinder create(Runtime.Version version) throws JScanFatalError {
         String platformName = String.valueOf(version.feature());
         PlatformProvider platformProvider = ServiceLoader.load(PlatformProvider.class).findFirst().orElseThrow();
         PlatformDescription platform;
         try {
             platform = platformProvider.getPlatform(platformName, null);
         } catch (PlatformProvider.PlatformNotSupported e) {
-            throw new IllegalArgumentException("Release: " + platformName + " not supported", e);
+            throw new JScanFatalError("Release: " + platformName + " not supported", e);
         }
         JavaFileManager fm = platform.getFileManager();
         return new RestrictedMethodFinder(version, fm);

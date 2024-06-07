@@ -4,9 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,34 +20,14 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.sun.tools.jscan;
+package lib;
 
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.lang.foreign.MemorySegment;
 
-class Log {
-
-    private final PrintWriter out;
-    private final PrintWriter err;
-
-    public Log(PrintWriter out, PrintWriter err) {
-        this.out = out;
-        this.err = err;
+public class Lib {
+    public static void doIt() {
+        MemorySegment.ofAddress(1234).reinterpret(10);
     }
 
-    public void error(String message) {
-        err.println("ERROR: " + message);
-    }
-
-    public void println(String message) {
-        out.println(message);
-    }
-
-    public PrintWriter out() {
-        return out;
-    }
-
-    public PrintWriter err() {
-        return err;
-    }
+    private static native void m();
 }

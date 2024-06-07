@@ -24,32 +24,23 @@
  */
 package com.sun.tools.jscan;
 
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.Serial;
 
-class Log {
+// Exception used in case of fatal error that is reasonably expected and handled.
+// Checked exception, so it's easy to see which parts of the program can run into fatal errors
+public class JScanFatalError extends Exception {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    private final PrintWriter out;
-    private final PrintWriter err;
-
-    public Log(PrintWriter out, PrintWriter err) {
-        this.out = out;
-        this.err = err;
+    public JScanFatalError(String message) {
+        super(message);
     }
 
-    public void error(String message) {
-        err.println("ERROR: " + message);
+    public JScanFatalError(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public void println(String message) {
-        out.println(message);
-    }
-
-    public PrintWriter out() {
-        return out;
-    }
-
-    public PrintWriter err() {
-        return err;
+    public JScanFatalError(Throwable cause) {
+        super(cause);
     }
 }

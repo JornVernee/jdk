@@ -28,14 +28,22 @@ import jdk.internal.joptsimple.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassModel;
 import java.lang.constant.ClassDesc;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.net.MalformedURLException;
+import java.lang.module.ModuleReference;
+import java.lang.module.ResolvedModule;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import java.util.stream.Stream;
+import java.util.zip.ZipFile;
 
 class JScanRestricted {
 
@@ -55,12 +63,9 @@ class JScanRestricted {
         this.cmdRootModules = cmdRootModules;
     }
 
-    public void run() throws MalformedURLException {
+    public void run() throws JScanFatalError {
         List<ScannedModule> modulesToScan = new ArrayList<>();
-        for (Path classPath : classPaths) {
-            // TODO recursive look at Class-Path attribute
-            modulesToScan.add(new ScannedModule(classPath, "ALL-UNNAMED"));
-        }
+        findAllClassPathJars().forEach(modulesToScan::add);
 
         ModuleFinder moduleFinder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
         List<String> rootModules = cmdRootModules;
@@ -68,22 +73,20 @@ class JScanRestricted {
             rootModules = allModuleNames(moduleFinder);
         }
         Configuration config = Configuration.resolveAndBind(moduleFinder, List.of(systemConfiguration()), ModuleFinder.of(), rootModules);
-        config.modules().forEach(m -> {
+        for (ResolvedModule m : config.modules()) {
             URI location = m.reference().location().orElseThrow();
+            if (!location.getScheme().equals("file")) {
+                throw new JScanFatalError("Module is not located in a jar file: " + m.name());
+            }
             Path path = Path.of(location.getPath());
+            checkRegularJar(path);
             modulesToScan.add(new ScannedModule(path, m.name()));
-        });
+        }
 
         RestrictedMethodFinder finder = RestrictedMethodFinder.create(version);
         Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods = new HashMap<>();
         for (ScannedModule mod : modulesToScan) {
             Path jar = mod.path();
-            // jar files only for now
-            if (!(Files.exists(jar) && Files.isRegularFile(jar) && jar.toString().endsWith(".jar"))) {
-                log.error("File does not exist, or does not appear to be a regular jar file: " + jar);
-                continue;
-            }
-
             Map<ClassDesc, List<RestrictedUse>> restrictedMethods = finder.findRestrictedMethodReferences(jar);
             if (!restrictedMethods.isEmpty()) {
                 allRestrictedMethods.put(mod, restrictedMethods);
@@ -93,6 +96,43 @@ class JScanRestricted {
         switch (action) {
             case PRINT -> printNativeAccess(allRestrictedMethods);
             case DUMP_ALL -> dumpAll(allRestrictedMethods);
+        }
+    }
+
+    // recursively look for all class path jars, starting at the root jars
+    // in this.classPaths, and recursively following all Class-Path manifest
+    // attributes
+    private Stream<ScannedModule> findAllClassPathJars() throws JScanFatalError {
+        Stream.Builder<ScannedModule> builder = Stream.builder();
+        Deque<Path> classPathJars = new ArrayDeque<>(classPaths);
+        while (!classPathJars.isEmpty()) {
+            Path jar = classPathJars.poll();
+            checkRegularJar(jar);
+            String[] classPathAttribute = classPathAttribute(jar);
+            for (String classPathEntry : classPathAttribute) {
+                Path parentDir = jar.getParent();
+                Path otherJar = parentDir != null
+                        ? parentDir.resolve(classPathEntry)
+                        : Path.of(classPathEntry);
+                classPathJars.offer(otherJar);
+            }
+            builder.add(new ScannedModule(jar, "ALL-UNNAMED"));
+        }
+        return builder.build();
+    }
+
+    private String[] classPathAttribute(Path jar) {
+        try (JarFile jf = new JarFile(jar.toFile(), false, ZipFile.OPEN_READ, version)) {
+           Manifest manifest = jf.getManifest();
+           if (manifest != null) {
+               String attrib = manifest.getMainAttributes().getValue("Class-Path");
+               if (attrib != null) {
+                   return attrib.split("\\s+");
+               }
+           }
+           return new String[0];
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -140,7 +180,7 @@ class JScanRestricted {
 
     private record ScannedModule(Path path, String moduleName) {}
 
-    public static void run(Log log, String[] args) throws MalformedURLException {
+    public static void run(Log log, String[] args) throws JScanFatalError {
         OptionParser parser = new OptionParser(false);
         OptionSpec<Void> helpOpt = parser.acceptsAll(List.of("?", "h", "help"), "help").forHelp();
         OptionSpec<String> classPathOpt = parser.accepts(
@@ -167,13 +207,11 @@ class JScanRestricted {
                 "dump all uses of restricted elements");
         parser.mutuallyExclusive(printNativeAccessOpt, dumpAllOpt);
 
-        // TODO --add-reads?
-
         OptionSet optionSet;
         try {
             optionSet = parser.parse(args);
         } catch (OptionException oe) {
-            throw new IllegalArgumentException("parsing options failed", oe);
+            throw new JScanFatalError("Parsing options failed: " + oe.getMessage(), oe);
         }
 
         if (optionSet.has(helpOpt)) {
@@ -184,21 +222,8 @@ class JScanRestricted {
             }
         }
 
-        List<Path> classPathJars = new ArrayList<>();
-        if (optionSet.has(classPathOpt)) {
-            String[] parts = optionSet.valueOf(classPathOpt).split(File.pathSeparator);
-            for (String part : parts) {
-                classPathJars.add(Path.of(part));
-            }
-        }
-
-        List<Path> modulePaths = new ArrayList<>();
-        if (optionSet.has(modulePathOpt)) {
-            String[] parts = optionSet.valueOf(modulePathOpt).split(File.pathSeparator);
-            for (String part : parts) {
-                modulePaths.add(Path.of(part));
-            }
-        }
+        List<Path> classPathJars = parseJarPaths(optionSet, classPathOpt);
+        List<Path> modulePaths = parseJarPaths(optionSet, modulePathOpt);
 
         Runtime.Version version = Runtime.version();
         if (optionSet.has(releaseOpt)) {
@@ -206,7 +231,7 @@ class JScanRestricted {
             try {
                 version = Runtime.Version.parse(release);
             } catch (IllegalArgumentException e) {
-                log.error("Invalid release: " + release + ", " + e.getMessage());
+                throw new JScanFatalError("Invalid release: " + release + ", " + e.getMessage());
             }
         }
 
@@ -216,8 +241,7 @@ class JScanRestricted {
         } else if (optionSet.has(dumpAllOpt)) {
             action = Action.DUMP_ALL;
         } else {
-            log.error("At least one of '--print-native-access', or '--dump-all' must be specified");
-            return;
+            throw new JScanFatalError("At least one of '--print-native-access', or '--dump-all' must be specified");
         }
 
         List<String> rootModules = List.of();
@@ -226,6 +250,24 @@ class JScanRestricted {
         }
 
         new JScanRestricted(log, classPathJars, modulePaths, rootModules, version, action).run();
+    }
+
+    private static List<Path> parseJarPaths(OptionSet optionSet, OptionSpec<String> opt) throws JScanFatalError {
+        List<Path> paths = new ArrayList<>();
+        if (optionSet.has(opt)) {
+            String[] parts = optionSet.valueOf(opt).split(File.pathSeparator);
+            for (String part : parts) {
+                Path path = Path.of(part);
+                paths.add(path);
+            }
+        }
+        return paths;
+    }
+
+    private static void checkRegularJar(Path path) throws JScanFatalError {
+        if (!(Files.exists(path) && Files.isRegularFile(path) && path.toString().endsWith(".jar"))) {
+            throw new JScanFatalError("File does not exist, or does not appear to be a regular jar file: " + path);
+        }
     }
 
     private enum Action {

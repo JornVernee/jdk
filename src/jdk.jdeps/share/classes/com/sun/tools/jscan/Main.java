@@ -26,10 +26,14 @@ package com.sun.tools.jscan;
 
 import jdk.internal.opt.CommandLine;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 
 public class Main {
+    private static final int SUCCESS_CODE = 0;
+    private static final int FATAL_ERROR_CODE = 1;
+
     private final PrintWriter out;
     private final PrintWriter err;
 
@@ -56,32 +60,43 @@ public class Main {
     }
 
     public int run(String[] args) {
-        if (args.length < 1) {
-            printError("No action specified");
-            printHelp();
-            return 1;
-        }
-
         Log log = new Log(out, err);
+        if (args.length < 1) {
+            log.error("No action specified");
+            printHelp();
+            return FATAL_ERROR_CODE;
+        }
 
         String action = args[0];
         String[] remainingArgs = new String[args.length - 1];
         System.arraycopy(args, 1, remainingArgs, 0, remainingArgs.length);
         try {
-            String[] expandedArgs = CommandLine.parse(remainingArgs);
+            String[] expandedArgs = expandArgFiles(remainingArgs);
             switch (action) {
                 case "restricted" -> JScanRestricted.run(log, expandedArgs);
+                // TODO implement e.g. --version
                 default -> {
-                    printError("Unknown action: " + action);
-                    // TODO implement e.g. --version
-                    return 1;
+                    log.error("Unknown action: " + action);
+                    return FATAL_ERROR_CODE;
                 }
-            };
-            return 0;
-        } catch (Throwable t) {
-            log.error(t.getMessage());
-            t.printStackTrace(err);
-            return 1;
+            }
+        } catch (JScanFatalError fatalError) {
+            log.error(fatalError.getMessage());
+            return FATAL_ERROR_CODE;
+        } catch (Throwable e) {
+            log.error("Unexpected exception encountered");
+            e.printStackTrace(log.err());
+            return FATAL_ERROR_CODE;
+        }
+
+        return SUCCESS_CODE;
+    }
+
+    private static String[] expandArgFiles(String[] args) throws JScanFatalError {
+        try {
+            return CommandLine.parse(args);
+        } catch (IOException e) { // file not found
+            throw new JScanFatalError(e.getMessage(), e);
         }
     }
 

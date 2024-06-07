@@ -27,17 +27,23 @@
  * @build JScanTestBase
  *     org.singlejar/* org.lib/* org.myapp/*
  *     cases.classpath.singlejar.main.Main
- * @run testng TestPrintNativeAccess
+ *     cases.classpath.lib.Lib
+ *     cases.classpath.app.App
+ * @run testng TestJScanRestricted
  */
 
+import jdk.test.lib.util.JarUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
-class TestPrintNativeAccess extends JScanTestBase {
+class TestJScanRestricted extends JScanTestBase {
 
+    Path classPathApp;
     Path singleJarClassPath;
     Path singleJarModular;
     Path orgMyapp;
@@ -46,8 +52,15 @@ class TestPrintNativeAccess extends JScanTestBase {
     public void before() throws IOException {
         singleJarClassPath = Path.of("singleJar.jar");
         Path classes = Path.of(System.getProperty("test.classes", ""));
-        assertSuccess(jar("--create", "--file", singleJarClassPath.toString(),
-                "-C", classes.toString(), "main/Main.class"));
+        JarUtils.createJarFile(singleJarClassPath, classes, Path.of("main", "Main.class"));
+
+        JarUtils.createJarFile(Path.of("lib.jar"), classes, Path.of("lib", "Lib.class"));
+        Manifest manifest = new Manifest();
+        Attributes mainAttrs = manifest.getMainAttributes();
+        mainAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0"); // need version or other attributes will be ignored
+        mainAttrs.putValue("Class-Path", "lib.jar");
+        classPathApp = Path.of("app.jar");
+        JarUtils.createJarFile(classPathApp, manifest, classes, Path.of("app", "App.class"));
 
         singleJarModular = makeModularJar("org.singlejar");
         orgMyapp = makeModularJar("org.myapp");
@@ -97,4 +110,17 @@ class TestPrintNativeAccess extends JScanTestBase {
                 .stdoutShouldContain("org.lib.Lib::doIt()void references restricted methods")
                 .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
+
+    @Test
+    public void testClassPathAttribute() {
+        assertSuccess(jscanRestricted("--class-path", classPathApp.toString(), "--dump-all"))
+                .stderrShouldBeEmpty()
+                .stdoutShouldContain("ALL-UNNAMED")
+                .stdoutShouldContain("lib.Lib")
+                .stdoutShouldContain("lib.Lib::m()void is a native method declaration")
+                .stdoutShouldContain("lib.Lib::doIt()void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
+    }
+
+    // TODO negative test cases
 }
