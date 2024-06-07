@@ -34,17 +34,12 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 import jdk.test.lib.process.OutputAnalyzer;
+import jdk.test.lib.util.JarUtils;
 
 public class JScanTestBase {
 
-    private static final ToolProvider JAR_TOOL = ToolProvider.findFirst("jar")
-            .orElseThrow(() -> new RuntimeException("jar tool not found"));
     private static final ToolProvider JSCAN_TOOL = ToolProvider.findFirst("jscan")
             .orElseThrow(() -> new RuntimeException("jscan tool not found"));
-
-    public static OutputAnalyzer jar(String... args) {
-        return run(JAR_TOOL, args);
-    }
 
     public static OutputAnalyzer jscanRestricted(String... args) {
         String[] newArgs = new String[args.length + 1];
@@ -72,19 +67,7 @@ public class JScanTestBase {
     public static Path makeModularJar(String moduleName) throws IOException {
         Path jarPath = Path.of(moduleName + ".jar");
         Path moduleRoot = moduleRoot(moduleName);
-        List<String> command = new ArrayList<>();
-        command.add("--create");
-        command.add("--file");
-        command.add(jarPath.toString());
-        try (Stream<Path> files = Files.walk(moduleRoot)) {
-            files.filter(Files::isRegularFile)
-                .forEach(p -> {
-                    command.add("-C");
-                    command.add(moduleRoot.toString());
-                    command.add(moduleRoot.relativize(p).toString());
-                });
-        }
-        assertSuccess(jar(command.toArray(String[]::new)));
+        JarUtils.createJarFile(jarPath, moduleRoot);
         return jarPath;
     }
 
