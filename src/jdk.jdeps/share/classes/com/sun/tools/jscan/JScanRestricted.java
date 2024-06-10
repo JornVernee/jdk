@@ -154,7 +154,7 @@ class JScanRestricted {
 
     private void dumpAll(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
         allRestrictedMethods.forEach((module, perClass) -> {
-            log.println(module.moduleName() + ":");
+            log.println(module.path() + " (" + module.moduleName() + "):");
             if (perClass.isEmpty()) {
                 log.println("  <no restricted methods>");
             } else {
