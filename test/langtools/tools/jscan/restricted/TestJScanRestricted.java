@@ -32,6 +32,7 @@
  * @run testng TestJScanRestricted
  */
 
+import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.util.JarUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -39,8 +40,12 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+
+import static org.testng.Assert.assertTrue;
 
 class TestJScanRestricted extends JScanTestBase {
 
@@ -160,5 +165,16 @@ class TestJScanRestricted extends JScanTestBase {
     public void testNoActionSpecified() {
         assertFailure(jscanRestricted("--class-path", singleJarClassPath.toString()))
                 .stderrShouldContain("At least one of '--print-native-access', or '--dump-all' must be specified");
+    }
+
+    @Test
+    public void testNoDuplicateNames() {
+        String classPath = singleJarClassPath + File.pathSeparator + classPathApp;
+        OutputAnalyzer output = assertSuccess(jscanRestricted("--class-path", classPath, "--print-native-access"));
+        String[] moduleNames = output.getStdout().split(",");
+        Set<String> names = new HashSet<>();
+        for (String name : moduleNames) {
+            assertTrue(names.add(name.strip()));
+        }
     }
 }

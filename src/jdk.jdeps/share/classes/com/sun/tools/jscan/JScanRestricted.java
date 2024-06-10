@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
@@ -145,11 +146,11 @@ class JScanRestricted {
     }
 
     private void printNativeAccess(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
-        StringJoiner sj = new StringJoiner(",");
-        for (ScannedModule mod : allRestrictedMethods.keySet()) {
-            sj.add(mod.moduleName());
-        }
-        log.println(sj.toString());
+        String nativeAccess = allRestrictedMethods.keySet().stream()
+                .map(ScannedModule::moduleName)
+                .distinct()
+                .collect(Collectors.joining(","));
+        log.println(nativeAccess);
     }
 
     private void dumpAll(Map<ScannedModule, Map<ClassDesc, List<RestrictedUse>>> allRestrictedMethods) {
