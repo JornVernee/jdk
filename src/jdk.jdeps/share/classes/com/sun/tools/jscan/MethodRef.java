@@ -42,6 +42,7 @@ record MethodRef(ClassDesc owner, String name, MethodTypeDesc type) {
 
     @Override
     public String toString() {
-        return owner.packageName() + '.' + owner.displayName() + "::" + name + type.displayDescriptor();
+        String packagePrefix = owner.packageName().isEmpty() ? "" : owner.packageName() + ".";
+        return packagePrefix + owner.displayName() + "::" + name + type.displayDescriptor();
     }
 }

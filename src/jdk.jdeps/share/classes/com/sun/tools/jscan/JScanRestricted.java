@@ -160,7 +160,8 @@ class JScanRestricted {
                 log.println("  <no restricted methods>");
             } else {
                 perClass.forEach((classDesc, restrictedUses) -> {
-                    log.println("  " + classDesc.packageName() + "." + classDesc.displayName() + ":");
+                    String packagePrefix = classDesc.packageName().isEmpty() ? "" : classDesc.packageName() + ".";
+                    log.println("  " + packagePrefix + classDesc.displayName() + ":");
                     restrictedUses.forEach(use -> {
                         switch (use) {
                             case RestrictedUse.NativeMethodDecl(MethodRef nmd) ->

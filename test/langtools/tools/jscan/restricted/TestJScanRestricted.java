@@ -29,6 +29,7 @@
  *     cases.classpath.singlejar.main.Main
  *     cases.classpath.lib.Lib
  *     cases.classpath.app.App
+ *     cases.classpath.unnamed_package.UnnamedPackage
  * @run testng TestJScanRestricted
  */
 
@@ -56,6 +57,7 @@ class TestJScanRestricted extends JScanTestBase {
     Path singleJarModular;
     Path orgMyapp;
     Path orgLib;
+    Path unnamedPackageJar;
 
     @BeforeClass
     public void before() throws IOException {
@@ -75,6 +77,9 @@ class TestJScanRestricted extends JScanTestBase {
         orgMyapp = makeModularJar("org.myapp");
         orgLib = makeModularJar("org.lib");
         makeModularJar("org.service");
+
+        unnamedPackageJar = Path.of("unnamed_package.jar");
+        JarUtils.createJarFile(unnamedPackageJar, manifest, testClasses, Path.of("UnnamedPackage.class"));
     }
 
     @Test
@@ -90,7 +95,7 @@ class TestJScanRestricted extends JScanTestBase {
 
     @Test
     public void testSingleJarModulePath() {
-        assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "org.singlejar"))
+        assertSuccess(jscanRestricted("--module-path", MODULE_PATH, "--dump-all", "--add-modules", "org.singlejar"))
                 .stderrShouldBeEmpty()
                 .stdoutShouldContain("org.singlejar")
                 .stdoutShouldContain("org.singlejar.main.Main")
@@ -101,7 +106,7 @@ class TestJScanRestricted extends JScanTestBase {
 
     @Test
     public void testWithDepModule() {
-        assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "org.myapp"))
+        assertSuccess(jscanRestricted("--module-path", MODULE_PATH, "--dump-all", "--add-modules", "org.myapp"))
                 .stderrShouldBeEmpty()
                 .stdoutShouldContain("org.lib")
                 .stdoutShouldContain("org.lib.Lib")
@@ -117,7 +122,7 @@ class TestJScanRestricted extends JScanTestBase {
 
     @Test
     public void testAllModulePath() {
-        assertSuccess(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH"))
+        assertSuccess(jscanRestricted("--module-path", MODULE_PATH, "--dump-all", "--add-modules", "ALL-MODULE-PATH"))
                 .stderrShouldBeEmpty()
                 .stdoutShouldContain("org.singlejar")
                 .stdoutShouldContain("org.lib")
@@ -137,13 +142,13 @@ class TestJScanRestricted extends JScanTestBase {
 
     @Test
     public void testInvalidRelease() {
-        assertFailure(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "asdf"))
+        assertFailure(jscanRestricted("--module-path", MODULE_PATH, "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "asdf"))
                 .stderrShouldContain("Invalid release");
     }
 
     @Test
     public void testReleaseNotSupported() {
-        assertFailure(jscanRestricted("--module-path", ".", "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "9999999"))
+        assertFailure(jscanRestricted("--module-path", MODULE_PATH, "--dump-all", "--add-modules", "ALL-MODULE-PATH", "--release", "9999999"))
                 .stderrShouldContain("Release: 9999999 not supported");
     }
 
@@ -176,5 +181,17 @@ class TestJScanRestricted extends JScanTestBase {
         for (String name : moduleNames) {
             assertTrue(names.add(name.strip()));
         }
+    }
+
+    @Test
+    public void testUnnamedPackage() {
+        assertSuccess(jscanRestricted("--class-path", unnamedPackageJar.toString(), "--dump-all"))
+                .stderrShouldBeEmpty()
+                .stdoutShouldContain("ALL-UNNAMED")
+                .stdoutShouldNotContain(".UnnamedPackage")
+                .stdoutShouldContain("UnnamedPackage")
+                .stdoutShouldContain("UnnamedPackage::m()void is a native method declaration")
+                .stdoutShouldContain("UnnamedPackage::main(String[])void references restricted methods")
+                .stdoutShouldContain("java.lang.foreign.MemorySegment::reinterpret(long)MemorySegment");
     }
 }

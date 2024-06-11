@@ -34,6 +34,8 @@ import jdk.test.lib.util.JarUtils;
 
 public class JScanTestBase {
 
+    public static final String MODULE_PATH = "mods";
+
     private static final ToolProvider JSCAN_TOOL = ToolProvider.findFirst("jscan")
             .orElseThrow(() -> new RuntimeException("jscan tool not found"));
 
@@ -65,7 +67,7 @@ public class JScanTestBase {
     }
 
     public static Path makeModularJar(String moduleName) throws IOException {
-        Path jarPath = Path.of(moduleName + ".jar");
+        Path jarPath = Path.of(MODULE_PATH, moduleName + ".jar");
         Path moduleRoot = moduleRoot(moduleName);
         JarUtils.createJarFile(jarPath, moduleRoot);
         return jarPath;
