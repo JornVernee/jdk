@@ -31,15 +31,16 @@ import java.lang.classfile.constantpool.MemberRefEntry;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 
-record MethodRef(ClassDesc owner, String name, MethodTypeDesc type) {
-    public static MethodRef ofModel(MethodModel model) {
+record MethodRef(ClassDesc owner, String name, MethodTypeDesc type, boolean isInterface) {
+    public static MethodRef ofModel(MethodModel model, boolean isInterface) {
         return new MethodRef(model.parent().orElseThrow().thisClass().asSymbol(),
-                model.methodName().stringValue(), model.methodTypeSymbol());
+                model.methodName().stringValue(), model.methodTypeSymbol(), isInterface);
     }
 
     public static MethodRef ofMethodRefEntry(MemberRefEntry method) {
+        boolean isInterface = method instanceof InterfaceMethodRefEntry;
         return new MethodRef(method.owner().asSymbol(),
-                method.name().stringValue(), MethodTypeDesc.ofDescriptor(method.type().stringValue()));
+                method.name().stringValue(), MethodTypeDesc.ofDescriptor(method.type().stringValue()), isInterface);
     }
 
     @Override
