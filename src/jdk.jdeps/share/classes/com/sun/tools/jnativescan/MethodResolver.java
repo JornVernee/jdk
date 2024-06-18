@@ -163,7 +163,8 @@ public class MethodResolver {
                 MethodModel methodModel = method.get();
                 if (!methodModel.flags().has(AccessFlag.ABSTRACT)) {
                     if (result != null) {
-                        return null; // no single non-abstract method
+                        // mimic what VM does in this case
+                        throw new IncompatibleClassChangeError("Conflicting default methods: " + result + " " + methodModel);
                     }
                     result = methodModel;
                 }
