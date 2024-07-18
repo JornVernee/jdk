@@ -40,10 +40,13 @@ import java.lang.invoke.MethodType;
 import java.nio.ByteOrder;
 import java.util.Map;
 
+import static jdk.internal.foreign.layout.ValueLayouts.asUnsigned;
+
 public final class LinuxRISCV64Linker extends AbstractLinker {
 
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
-            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG,
+                    asUnsigned(ValueLayout.JAVA_BYTE), asUnsigned(ValueLayout.JAVA_INT));
 
     public static LinuxRISCV64Linker getInstance() {
         final class Holder {
