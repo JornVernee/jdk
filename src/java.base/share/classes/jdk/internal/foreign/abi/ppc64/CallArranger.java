@@ -50,6 +50,7 @@ import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Optional;
 
+import static jdk.internal.foreign.abi.Binding.ExtendBehavior.ZERO_EXTEND;
 import static jdk.internal.foreign.abi.ppc64.PPC64Architecture.*;
 import static jdk.internal.foreign.abi.ppc64.PPC64Architecture.Regs.*;
 
@@ -377,7 +378,7 @@ public abstract class CallArranger {
                             bindings.shiftLeft(shiftAmount, type)
                                     .vmStore(storage, long.class);
                         } else {
-                            bindings.vmStore(storage, type, true);
+                            bindings.vmStore(storage, type, ZERO_EXTEND);
                         }
                         offset += size;
                     }
@@ -398,7 +399,7 @@ public abstract class CallArranger {
                             bindings.dup();
                         }
                         bindings.bufferLoad(offset, type)
-                                .vmStore(storage, type, true);
+                                .vmStore(storage, type, ZERO_EXTEND);
                         VMStorage storage2 = regs.second()[index];
                         if (storage2 != null) {
                             // We have a second slot to fill (always 64 bit GP reg or stack slot).
