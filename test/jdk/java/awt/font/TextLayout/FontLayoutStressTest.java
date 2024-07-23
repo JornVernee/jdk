@@ -67,7 +67,9 @@ public class FontLayoutStressTest {
                         double width = doLayout();
                         if (width != expectedWidth) {
                             throw new RuntimeException(
-                                    "Unexpected layout result");
+                                    Thread.currentThread()
+                                            + " Unexpected layout result, width=" + width
+                                            + ", expected=" + expectedWidth);
                         }
                     }
                 } catch (Throwable e) {

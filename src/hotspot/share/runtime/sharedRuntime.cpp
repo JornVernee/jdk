@@ -1423,7 +1423,7 @@ JRT_BLOCK_ENTRY(address, SharedRuntime::handle_wrong_method(JavaThread* current)
       caller_frame.is_entry_frame() ||
       caller_frame.is_upcall_stub_frame()) {
     Method* callee = current->callee_target();
-    guarantee(callee != nullptr && callee->is_method(), "bad handshake");
+    guarantee(callee != nullptr && callee->is_method(), "bad handshake. callee=" PTR_FORMAT, p2i(callee));
     current->set_vm_result_2(callee);
     current->set_callee_target(nullptr);
     if (caller_frame.is_entry_frame() && VM_Version::supports_fast_class_init_checks()) {

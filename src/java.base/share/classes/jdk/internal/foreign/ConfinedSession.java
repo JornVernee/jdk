@@ -27,6 +27,7 @@ package jdk.internal.foreign;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.Objects;
 
 import jdk.internal.vm.annotation.ForceInline;
 
@@ -67,15 +68,8 @@ final class ConfinedSession extends MemorySessionImpl {
     @Override
     @ForceInline
     public void release0() {
-        if (Thread.currentThread() == owner) {
-            state--;
-        } else {
-            // It is possible to end up here in two cases: this session was kept alive by some other confined session
-            // which is implicitly released (in which case the release call comes from the cleaner thread). Or,
-            // this session might be kept alive by a shared session, which means the release call can come from any
-            // thread.
-            ASYNC_RELEASE_COUNT.getAndAdd(this, 1);
-        }
+        checkValidState();
+        state--;
     }
 
     void justClose() {

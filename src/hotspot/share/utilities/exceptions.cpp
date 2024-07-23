@@ -117,9 +117,10 @@ bool Exceptions::special_exception(JavaThread* thread, const char* file, int lin
   if (h_exception.is_null() && !thread->can_call_java()) {
     ResourceMark rm(thread);
     const char* exc_value = h_name != nullptr ? h_name->as_C_string() : "null";
-    log_info(exceptions)("Thread cannot call Java so instead of throwing exception <%.*s%s%.*s> (" PTR_FORMAT ") \n"
+    log_info(exceptions)("Thread %s cannot call Java so instead of throwing exception <%.*s%s%.*s> (" PTR_FORMAT ") \n"
                         "at [%s, line %d]\nfor thread " PTR_FORMAT ",\n"
                         "throwing pre-allocated exception: %s",
+                        thread->name(),
                         MAX_LEN, exc_value, message ? ": " : "",
                         MAX_LEN, message ? message : "",
                         p2i(h_exception()), file, line, p2i(thread),

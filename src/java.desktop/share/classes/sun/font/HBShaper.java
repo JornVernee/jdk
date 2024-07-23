@@ -186,8 +186,8 @@ public class HBShaper {
         MethodHandle tmp3 = LINKER.downcallHandle(dispose_face_symbol, disposeFaceDescriptor);
         dispose_face_handle = tmp3;
 
-        FunctionDescriptor shapeDesc = FunctionDescriptor.ofVoid(
-            //JAVA_INT,    // return type
+        FunctionDescriptor shapeDesc = FunctionDescriptor.of(
+            JAVA_INT,    // return type
             JAVA_FLOAT,  // ptSize
             ADDRESS,     // matrix
             ADDRESS,     // face
@@ -274,7 +274,7 @@ public class HBShaper {
                 get_v_advance_stub,
                 get_contour_pt_stub);
         } catch (Throwable t) {
-            t.printStackTrace();
+            throw new AssertionError(t);
         }
         hb_jdk_font_funcs_struct = s;
 
@@ -470,13 +470,14 @@ public class HBShaper {
                 MemorySegment matrix = arena.allocateFrom(JAVA_FLOAT, mat);
                 MemorySegment chars = arena.allocateFrom(JAVA_CHAR, text);
 
-                /*int ret =*/ jdk_hb_shape_handle.invokeExact(
+                int ignored = (int) jdk_hb_shape_handle.invokeExact(
                      ptSize, matrix, hbface, chars, text.length,
                      script, offset, limit,
                      baseIndex, startX, startY, flags, slot,
                      hb_jdk_font_funcs_struct,
                      store_layout_results_stub);
             } catch (Throwable t) {
+                throw new AssertionError(t);
             }
         });
     }

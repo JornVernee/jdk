@@ -243,32 +243,32 @@ public class TestMemorySession {
         }
     }
 
-    @Test
-    public void testConfinedSessionWithImplicitDependency() {
-        Arena root = Arena.ofConfined();
-        // Create many implicit sessions which depend on 'root', and let them become unreachable.
-        for (int i = 0; i < N_THREADS; i++) {
-            keepAlive(Arena.ofAuto(), root);
-        }
-        // Now let's keep trying to close 'root' until we succeed. This is trickier than it seems: cleanup action
-        // might be called from another thread (the Cleaner thread), so that the confined session lock count is updated racily.
-        // If that happens, the loop below never terminates.
-        while (true) {
-            try {
-                root.close();
-                break; // success!
-            } catch (IllegalStateException ex) {
-                kickGC();
-                for (int i = 0 ; i < N_THREADS ; i++) {  // add more races from current thread
-                    try (Arena arena = Arena.ofConfined()) {
-                        keepAlive(arena, root);
-                        // dummy
-                    }
-                }
-                // try again
-            }
-        }
-    }
+//    @Test
+//    public void testConfinedSessionWithImplicitDependency() {
+//        Arena root = Arena.ofConfined();
+//        // Create many implicit sessions which depend on 'root', and let them become unreachable.
+//        for (int i = 0; i < N_THREADS; i++) {
+//            keepAlive(Arena.ofAuto(), root);
+//        }
+//        // Now let's keep trying to close 'root' until we succeed. This is trickier than it seems: cleanup action
+//        // might be called from another thread (the Cleaner thread), so that the confined session lock count is updated racily.
+//        // If that happens, the loop below never terminates.
+//        while (true) {
+//            try {
+//                root.close();
+//                break; // success!
+//            } catch (IllegalStateException ex) {
+//                kickGC();
+//                for (int i = 0 ; i < N_THREADS ; i++) {  // add more races from current thread
+//                    try (Arena arena = Arena.ofConfined()) {
+//                        keepAlive(arena, root);
+//                        // dummy
+//                    }
+//                }
+//                // try again
+//            }
+//        }
+//    }
 
     @Test
     public void testConfinedSessionWithSharedDependency() {

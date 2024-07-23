@@ -623,7 +623,7 @@ UpcallStub* UpcallStub::create(const char* name, CodeBuffer* cb, jobject receive
   // Track memory usage statistic after releasing CodeCache_lock
   MemoryService::track_code_cache_memory_usage();
 
-  trace_new_stub(blob, "UpcallStub");
+  trace_new_stub(blob, "UpcallStub - ", name);
 
   return blob;
 }

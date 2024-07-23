@@ -189,7 +189,11 @@ public abstract sealed class MemorySessionImpl
      */
     @ForceInline
     public void checkValidStateRaw() {
-        if (owner != null && owner != Thread.currentThread()) {
+        final Thread curr;
+        if (owner != null && owner != (curr = Thread.currentThread())) {
+            System.err.println("wrong thread: " + curr
+                    + " (objid= " + Objects.toIdentityString(curr)
+                    + ") owner: " + owner + " (objid=" + Objects.toIdentityString(owner) + ")");
             throw WRONG_THREAD;
         }
         if (state < OPEN) {
