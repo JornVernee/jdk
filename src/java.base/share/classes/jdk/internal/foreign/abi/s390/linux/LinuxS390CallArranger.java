@@ -25,8 +25,11 @@
  */
 package jdk.internal.foreign.abi.s390.linux;
 
-import java.lang.foreign.*;
-
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
 import jdk.internal.foreign.abi.ABIDescriptor;
 import jdk.internal.foreign.abi.AbstractLinker.UpcallStubFactory;
 import jdk.internal.foreign.abi.Binding;

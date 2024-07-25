@@ -28,8 +28,12 @@
 
 package jdk.internal.foreign.abi.riscv64.linux;
 
-import java.lang.foreign.*;
-
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import jdk.internal.foreign.abi.ABIDescriptor;
 import jdk.internal.foreign.abi.AbstractLinker.UpcallStubFactory;
 import jdk.internal.foreign.abi.Binding;

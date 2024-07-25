@@ -56,6 +56,7 @@ import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
 import static platform.PlatformLayouts.AArch64.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class TestMacOsAArch64CallArranger extends CallArrangerTestBase {
 
