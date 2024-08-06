@@ -22,7 +22,7 @@
  */
 
 #include "precompiled.hpp"
-#include "classfile/javaClasses.hpp"
+#include "classfile/javaClasses.inline.hpp"
 #include "classfile/symbolTable.hpp"
 #include "classfile/systemDictionary.hpp"
 #include "compiler/compilationPolicy.hpp"
@@ -108,7 +108,14 @@ JavaThread* UpcallLinker::on_entry(UpcallStub::FrameData* context, jobject recei
   debug_only(thread->inc_java_call_counter());
   thread->set_active_handles(context->new_handles);     // install new handle block and reset Java frame linkage
 
-  thread->set_vm_result(JNIHandles::resolve(receiver));
+  // load receiver and target Method* for stub to use
+  oop receiverOop = JNIHandles::resolve(receiver);
+  oop lform = java_lang_invoke_MethodHandle::form(receiverOop);
+  oop vmentry = java_lang_invoke_LambdaForm::vmentry(lform);
+  Method* vmtarget = java_lang_invoke_MemberName::vmtarget(vmentry);
+  thread->set_vm_result(receiverOop);
+  thread->set_callee_target(vmtarget); // just in case callee is deoptimized (see SharedRuntime::handle_wrong_method)
+  thread->set_vm_result_2(vmtarget);
 
   return thread;
 }

@@ -275,6 +275,29 @@ inline bool java_lang_invoke_MethodHandle::is_instance(oop obj) {
   return obj != nullptr && is_subclass(obj->klass());
 }
 
+inline oop java_lang_invoke_MethodHandle::form(oop mh) {
+  assert(_form_offset != 0, "");
+  return mh->obj_field(_form_offset);
+}
+
+inline oop java_lang_invoke_LambdaForm::vmentry(oop lform) {
+  assert(is_instance(lform), "wrong type");
+  return lform->obj_field(_vmentry_offset);
+}
+
+inline Method* java_lang_invoke_ResolvedMethodName::vmtarget(oop resolved_method) {
+  assert(is_instance(resolved_method), "wrong type");
+  Method* m = (Method*)resolved_method->address_field(_vmtarget_offset);
+  assert(m->is_method(), "must be");
+  return m;
+}
+
+inline Method* java_lang_invoke_MemberName::vmtarget(oop mname) {
+  assert(is_instance(mname), "wrong type");
+  oop method = mname->obj_field(_method_offset);
+  return method == nullptr ? nullptr : java_lang_invoke_ResolvedMethodName::vmtarget(method);
+}
+
 inline bool java_lang_Class::is_instance(oop obj) {
   return obj != nullptr && obj->klass() == vmClasses::Class_klass();
 }

@@ -4279,10 +4279,10 @@ void java_lang_invoke_MethodHandle::set_type(oop mh, oop mtype) {
   mh->obj_field_put(_type_offset, mtype);
 }
 
-oop java_lang_invoke_MethodHandle::form(oop mh) {
-  assert(_form_offset != 0, "");
-  return mh->obj_field(_form_offset);
-}
+// oop java_lang_invoke_MethodHandle::form(oop mh) {
+//   assert(_form_offset != 0, "");
+//   return mh->obj_field(_form_offset);
+// }
 
 void java_lang_invoke_MethodHandle::set_form(oop mh, oop lform) {
   assert(_form_offset != 0, "");
@@ -4333,11 +4333,11 @@ void java_lang_invoke_MemberName::set_flags(oop mname, int flags) {
 
 
 // Return vmtarget from ResolvedMethodName method field through indirection
-Method* java_lang_invoke_MemberName::vmtarget(oop mname) {
-  assert(is_instance(mname), "wrong type");
-  oop method = mname->obj_field(_method_offset);
-  return method == nullptr ? nullptr : java_lang_invoke_ResolvedMethodName::vmtarget(method);
-}
+// Method* java_lang_invoke_MemberName::vmtarget(oop mname) {
+//   assert(is_instance(mname), "wrong type");
+//   oop method = mname->obj_field(_method_offset);
+//   return method == nullptr ? nullptr : java_lang_invoke_ResolvedMethodName::vmtarget(method);
+// }
 
 bool java_lang_invoke_MemberName::is_method(oop mname) {
   assert(is_instance(mname), "must be MemberName");
@@ -4360,12 +4360,12 @@ void java_lang_invoke_MemberName::set_vmindex(oop mname, intptr_t index) {
 }
 
 
-Method* java_lang_invoke_ResolvedMethodName::vmtarget(oop resolved_method) {
-  assert(is_instance(resolved_method), "wrong type");
-  Method* m = (Method*)resolved_method->address_field(_vmtarget_offset);
-  assert(m->is_method(), "must be");
-  return m;
-}
+// Method* java_lang_invoke_ResolvedMethodName::vmtarget(oop resolved_method) {
+//   assert(is_instance(resolved_method), "wrong type");
+//   Method* m = (Method*)resolved_method->address_field(_vmtarget_offset);
+//   assert(m->is_method(), "must be");
+//   return m;
+// }
 
 // Used by redefinition to change Method* to new Method* with same hash (name, signature)
 void java_lang_invoke_ResolvedMethodName::set_vmtarget(oop resolved_method, Method* m) {
@@ -4417,10 +4417,10 @@ oop java_lang_invoke_ResolvedMethodName::find_resolved_method(const methodHandle
   return ResolvedMethodTable::add_method(method, Handle(THREAD, new_resolved_method));
 }
 
-oop java_lang_invoke_LambdaForm::vmentry(oop lform) {
-  assert(is_instance(lform), "wrong type");
-  return lform->obj_field(_vmentry_offset);
-}
+// oop java_lang_invoke_LambdaForm::vmentry(oop lform) {
+//   assert(is_instance(lform), "wrong type");
+//   return lform->obj_field(_vmentry_offset);
+// }
 
 
 // Support for java_lang_invoke_MethodType
