@@ -46,6 +46,7 @@ public:
   }
 
   void copy(JavaFrameAnchor* src) {
+    assert(is_valid_state_for_copy(), "race with GC");
     // In order to make sure the transition state is valid for "this"
     // We must clear _last_Java_sp before copying the rest of the new data
     //

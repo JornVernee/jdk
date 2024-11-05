@@ -81,6 +81,10 @@ friend class UpcallLinker;
   // and no one should look at the other fields.
   void zap(void)                                     { _last_Java_sp = nullptr; }
 
+#ifdef ASSERT
+  static bool is_valid_state_for_copy();
+#endif
+
 #include CPU_HEADER(javaFrameAnchor)
 
 public:
