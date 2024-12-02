@@ -260,12 +260,15 @@ public abstract sealed class MemorySessionImpl
             cleanup(); // cleaner interop
         }
 
-        static void cleanup(ResourceCleanup first, ResourceCleanup cache) {
+        static void cleanup(ResourceCleanup first) {
             RuntimeException pendingException = null;
-            if (cache != null) {
-                pendingException = cleanupSingle(cache, pendingException);
-            }
             ResourceCleanup current = first;
+            // manually peel an iteration, which helps EA see that first does
+            // not escape if we only have 1 element
+            if (current != null) {
+                pendingException = cleanupSingle(current, pendingException);
+                current = current.next;
+            }
             while (current != null) {
                 pendingException = cleanupSingle(current, pendingException);
                 current = current.next;

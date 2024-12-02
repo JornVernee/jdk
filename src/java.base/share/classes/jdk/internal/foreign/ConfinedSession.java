@@ -86,17 +86,12 @@ final class ConfinedSession extends MemorySessionImpl {
      * A confined resource list; no races are possible here.
      */
     static final class ConfinedResourceList extends ResourceList {
-        ResourceCleanup cache;
 
         @Override
         void add(ResourceCleanup cleanup) {
             if (fst != ResourceCleanup.CLOSED_LIST) {
-                if (cache == null) {
-                    cache = cleanup;
-                } else {
-                    cleanup.next = fst;
-                    fst = cleanup;
-                }
+                cleanup.next = fst;
+                fst = cleanup;
             } else {
                 throw alreadyClosed();
             }
@@ -107,7 +102,7 @@ final class ConfinedSession extends MemorySessionImpl {
             if (fst != ResourceCleanup.CLOSED_LIST) {
                 ResourceCleanup prev = fst;
                 fst = ResourceCleanup.CLOSED_LIST;
-                cleanup(prev, cache);
+                cleanup(prev);
             } else {
                 throw alreadyClosed();
             }
