@@ -2656,7 +2656,7 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   set_predefined_output_for_runtime_call(call);
 
   Node* ret;
-  if (method() == NULL || method()->return_type()->basic_type() == T_VOID) {
+  if (method()->return_type()->basic_type() == T_VOID) {
     ret = top();
   } else {
     ret = gvn().transform(new ProjNode(call, TypeFunc::Parms));
