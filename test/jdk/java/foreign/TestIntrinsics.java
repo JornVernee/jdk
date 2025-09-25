@@ -30,9 +30,9 @@
  *   TestIntrinsics
  */
 
-import java.lang.foreign.Linker;
 import java.lang.foreign.FunctionDescriptor;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
@@ -42,13 +42,12 @@ import java.lang.foreign.MemoryLayout;
 import org.testng.annotations.*;
 
 import static java.lang.foreign.Linker.Option.firstVariadicArg;
-import static java.lang.invoke.MethodType.methodType;
 import static java.lang.foreign.ValueLayout.JAVA_CHAR;
 import static org.testng.Assert.assertEquals;
 
 public class TestIntrinsics extends NativeTestHelper {
 
-    static final Linker abi = Linker.nativeLinker();
+    static final Linker.Option CRITICAL = Linker.Option.critical(false);
     static {
         System.loadLibrary("Intrinsics");
     }
@@ -78,36 +77,36 @@ public class TestIntrinsics extends NativeTestHelper {
         });
 
         interface AddIdentity {
-            void add(String name, Class<?> carrier, MemoryLayout layout, Object arg);
+            void add(String name, MemoryLayout layout, Object arg);
         }
 
-        AddIdentity addIdentity = (name, carrier, layout, arg) -> {
+        AddIdentity addIdentity = (name, layout, arg) -> {
             MemorySegment ma = findNativeOrThrow(name);
             FunctionDescriptor fd = FunctionDescriptor.of(layout, layout);
 
-            tests.add(abi.downcallHandle(ma, fd), arg, arg);
-            tests.add(abi.downcallHandle(fd), arg, ma, arg);
+            tests.add(LINKER.downcallHandle(ma, fd, CRITICAL), arg, arg);
+            tests.add(LINKER.downcallHandle(fd, CRITICAL), arg, ma, arg);
         };
 
         { // empty
             MemorySegment ma = findNativeOrThrow("empty");
             FunctionDescriptor fd = FunctionDescriptor.ofVoid();
-            tests.add(abi.downcallHandle(ma, fd), null);
+            tests.add(LINKER.downcallHandle(ma, fd, CRITICAL), null);
         }
 
-        addIdentity.add("identity_bool",   boolean.class, C_BOOL,   true);
-        addIdentity.add("identity_char",   byte.class,    C_CHAR,   (byte) 10);
-        addIdentity.add("identity_short",  short.class,   C_SHORT, (short) 10);
-        addIdentity.add("identity_int",    int.class,     C_INT,           10);
-        addIdentity.add("identity_long",   long.class,    C_LONG_LONG,     10L);
-        addIdentity.add("identity_float",  float.class,   C_FLOAT,         10F);
-        addIdentity.add("identity_double", double.class,  C_DOUBLE,        10D);
+        addIdentity.add("identity_bool",   C_BOOL,          true);
+        addIdentity.add("identity_char",   C_CHAR,   (byte) 10);
+        addIdentity.add("identity_short",  C_SHORT, (short) 10);
+        addIdentity.add("identity_int",    C_INT,           10);
+        addIdentity.add("identity_long",   C_LONG_LONG,     10L);
+        addIdentity.add("identity_float",  C_FLOAT,         10F);
+        addIdentity.add("identity_double", C_DOUBLE,        10D);
 
         { // identity_va
             MemorySegment ma = findNativeOrThrow("identity_va");
             FunctionDescriptor fd = FunctionDescriptor.of(C_INT, C_INT,
                                                                  C_DOUBLE, C_INT, C_DOUBLE, C_LONG_LONG);
-            tests.add(abi.downcallHandle(ma, fd, firstVariadicArg(1)), 1, 1, 10D, 2, 3D, 4L);
+            tests.add(LINKER.downcallHandle(ma, fd, firstVariadicArg(1), CRITICAL), 1, 1, 10D, 2, 3D, 4L);
         }
 
         { // high_arity
@@ -118,7 +117,7 @@ public class TestIntrinsics extends NativeTestHelper {
                 MemorySegment ma = findNativeOrThrow("invoke_high_arity" + i);
                 FunctionDescriptor fd = baseFD.changeReturnLayout(baseFD.argumentLayouts().get(i));
                 Object expected = args[i];
-                tests.add(abi.downcallHandle(ma, fd), expected, args);
+                tests.add(LINKER.downcallHandle(ma, fd, CRITICAL), expected, args);
             }
         }
 

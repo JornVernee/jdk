@@ -476,6 +476,11 @@ public class IRNode {
         beforeMatchingNameRegex(CALL, "Call.*Java");
     }
 
+    public static final String CALL_NATIVE = PREFIX + "CALL_NATIVE" + POSTFIX;
+    static {
+        beforeMatchingNameRegex(CALL_NATIVE, "CallNative");
+    }
+
     public static final String CALL_OF = COMPOSITE_PREFIX + "CALL_OF" + POSTFIX;
     static {
         callOfNodes(CALL_OF, "Call.*");

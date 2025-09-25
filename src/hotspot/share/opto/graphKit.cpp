@@ -2618,7 +2618,7 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   }
 
   uint n_returns = call_type->range()->cnt() - TypeFunc::Parms;
-  assert(n_returns < 2, "multiple return nyi");
+  assert(n_returns <= 2, "multiple return nyi");
   GrowableArray<VMReg> ret_regs(C->comp_arena(), n_returns, n_returns, VMRegImpl::Bad());
   const Type** ret_types = TypeTuple::fields(n_returns);
 
