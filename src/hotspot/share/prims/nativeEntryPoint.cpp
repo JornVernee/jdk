@@ -94,31 +94,25 @@ JNI_END
 // calling conventions, but in this case dynamically derived from the volatile registers of
 // an ABIDescriptor
 JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobjectArray volatile_regs))
-  ResourceMark rm;
+  char policy[REG_COUNT + 1];
+
+  for (OptoReg::Name i = 0; i < REG_COUNT; i++) {
+    // registers considered non-volatile by default
+    // save on entry (SOE)
+    policy[i] = 'E';
+  }
+
   objArrayOop volatile_regs_oop = oop_cast<objArrayOop>(JNIHandles::resolve(volatile_regs));
-  RegMask mask;
   for (int i = 0; i < volatile_regs_oop->length(); i++) {
     VMReg vmr = as_VMReg(ForeignGlobals::parse_vmstorage(volatile_regs_oop->obj_at(i)));
     // Not every VMStorage is representable as a VMReg,
     // but we don't care about the ones that aren't in this case
     if (vmr->is_valid()) {
-      mask.Insert(OptoReg::as_OptoReg(vmr));
-    }
-  }
-
-  char policy[REG_COUNT + 1];
-
-  OptoReg::Name framePointer = Matcher::c_frame_pointer(); // FIXME get from ABI?
-  for (OptoReg::Name i = 0; i < REG_COUNT; i++) {
-    if (i == framePointer || i == framePointer + 1) { // RSP_num and RSP_H_num
-      // not saved (NS)
-      policy[i] = 'N';
-    } else if (mask.Member(i)) {
-      // save on call (SOC)
-      policy[i] = 'C';
-    } else {
-      // save on entry (SOE)
-      policy[i] = 'E';
+      // The difference between NS and SOC doesn't matter here since C2
+      // doesn't handle register allocation for the native side.
+      // It is enough to know that these registers should be saved when
+      // doing a native call.
+      policy[OptoReg::as_OptoReg(vmr)] = 'C'; // Save on call (SOC)
     }
   }
 
