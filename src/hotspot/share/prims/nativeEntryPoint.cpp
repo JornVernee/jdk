@@ -90,29 +90,34 @@ JNI_ENTRY(jlong, NEP_makeDowncallStub(JNIEnv* env, jclass _unused, jobject metho
   return (jlong) stub->code_begin();
 JNI_END
 
+// This method constructs a register save policy as found in the .ad files for the Java and C
+// calling conventions, but in this case dynamically derived from the volatile registers of
+// an ABIDescriptor
 JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobjectArray volatile_regs))
   ResourceMark rm;
   objArrayOop volatile_regs_oop = oop_cast<objArrayOop>(JNIHandles::resolve(volatile_regs));
-  GrowableArray<OptoReg::Name> soc_regs; // FIXME use a set for faster lookup?
+  RegMask mask;
   for (int i = 0; i < volatile_regs_oop->length(); i++) {
-    OptoReg::Name reg = OptoReg::as_OptoReg(as_VMReg(ForeignGlobals::parse_vmstorage(volatile_regs_oop->obj_at(i))));
-    soc_regs.append(reg);
+    VMReg vmr = as_VMReg(ForeignGlobals::parse_vmstorage(volatile_regs_oop->obj_at(i)));
+    // Not every VMStorage is representable as a VMReg,
+    // but we don't care about the ones that aren't in this case
+    if (vmr->is_valid()) {
+      mask.Insert(OptoReg::as_OptoReg(vmr));
+    }
   }
 
   char policy[REG_COUNT];
-  //   if      (!strcmp(calling_convention, "NS"))  callconv = 'N';
-  // else if (!strcmp(calling_convention, "SOE")) callconv = 'E';
-  // else if (!strcmp(calling_convention, "SOC")) callconv = 'C';
-  // else if (!strcmp(calling_convention, "AS"))  callconv = 'A';
-  // else                                         callconv = 'Z';
 
   OptoReg::Name framePointer = Matcher::c_frame_pointer(); // FIXME get from ABI?
   for (OptoReg::Name i = 0; i < REG_COUNT; i++) {
     if (i == framePointer || i == framePointer + 1) { // RSP_num and RSP_H_num
+      // not saved (NS)
       policy[i] = 'N';
-    } else if (soc_regs.contains(i)) {
+    } else if (mask.Member(i)) {
+      // save on call (SOC)
       policy[i] = 'C';
     } else {
+      // save on entry (SOE)
       policy[i] = 'E';
     }
   }
