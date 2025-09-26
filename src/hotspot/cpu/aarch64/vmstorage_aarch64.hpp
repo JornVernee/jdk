@@ -60,6 +60,18 @@ inline FloatRegister as_FloatRegister(VMStorage vms) {
   return ::as_FloatRegister(vms.index());
 }
 
+inline VMReg as_VMReg(VMStorage vms) {
+  switch (vms.type()) {
+    case StorageType::INTEGER: return as_Register(vms)->as_VMReg();
+    case StorageType::VECTOR:  return as_FloatRegister(vms)->as_VMReg();
+    case StorageType::STACK: {
+      assert((vms.offset() % VMRegImpl::stack_slot_size) == 0, "can not represent as VMReg");
+      return VMRegImpl::stack2reg(vms.offset() / VMRegImpl::stack_slot_size);
+    }
+    default: return VMRegImpl::Bad();
+  }
+}
+
 constexpr inline VMStorage as_VMStorage(Register reg) {
   return VMStorage::reg_storage(StorageType::INTEGER, REG64_MASK, reg->encoding());
 }

@@ -106,7 +106,7 @@ JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobject
     }
   }
 
-  char policy[REG_COUNT];
+  char policy[REG_COUNT + 1];
 
   OptoReg::Name framePointer = Matcher::c_frame_pointer(); // FIXME get from ABI?
   for (OptoReg::Name i = 0; i < REG_COUNT; i++) {
@@ -121,6 +121,8 @@ JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobject
       policy[i] = 'E';
     }
   }
+
+  policy[REG_COUNT] = '\0';
 
   oop result = java_lang_String::create_oop_from_str(policy, CHECK_NULL);
   return (jstring) JNIHandles::make_local(THREAD, result);
