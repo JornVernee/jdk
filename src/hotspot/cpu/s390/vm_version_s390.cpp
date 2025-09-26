@@ -24,6 +24,7 @@
  */
 
 #include "asm/assembler.inline.hpp"
+#include "classfile/vmIntrinsics.hpp"
 #include "compiler/disassembler.hpp"
 #include "code/compiledIC.hpp"
 #include "jvm.h"
@@ -1552,4 +1553,17 @@ void VM_Version::initialize_cpu_information(void) {
   os::snprintf_checked(_cpu_name, CPU_TYPE_DESC_BUF_SIZE, "s390 %s", VM_Version::get_model_string());
   os::snprintf_checked(_cpu_desc, CPU_DETAILED_DESC_BUF_SIZE, "s390 %s", cpu_info_string());
   _initialized = true;
+}
+
+bool VM_Version::is_intrinsic_supported(vmIntrinsicID id) {
+  assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+  switch (id) {
+#ifdef COMPILER2
+  case vmIntrinsics::_linkToNative:
+    return false;
+#endif
+  default:
+    break;
+  }
+  return true;
 }

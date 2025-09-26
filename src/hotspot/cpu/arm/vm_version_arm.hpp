@@ -108,6 +108,8 @@ class VM_Version: public Abstract_VM_Version {
 
   static void initialize_cpu_information(void);
 
+  static bool is_intrinsic_supported(vmIntrinsicID id);
+
   static bool profile_all_receivers_at_type_check() { return false; }
 };
 

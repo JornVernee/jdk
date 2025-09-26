@@ -590,6 +590,8 @@ class VM_Version: public Abstract_VM_Version {
   static unsigned long z_SIGSEGV();
 
   static void initialize_cpu_information(void);
+
+  static bool is_intrinsic_supported(vmIntrinsicID id);
 };
 
 #endif // CPU_S390_VM_VERSION_S390_HPP

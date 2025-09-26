@@ -221,6 +221,8 @@ enum Ampere_CPU_Model {
   static bool use_neon_for_vector(int vector_length_in_bytes) {
     return vector_length_in_bytes <= 16;
   }
+
+  static bool is_intrinsic_supported(vmIntrinsicID id);
 };
 
 #endif // CPU_AARCH64_VM_VERSION_AARCH64_HPP

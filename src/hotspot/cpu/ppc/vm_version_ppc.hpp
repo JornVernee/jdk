@@ -81,6 +81,8 @@ public:
   static uint64_t _dscr_val;
 
   static void initialize_cpu_information(void);
+
+  static bool is_intrinsic_supported(vmIntrinsicID id);
 };
 
 #endif // CPU_PPC_VM_VERSION_PPC_HPP

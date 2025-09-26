@@ -23,6 +23,7 @@
  *
  */
 
+#include "classfile/vmIntrinsics.hpp"
 #include "pauth_aarch64.hpp"
 #include "register_aarch64.hpp"
 #include "runtime/arguments.hpp"
@@ -729,4 +730,17 @@ void VM_Version::initialize_cpu_information(void) {
   os::snprintf_checked(_cpu_desc + desc_len, CPU_DETAILED_DESC_BUF_SIZE - desc_len, " %s", _cpu_info_string);
 
   _initialized = true;
+}
+
+bool VM_Version::is_intrinsic_supported(vmIntrinsicID id) {
+  assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+  switch (id) {
+#ifdef COMPILER2
+  case vmIntrinsics::_linkToNative:
+    return NOT_WINDOWS(true) WINDOWS_ONLY(false);
+#endif
+  default:
+    break;
+  }
+  return true;
 }
