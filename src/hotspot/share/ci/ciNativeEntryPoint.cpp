@@ -40,9 +40,10 @@ VMReg* get_VMReg_array(ciArray* array) {
 
   for (int i = 0; i < array->length(); i++) {
     ciConstant con = array->element_value(i);
-    VMStorage vms = con.as_object()->as_vmstorage()->parse();
-    VMReg reg = as_VMReg(vms);
-    out[i] = reg;
+    ciObject* obj = con.as_object();
+    out[i] = obj->is_null_object()
+      ? VMRegImpl::Bad()
+      : obj->as_vmstorage()->as_VMReg();
   }
 
   return out;
@@ -64,6 +65,7 @@ ciNativeEntryPoint::ciNativeEntryPoint(instanceHandle h_i) : ciInstance(h_i) {
   _shadow_space = jdk_internal_foreign_abi_NativeEntryPoint::shadow_space(get_oop());
   _needs_transition = jdk_internal_foreign_abi_NativeEntryPoint::needs_transition(get_oop());
   _needs_return_buffer = jdk_internal_foreign_abi_NativeEntryPoint::needs_return_buffer(get_oop());
+  _uses_address_pairs = jdk_internal_foreign_abi_NativeEntryPoint::uses_address_pairs(get_oop());
 
   oop c2_reg_save_policy_str = jdk_internal_foreign_abi_NativeEntryPoint::c2RegSavePolicy(get_oop());
   assert(c2_reg_save_policy_str != NULL, "Must have save policy");
@@ -88,6 +90,10 @@ bool ciNativeEntryPoint::needs_transition() const {
 
 bool ciNativeEntryPoint::needs_return_buffer() const {
   return _needs_return_buffer;
+}
+
+bool ciNativeEntryPoint::uses_address_pairs() const {
+  return _uses_address_pairs;
 }
 
 const char* ciNativeEntryPoint::c2_reg_save_policy() const {

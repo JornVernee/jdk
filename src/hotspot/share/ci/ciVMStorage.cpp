@@ -26,9 +26,12 @@
 #include "ci/ciUtilities.inline.hpp"
 #include "ci/ciVMStorage.hpp"
 #include "prims/foreignGlobals.hpp"
+#include "prims/vmstorage.hpp"
 
-ciVMStorage::ciVMStorage(instanceHandle h_i) : ciInstance(h_i) {}
+ciVMStorage::ciVMStorage(instanceHandle h_i) : ciInstance(h_i) {
+  _storage = ForeignGlobals::parse_vmstorage(get_oop());
+}
 
-VMStorage ciVMStorage::parse() const {
-  return ForeignGlobals::parse_vmstorage(get_oop());
+VMReg ciVMStorage::as_VMReg() const {
+  return ::as_VMReg(_storage);
 }

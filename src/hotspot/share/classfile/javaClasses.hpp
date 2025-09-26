@@ -1168,6 +1168,7 @@ class jdk_internal_foreign_abi_NativeEntryPoint: AllStatic {
   static int _returnMoves_offset;
   static int _needs_transition_offset;
   static int _needs_return_buffer_offset;
+  static int _uses_address_pairs_offset;
   static int _method_type_offset;
   static int _downcall_stub_address_offset;
   static int _c2RegSavePolicy_offset;
@@ -1183,6 +1184,7 @@ class jdk_internal_foreign_abi_NativeEntryPoint: AllStatic {
   static oop        returnMoves(oop entry);
   static jboolean   needs_transition(oop entry);
   static jboolean   needs_return_buffer(oop entry);
+  static jboolean   uses_address_pairs(oop entry);
   static oop        method_type(oop entry);
   static jlong      downcall_stub_address(oop entry);
   static oop        c2RegSavePolicy(oop entry);
@@ -1195,14 +1197,7 @@ class jdk_internal_foreign_abi_NativeEntryPoint: AllStatic {
   static bool is_instance(oop obj);
 
   // Accessors for code generation:
-  static int shadow_space_offset_in_bytes()          { return _shadow_space_offset;    }
-  static int argMoves_offset_in_bytes()              { return _argMoves_offset;        }
-  static int returnMoves_offset_in_bytes()           { return _returnMoves_offset;     }
-  static int needs_transition_offset_in_bytes()      { return _needs_transition_offset; }
-  static int _needs_return_buffer_offset_in_bytes()  { return _needs_return_buffer_offset; }
-  static int method_type_offset_in_bytes()           { return _method_type_offset; }
   static int downcall_stub_address_offset_in_bytes() { return _downcall_stub_address_offset; }
-  static int c2RegSavePolicy_offset_in_bytes()       { return _c2RegSavePolicy_offset; }
 };
 
 class jdk_internal_foreign_abi_ABIDescriptor: AllStatic {

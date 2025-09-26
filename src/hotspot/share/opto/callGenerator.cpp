@@ -1162,7 +1162,7 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
           const TypeOopPtr* nep_t = nep_n->bottom_type()->is_oopptr();
           ciNativeEntryPoint* nep = nep_t->const_oop()->as_native_entry_point();
 
-          if (!nep->needs_transition() && !nep->needs_return_buffer()) {
+          if (!nep->needs_transition() && !nep->needs_return_buffer() && !nep->uses_address_pairs()) {
             const TypeLong* addr_t = addr_n->bottom_type()->is_long();
             address addr = (address) addr_t->get_con();
 

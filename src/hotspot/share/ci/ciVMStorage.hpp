@@ -33,13 +33,14 @@
 //
 // The class represents a jdk.internal.foreign.abi.VMStorage object.
 class ciVMStorage : public ciInstance {
+  VMStorage _storage;
 public:
   ciVMStorage(instanceHandle h_i);
 
   // What kind of ciObject is this?
   bool is_vmstorage() const { return true; }
 
-  VMStorage parse() const;
+  VMReg as_VMReg() const;
 };
 
 #endif // SHARE_VM_CI_CIVMSTORAGE_HPP

@@ -49,6 +49,7 @@ public class NativeEntryPoint {
     private final VMStorage[] returnMoves;
     private final boolean needsTransition;
     private final boolean needsReturnBuffer;
+    private final boolean usesAddressPairs;
 
     private final String c2RegSavePolicy;
 
@@ -57,7 +58,7 @@ public class NativeEntryPoint {
     private record CacheKey(MethodType methodType, ABIDescriptor abi,
                             List<VMStorage> argMoves, List<VMStorage> retMoves,
                             boolean needsReturnBuffer, int capturedStateMask,
-                            boolean needsTransition) {
+                            boolean needsTransition, boolean usesAddressPairs) {
 
         @Override
         public boolean equals(Object o) {
@@ -65,6 +66,7 @@ public class NativeEntryPoint {
 
             return methodType == other.methodType && abi == other.abi && capturedStateMask == other.capturedStateMask
                     && needsTransition == other.needsTransition && needsReturnBuffer == other.needsReturnBuffer
+                    && usesAddressPairs == other.usesAddressPairs
                     && argMoves.equals(other.argMoves) && retMoves.equals(other.retMoves);
         }
 
@@ -77,13 +79,14 @@ public class NativeEntryPoint {
             result = 31 * result + Boolean.hashCode(needsReturnBuffer);
             result = 31 * result + capturedStateMask;
             result = 31 * result + Boolean.hashCode(needsTransition);
+            result = 31 * result + Boolean.hashCode(usesAddressPairs);
             return result;
         }
     }
 
     private NativeEntryPoint(MethodType methodType, long downcallStubAddress,
                              int shadowSpace, VMStorage[] argMoves, VMStorage[] returnMoves, boolean needsTransition,
-                             boolean needsReturnBuffer,  String c2RegSavePolicy) {
+                             boolean needsReturnBuffer, boolean usesAddressPairs,  String c2RegSavePolicy) {
         this.methodType = methodType;
         this.downcallStubAddress = downcallStubAddress;
         this.shadowSpace = shadowSpace;
@@ -91,6 +94,7 @@ public class NativeEntryPoint {
         this.returnMoves = returnMoves;
         this.needsTransition = needsTransition;
         this.needsReturnBuffer = needsReturnBuffer;
+        this.usesAddressPairs = usesAddressPairs;
         this.c2RegSavePolicy = c2RegSavePolicy;
     }
 
@@ -107,7 +111,7 @@ public class NativeEntryPoint {
         checkMethodType(methodType, needsReturnBuffer, capturedStateMask, usingAddressPairs);
 
         CacheKey key = new CacheKey(methodType, abi, Arrays.asList(argMoves), Arrays.asList(returnMoves),
-                                    needsReturnBuffer, capturedStateMask, needsTransition);
+                                    needsReturnBuffer, capturedStateMask, needsTransition, usingAddressPairs);
         return NEP_CACHE.get(key, k -> {
             long downcallStub = makeDowncallStub(methodType, abi, argMoves, returnMoves, needsReturnBuffer,
                                                  capturedStateMask, needsTransition);
@@ -116,7 +120,9 @@ public class NativeEntryPoint {
             }
             String regSavePolicy = computeRegSavePolicy(abi.allVoltatileRegs());
             NativeEntryPoint nep = new NativeEntryPoint(methodType, downcallStub,
-                    abi.shadowSpace, argMoves, returnMoves, needsTransition, needsReturnBuffer, regSavePolicy);
+                    abi.shadowSpace, argMoves, returnMoves,
+                    needsTransition, needsReturnBuffer, usingAddressPairs,
+                    regSavePolicy);
             CLEANER.register(nep, () -> freeDowncallStub(downcallStub));
             return nep;
         });

@@ -40,6 +40,7 @@ private:
   int _shadow_space;
   bool _needs_transition;
   bool _needs_return_buffer;
+  bool _uses_address_pairs;
   const char* _c2_reg_save_policy;
 public:
   ciNativeEntryPoint(instanceHandle h_i);
@@ -52,6 +53,7 @@ public:
   VMReg*       return_moves() const;
   bool         needs_transition() const;
   bool         needs_return_buffer() const;
+  bool         uses_address_pairs() const;
   const char*  c2_reg_save_policy() const;
 };
 

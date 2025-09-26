@@ -1404,10 +1404,15 @@ MachNode *Matcher::match_sfpt( SafePointNode *sfpt ) {
   OptoReg::Name out_arg_limit_per_call = begin_out_arg_area;
   // Calls to C may hammer extra stack slots above and beyond any arguments.
   // These are usually backing store for register arguments for varargs.
-  if( call != nullptr && call->is_CallRuntime() )
-    out_arg_limit_per_call = OptoReg::add(out_arg_limit_per_call,C->varargs_C_out_slots_killed());
-  if( call != NULL && call->is_CallNative() )
-    out_arg_limit_per_call = OptoReg::add(out_arg_limit_per_call, call->as_CallNative()->_shadow_space_bytes);
+  if (call != nullptr) {
+    if (call->is_CallRuntime()) {
+      out_arg_limit_per_call = OptoReg::add(out_arg_limit_per_call, C->varargs_C_out_slots_killed());
+    } else if(call->is_CallNative()) {
+      // round up to slot size
+      uint killed_slots = align_up(call->as_CallNative()->_shadow_space_bytes, BytesPerInt) / BytesPerInt;
+      out_arg_limit_per_call = OptoReg::add(out_arg_limit_per_call, killed_slots);
+    }
+  }
 
 
   // Do the normal argument list (parameters) register masks

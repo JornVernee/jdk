@@ -1147,7 +1147,8 @@ Node* CallStaticJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
               && in(TypeFunc::Parms + 0)->Opcode() == Op_ConL /* address */) {
             ciNativeEntryPoint* nep = nep_node->bottom_type()->is_oopptr()->const_oop()->as_native_entry_point();
             if (!nep->needs_transition()
-                && !nep->needs_return_buffer()) {
+                && !nep->needs_return_buffer()
+                && !nep->uses_address_pairs()) {
               phase->C->prepend_late_inline(cg);
               set_generator(NULL);
             }

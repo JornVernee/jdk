@@ -4304,6 +4304,7 @@ int jdk_internal_foreign_abi_NativeEntryPoint::_argMoves_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_returnMoves_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_needs_transition_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_needs_return_buffer_offset;
+int jdk_internal_foreign_abi_NativeEntryPoint::_uses_address_pairs_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_method_type_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_downcall_stub_address_offset;
 int jdk_internal_foreign_abi_NativeEntryPoint::_c2RegSavePolicy_offset;
@@ -4314,6 +4315,7 @@ int jdk_internal_foreign_abi_NativeEntryPoint::_c2RegSavePolicy_offset;
   macro(_returnMoves_offset,           k, "returnMoves",         jdk_internal_foreign_abi_VMStorage_array_signature, false); \
   macro(_needs_transition_offset,      k, "needsTransition",     bool_signature, false); \
   macro(_needs_return_buffer_offset,   k, "needsReturnBuffer",   bool_signature, false); \
+  macro(_uses_address_pairs_offset,    k, "usesAddressPairs",    bool_signature, false); \
   macro(_method_type_offset,           k, "methodType",          java_lang_invoke_MethodType_signature, false); \
   macro(_downcall_stub_address_offset, k, "downcallStubAddress", long_signature, false); \
   macro(_c2RegSavePolicy_offset,       k, "c2RegSavePolicy",     string_signature, false);
@@ -4351,6 +4353,10 @@ jboolean jdk_internal_foreign_abi_NativeEntryPoint::needs_transition(oop entry) 
 
 jboolean jdk_internal_foreign_abi_NativeEntryPoint::needs_return_buffer(oop entry) {
   return entry->bool_field(_needs_return_buffer_offset);
+}
+
+jboolean jdk_internal_foreign_abi_NativeEntryPoint::uses_address_pairs(oop entry) {
+  return entry->bool_field(_uses_address_pairs_offset);
 }
 
 oop jdk_internal_foreign_abi_NativeEntryPoint::method_type(oop entry) {
