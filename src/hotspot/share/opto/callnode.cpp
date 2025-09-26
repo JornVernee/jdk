@@ -1141,7 +1141,7 @@ Node* CallStaticJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
           register_for_late_inline();
         }
       } else if (iid == vmIntrinsics::_linkToNative) {
-        if (UseL2NIntrinsic) {
+        if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_linkToNative)) {
           Node* nep_node = in(TypeFunc::Parms + callee->arg_size() - 1);
           if (nep_node->Opcode() == Op_ConP /* NEP */
               && in(TypeFunc::Parms + 0)->Opcode() == Op_ConL /* address */) {
@@ -1326,16 +1326,10 @@ Node* CallNativeNode::match(const ProjNode *proj, const Matcher *matcher) {
     case TypeFunc::Parms: {
       const Type* field_at_con = tf()->range()->field_at(proj->_con);
       const BasicType bt = field_at_con->basic_type();
-      OptoReg::Name optoreg = OptoReg::as_OptoReg(_ret_regs.at(proj->_con - TypeFunc::Parms));
-      OptoRegPair regs;
-      if (bt == T_DOUBLE || bt == T_LONG) {
-        regs.set2(optoreg);
-      } else {
-        regs.set1(optoreg);
-      }
-      RegMask rm = RegMask(regs.first());
-      if(OptoReg::is_valid(regs.second()))
-        rm.Insert(regs.second());
+      OptoReg::Name reg = OptoReg::as_OptoReg(_ret_regs.at(proj->_con - TypeFunc::Parms));
+      RegMask rm = RegMask(reg);
+      if(bt == T_DOUBLE || bt == T_LONG)
+        rm.Insert(reg + 1);
       return new MachProjNode(this, proj->_con, rm, field_at_con->ideal_reg());
     }
     case TypeFunc::Parms + 1: {

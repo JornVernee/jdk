@@ -60,17 +60,24 @@ public class CallOverheadConstant {
     }
 
     @Benchmark
-    public int jni_identity() throws Throwable {
+    public int jni_identity_int() throws Throwable {
         return identity(10);
     }
 
     @Benchmark
-    public int panama_identity() throws Throwable {
+    public int panama_identity_int() throws Throwable {
         return (int) identity.invokeExact(10);
     }
 
     @Benchmark
-    public int panama_identity_critical() throws Throwable {
+    public int panama_identity_int_critical() throws Throwable {
+        return (int) identity_critical.invokeExact(10);
+    }
+
+    @Benchmark
+    @Fork(value = 3, jvmArgs = { "--enable-native-access=ALL-UNNAMED", "-Djava.library.path=micro/native",
+        "-XX:+UnlockDiagnosticVMOptions", "-XX:-UseL2NIntrinsics"})
+    public int panama_identity_int_critical_no_intrinsics() throws Throwable {
         return (int) identity_critical.invokeExact(10);
     }
 

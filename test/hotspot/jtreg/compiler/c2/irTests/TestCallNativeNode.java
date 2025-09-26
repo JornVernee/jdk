@@ -39,16 +39,15 @@ import java.lang.invoke.MethodHandle;
 /*
  * @test
  * @library /test/lib /
- * @run driver compiler.c2.irTests.TestNativeCallNode
+ * @run driver compiler.c2.irTests.TestCallNativeNode
  */
 
-public class TestNativeCallNode {
+public class TestCallNativeNode {
 
     public static void main(String[] args) {
         TestFramework.runWithFlags(
-            "--enable-native-access=ALL-UNNAMED",
-            "-XX:+UnlockExperimentalVMOptions",
-            "-XX:+UseL2NIntrinsic"
+            // allow loading the native library
+            "--enable-native-access=ALL-UNNAMED"
         );
     }
 
@@ -108,7 +107,7 @@ public class TestNativeCallNode {
 
     private static class Handles {
         static {
-            // keep this separate so that we can pass --enable-native-access when running
+            // keep this separate so that we have a chance to pass --enable-native-access when running
             System.loadLibrary("NativeCallNode");
         }
 

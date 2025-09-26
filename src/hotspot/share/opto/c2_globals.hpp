@@ -896,7 +896,7 @@
   develop(bool, StressLoopPeeling, false,                                   \
           "Randomize loop peeling decision")                                \
                                                                             \
-  product(bool, UseL2NIntrinsic, false, EXPERIMENTAL,                       \
+  product(bool, UseL2NIntrinsics, true, DIAGNOSTIC,                         \
           "Use MethodHandle::linkToNative intrinsic")                       \
 
 // end of C2_FLAGS

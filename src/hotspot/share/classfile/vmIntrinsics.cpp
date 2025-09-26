@@ -631,6 +631,9 @@ bool vmIntrinsics::disabled_by_jvm_flags(vmIntrinsics::ID id) {
   case vmIntrinsics::_fsignum:
     if (!InlineMathNatives || !UseSignumIntrinsic) return true;
     break;
+  case vmIntrinsics::_linkToNative:
+    if (!UseL2NIntrinsics) return true;
+    break;
 #endif // COMPILER2
   default:
     return false;

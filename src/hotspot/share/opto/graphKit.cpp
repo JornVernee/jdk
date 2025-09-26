@@ -2586,7 +2586,7 @@ Node* GraphKit::sign_extend_short(Node* in) {
 }
 
 //-----------------------------gen_native_call-------------------------------
-void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uint nargs, ciNativeEntryPoint* nep) {
+void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, ciNativeEntryPoint* nep) {
   assert(!nep->needs_transition(), "only trivial calls");
 
   // Select just the actual call args to pass on
@@ -2594,6 +2594,12 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   //                      |          |
   //                      V          V
   //                      [ ... args ]
+  // The below code grabs the nodes, types, and registers for the arguments and return values.
+  // Keep in mind that, while the VM uses 2 arguments/types/regs for long & double,
+  // the JDK implementation (nep->arg_moves & nep->return_moves) only track a single
+  // register per value, even for long & double, since these represent raw register values.
+
+  uint nargs = call_type->domain()->cnt() - TypeFunc::Parms;
   uint n_filtered_args = nargs - 3; // -addr (2), -nep;
   ResourceMark rm;
   Node** argument_nodes = NEW_RESOURCE_ARRAY(Node*, n_filtered_args);
@@ -2601,20 +2607,18 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   GrowableArray<VMReg> arg_regs(C->comp_arena(), n_filtered_args, n_filtered_args, VMRegImpl::Bad());
 
   VMReg* argRegs = nep->arg_moves();
-  {
-    for (uint vm_arg_pos = 0, java_arg_read_pos = 1; // +1 to skip target addr
-        vm_arg_pos < n_filtered_args; vm_arg_pos++) {
-      uint vm_unfiltered_arg_pos = vm_arg_pos + 2; // +2 to skip addr (2 since long)
-      Node* node = argument(vm_unfiltered_arg_pos);
-      const Type* type = call_type->domain()->field_at(TypeFunc::Parms + vm_unfiltered_arg_pos);
-      VMReg reg = type == Type::HALF
-        ? VMRegImpl::Bad()
-        : argRegs[java_arg_read_pos++];
+  for (uint vm_arg_pos = 0, java_arg_read_pos = 1; // +1 to skip target addr
+      vm_arg_pos < n_filtered_args; vm_arg_pos++) {
+    uint vm_unfiltered_arg_pos = vm_arg_pos + 2; // +2 to skip addr (2 since long)
+    Node* node = argument(vm_unfiltered_arg_pos);
+    const Type* type = call_type->domain()->field_at(TypeFunc::Parms + vm_unfiltered_arg_pos);
+    VMReg reg = type == Type::HALF
+      ? VMRegImpl::Bad()
+      : argRegs[java_arg_read_pos++];
 
-      argument_nodes[vm_arg_pos] = node;
-      arg_types[TypeFunc::Parms + vm_arg_pos] = type;
-      arg_regs.at_put(vm_arg_pos, reg);
-    }
+    argument_nodes[vm_arg_pos] = node;
+    arg_types[TypeFunc::Parms + vm_arg_pos] = type;
+    arg_regs.at_put(vm_arg_pos, reg);
   }
 
   uint n_returns = call_type->range()->cnt() - TypeFunc::Parms;
@@ -2623,17 +2627,15 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   const Type** ret_types = TypeTuple::fields(n_returns);
 
   VMReg* retRegs = nep->return_moves();
-  {
-    for (uint vm_ret_pos = 0, java_ret_read_pos = 0;
-        vm_ret_pos < n_returns; vm_ret_pos++) { // 0 or 1
-      const Type* type = call_type->range()->field_at(TypeFunc::Parms + vm_ret_pos);
-      VMReg reg = type == Type::HALF
-        ? VMRegImpl::Bad()
-        : retRegs[java_ret_read_pos++];
+  for (uint vm_ret_pos = 0, java_ret_read_pos = 0;
+      vm_ret_pos < n_returns; vm_ret_pos++) { // 0 or 1
+    const Type* type = call_type->range()->field_at(TypeFunc::Parms + vm_ret_pos);
+    VMReg reg = type == Type::HALF
+      ? VMRegImpl::Bad()
+      : retRegs[java_ret_read_pos++];
 
-      ret_regs.at_put(vm_ret_pos, reg);
-      ret_types[TypeFunc::Parms + vm_ret_pos] = type;
-    }
+    ret_types[TypeFunc::Parms + vm_ret_pos] = type;
+    ret_regs.at_put(vm_ret_pos, reg);
   }
 
   const TypeFunc* new_call_type = TypeFunc::make(
@@ -2661,6 +2663,9 @@ void GraphKit::gen_native_call(address call_addr, const TypeFunc* call_type, uin
   } else {
     ret = gvn().transform(new ProjNode(call, TypeFunc::Parms));
   }
+  // See also the code in CallNativeNode::match that constructs
+  // a MachProjNode with the right register mask as specified
+  // by the NativeEntryPoint
 
   push_node(method()->return_type()->basic_type(), ret);
 }

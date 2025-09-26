@@ -1021,7 +1021,7 @@ public:
 JVMState* NativeCallGenerator::generate(JVMState* jvms) {
   GraphKit kit(jvms);
 
-  kit.gen_native_call(_call_addr, tf(), method()->arg_size(), _nep);
+  kit.gen_native_call(_call_addr, tf(), _nep);
 
   return kit.transfer_exceptions_into_jvms();
 }
@@ -1152,34 +1152,30 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
   } break;
 
     case vmIntrinsics::_linkToNative:
-    if (UseL2NIntrinsic) {
-      Node* addr_n = kit.argument(0); // target address
-      Node* nep_n = kit.argument(callee->arg_size() - 1); // NativeEntryPoint
-      // This check needs to be kept in sync with the one in CallStaticJavaNode::Ideal
-      if (addr_n->Opcode() == Op_ConL && nep_n->Opcode() == Op_ConP) {
-        input_not_const = false;
+      if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_linkToNative)) {
+        Node* addr_n = kit.argument(0); // target address
+        Node* nep_n = kit.argument(callee->arg_size() - 1); // NativeEntryPoint
+        // This check needs to be kept in sync with the one in CallStaticJavaNode::Ideal
+        if (addr_n->Opcode() == Op_ConL && nep_n->Opcode() == Op_ConP) {
+          input_not_const = false;
 
-        const TypeOopPtr* nep_t = nep_n->bottom_type()->is_oopptr();
-        ciNativeEntryPoint* nep = nep_t->const_oop()->as_native_entry_point();
+          const TypeOopPtr* nep_t = nep_n->bottom_type()->is_oopptr();
+          ciNativeEntryPoint* nep = nep_t->const_oop()->as_native_entry_point();
 
-        if (!nep->needs_transition()) {
-          if (nep->needs_return_buffer()) {
-            print_inlining_failure(C, callee, jvms, "needs return buffer");
-          } else {
+          if (!nep->needs_transition() && !nep->needs_return_buffer()) {
             const TypeLong* addr_t = addr_n->bottom_type()->is_long();
             address addr = (address) addr_t->get_con();
 
             return new NativeCallGenerator(callee, addr, nep);
+          } else {
+            print_inlining_failure(C, callee, jvms, "non-critical call or needs return buffer");
           }
         } else {
-          print_inlining_failure(C, callee, jvms, "non-trivial call");
+          print_inlining_failure(C, callee, jvms, "NativeEntryPoint or address not constant");
         }
       } else {
-        print_inlining_failure(C, callee, jvms, "NativeEntryPoint or address not constant");
+          print_inlining_failure(C, callee, jvms, "native call");
       }
-    } else {
-        print_inlining_failure(C, callee, jvms, "native call");
-    }
     break;
 
   default:

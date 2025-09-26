@@ -64,11 +64,7 @@ public class LinkerOptions {
             optionMap.put(option.getClass(), opImpl);
         }
 
-        LinkerOptions linkerOptions = new LinkerOptions(optionMap);
-        // if (linkerOptions.isTrivial() && linkerOptions.hasCapturedCallState()) {
-        //     throw new IllegalArgumentException("Trivial call may not capture call state");
-        // }
-        return linkerOptions;
+        return new LinkerOptions(optionMap);
     }
 
     public static LinkerOptions empty() {
