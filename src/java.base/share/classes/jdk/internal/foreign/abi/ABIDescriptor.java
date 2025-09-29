@@ -86,4 +86,8 @@ public class ABIDescriptor {
               .flatMap(Arrays::stream)
               .toArray(VMStorage[]::new);
     }
+
+    public int shadowSpace() {
+        return shadowSpace;
+    }
 }

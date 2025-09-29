@@ -62,13 +62,14 @@ inline XMMRegister as_XMMRegister(VMStorage vms) {
   return ::as_XMMRegister(vms.index());
 }
 
-inline VMReg as_VMReg(VMStorage vms) {
+inline VMReg as_VMReg(VMStorage vms, int shadow_space_bytes) {
   switch (vms.type()) {
     case StorageType::INTEGER: return as_Register(vms)->as_VMReg();
     case StorageType::VECTOR:  return as_XMMRegister(vms)->as_VMReg();
     case StorageType::STACK: {
       assert((vms.offset() % VMRegImpl::stack_slot_size) == 0, "can not represent as VMReg");
-      return VMRegImpl::stack2reg(vms.offset() / VMRegImpl::stack_slot_size);
+      // We have to account for shadow space here, as the offset does not include it.
+      return VMRegImpl::stack2reg((vms.offset() + shadow_space_bytes) / VMRegImpl::stack_slot_size);
     }
     default: return VMRegImpl::Bad();
   }

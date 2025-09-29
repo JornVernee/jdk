@@ -32,6 +32,6 @@ ciVMStorage::ciVMStorage(instanceHandle h_i) : ciInstance(h_i) {
   _storage = ForeignGlobals::parse_vmstorage(get_oop());
 }
 
-VMReg ciVMStorage::as_VMReg() const {
-  return ::as_VMReg(_storage);
+VMReg ciVMStorage::as_VMReg(int shadow_space_bytes) const {
+  return ::as_VMReg(_storage, shadow_space_bytes);
 }

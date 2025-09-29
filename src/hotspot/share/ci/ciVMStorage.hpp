@@ -40,7 +40,7 @@ public:
   // What kind of ciObject is this?
   bool is_vmstorage() const { return true; }
 
-  VMReg as_VMReg() const;
+  VMReg as_VMReg(int shadow_space_bytes) const;
 };
 
 #endif // SHARE_VM_CI_CIVMSTORAGE_HPP

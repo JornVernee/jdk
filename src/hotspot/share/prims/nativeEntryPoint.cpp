@@ -93,7 +93,7 @@ JNI_END
 // This method constructs a register save policy as found in the .ad files for the Java and C
 // calling conventions, but in this case dynamically derived from the volatile registers of
 // an ABIDescriptor
-JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobjectArray volatile_regs))
+JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobjectArray volatile_regs, jint shadow_space_bytes))
   char policy[REG_COUNT + 1];
 
   for (OptoReg::Name i = 0; i < REG_COUNT; i++) {
@@ -104,7 +104,7 @@ JNI_ENTRY(jstring, NEP_computeRegSavePolicy(JNIEnv* env, jclass _unused, jobject
 
   objArrayOop volatile_regs_oop = oop_cast<objArrayOop>(JNIHandles::resolve(volatile_regs));
   for (int i = 0; i < volatile_regs_oop->length(); i++) {
-    VMReg vmr = as_VMReg(ForeignGlobals::parse_vmstorage(volatile_regs_oop->obj_at(i)));
+    VMReg vmr = as_VMReg(ForeignGlobals::parse_vmstorage(volatile_regs_oop->obj_at(i)), shadow_space_bytes);
     // Not every VMStorage is representable as a VMReg,
     // but we don't care about the ones that aren't in this case
     if (vmr->is_valid()) {
@@ -140,7 +140,7 @@ JNI_END
 
 static JNINativeMethod NEP_methods[] = {
   {CC "makeDowncallStub", CC "(" METHOD_TYPE ABI_DESC VM_STORAGE_ARR VM_STORAGE_ARR "ZIZ)J", FN_PTR(NEP_makeDowncallStub)},
-  {CC "computeRegSavePolicy", CC "(" VM_STORAGE_ARR ")Ljava/lang/String;", FN_PTR(NEP_computeRegSavePolicy)},
+  {CC "computeRegSavePolicy", CC "(" VM_STORAGE_ARR "I)Ljava/lang/String;", FN_PTR(NEP_computeRegSavePolicy)},
   {CC "freeDowncallStub0", CC "(J)Z", FN_PTR(NEP_freeDowncallStub)},
 };
 
