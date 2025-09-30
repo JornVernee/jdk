@@ -51,12 +51,7 @@ public class CallOverheadConstant {
 
     @Benchmark
     public void panama_blank() throws Throwable {
-        func.invokeExact();
-    }
-
-    @Benchmark
-    public void panama_blank_critical() throws Throwable {
-        func_critical.invokeExact();
+        FUNC.invokeExact();
     }
 
     @Benchmark
@@ -66,104 +61,52 @@ public class CallOverheadConstant {
 
     @Benchmark
     public int panama_identity_int() throws Throwable {
-        return (int) identity.invokeExact(10);
+        return (int) IDENTITY.invokeExact(10);
     }
 
     @Benchmark
-    public int panama_identity_int_critical() throws Throwable {
-        return (int) identity_critical.invokeExact(10);
-    }
-
-    @Benchmark
-    @Fork(value = 3, jvmArgs = { "--enable-native-access=ALL-UNNAMED", "-Djava.library.path=micro/native",
-        "-XX:+UnlockDiagnosticVMOptions", "-XX:-UseL2NIntrinsics"})
-    public int panama_identity_int_critical_no_intrinsics() throws Throwable {
-        return (int) identity_critical.invokeExact(10);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_struct_confined() throws Throwable {
-        return (MemorySegment) identity_struct.invokeExact(recycling_allocator, confinedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_struct_shared() throws Throwable {
-        return (MemorySegment) identity_struct.invokeExact(recycling_allocator, sharedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_struct_confined_3() throws Throwable {
-        return (MemorySegment) identity_struct_3.invokeExact(recycling_allocator, confinedPoint, confinedPoint, confinedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_struct_shared_3() throws Throwable {
-        return (MemorySegment) identity_struct_3.invokeExact(recycling_allocator, sharedPoint, sharedPoint, sharedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_memory_address_shared() throws Throwable {
-        return (MemorySegment) identity_memory_address.invokeExact(sharedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_memory_address_confined() throws Throwable {
-        return (MemorySegment) identity_memory_address.invokeExact(confinedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_memory_address_shared_3() throws Throwable {
-        return (MemorySegment) identity_memory_address_3.invokeExact(sharedPoint, sharedPoint, sharedPoint);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_memory_address_confined_3() throws Throwable {
-        return (MemorySegment) identity_memory_address_3.invokeExact(confinedPoint, confinedPoint, confinedPoint);
+    public MemorySegment panama_identity_struct() throws Throwable {
+        return (MemorySegment) IDENTITY_STRUCT.invokeExact(RECYCLING_ALLOCATOR, POINT);
     }
 
     @Benchmark
     public MemorySegment panama_identity_memory_address_null() throws Throwable {
-        return (MemorySegment) identity_memory_address.invokeExact(MemorySegment.NULL);
-    }
-
-    @Benchmark
-    public MemorySegment panama_identity_memory_address_null_3() throws Throwable {
-        return (MemorySegment) identity_memory_address_3.invokeExact(MemorySegment.NULL, MemorySegment.NULL, MemorySegment.NULL);
+        return (MemorySegment) IDENTITY_MEMORY_ADDRESS.invokeExact(MemorySegment.NULL);
     }
 
     @Benchmark
     public MemorySegment panama_identity_memory_address_null_non_exact() throws Throwable {
-        return (MemorySegment) identity_memory_address.invoke(MemorySegment.NULL);
+        return (MemorySegment) IDENTITY_MEMORY_ADDRESS.invoke(MemorySegment.NULL);
     }
 
     @Benchmark
     public void panama_args_01() throws Throwable {
-        args1.invokeExact(10L);
+        ARGS1.invokeExact(10L);
     }
 
     @Benchmark
     public void panama_args_02() throws Throwable {
-        args2.invokeExact(10L, 11D);
+        ARGS2.invokeExact(10L, 11D);
     }
 
     @Benchmark
     public void panama_args_03() throws Throwable {
-        args3.invokeExact(10L, 11D, 12L);
+        ARGS3.invokeExact(10L, 11D, 12L);
     }
 
     @Benchmark
     public void panama_args_04() throws Throwable {
-        args4.invokeExact(10L, 11D, 12L, 13D);
+        ARGS4.invokeExact(10L, 11D, 12L, 13D);
     }
 
     @Benchmark
     public void panama_args_05() throws Throwable {
-        args5.invokeExact(10L, 11D, 12L, 13D, 14L);
+        ARGS5.invokeExact(10L, 11D, 12L, 13D, 14L);
     }
 
     @Benchmark
     public void panama_args_10() throws Throwable {
-        args10.invokeExact(10L, 11D, 12L, 13D, 14L,
+        ARGS10.invokeExact(10L, 11D, 12L, 13D, 14L,
                            15D, 16L, 17D, 18L, 19D);
     }
 }

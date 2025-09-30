@@ -31,150 +31,168 @@ import static java.lang.invoke.MethodHandles.insertArguments;
 
 public class CallOverheadHelper extends CLayouts {
 
-    static final Linker abi = Linker.nativeLinker();
+    static final Linker ABI = Linker.nativeLinker();
 
-    static final MethodHandle func;
-    static final MethodHandle func_critical;
-    static final MethodHandle func_v;
-    static final MethodHandle func_critical_v;
-    static MemorySegment func_addr;
-    static final MethodHandle identity;
-    static final MethodHandle identity_critical;
-    static final MethodHandle identity_v;
-    static final MethodHandle identity_critical_v;
-    static MemorySegment identity_addr;
-    static final MethodHandle identity_struct;
-    static final MethodHandle identity_struct_v;
-    static MemorySegment identity_struct_addr;
-    static final MethodHandle identity_struct_3;
-    static final MethodHandle identity_struct_3_v;
-    static MemorySegment identity_struct_3_addr;
-    static final MethodHandle identity_memory_address;
-    static final MethodHandle identity_memory_address_v;
-    static MemorySegment identity_memory_address_addr;
-    static final MethodHandle identity_memory_address_3;
-    static final MethodHandle identity_memory_address_3_v;
-    static MemorySegment identity_memory_address_3_addr;
-    static final MethodHandle args1;
-    static final MethodHandle args1_v;
-    static MemorySegment args1_addr;
-    static final MethodHandle args2;
-    static final MethodHandle args2_v;
-    static MemorySegment args2_addr;
-    static final MethodHandle args3;
-    static final MethodHandle args3_v;
-    static MemorySegment args3_addr;
-    static final MethodHandle args4;
-    static final MethodHandle args4_v;
-    static MemorySegment args4_addr;
-    static final MethodHandle args5;
-    static final MethodHandle args5_v;
-    static MemorySegment args5_addr;
-    static final MethodHandle args10;
-    static final MethodHandle args10_v;
-    static MemorySegment args10_addr;
+    // Note: addresses below are deliberately NOT final
+    // so that they are not seen as constants by C2
+    static final MethodHandle FUNC;
+    static final MethodHandle FUNC_CRITICAL;
+    static final MethodHandle FUNC_V;
+    static final MethodHandle FUNC_CRITICAL_V;
+    static MemorySegment FUNC_ADDR;
+
+    static final MethodHandle IDENTITY;
+    static final MethodHandle IDENTITY_CRITICAL;
+    static final MethodHandle IDENTITY_V;
+    static final MethodHandle IDENTITY_CRITICAL_V;
+    static MemorySegment IDENTITY_ADDR;
+
+    static final MethodHandle IDENTITY_STRUCT;
+    static final MethodHandle IDENTITY_STRUCT_CRITICAL;
+    static final MethodHandle IDENTITY_STRUCT_V;
+    static final MethodHandle IDENTITY_STRUCT_CRITICAL_V;
+    static MemorySegment IDENTITY_STRUCT_ADDR;
+
+    static final MethodHandle IDENTITY_STRUCT_3;
+    static final MethodHandle IDENTITY_STRUCT_3_V;
+    static MemorySegment IDENTITY_STRUCT_3_ADDR;
+
+    static final MethodHandle IDENTITY_MEMORY_ADDRESS;
+    static final MethodHandle IDENTITY_MEMORY_ADDRESS_V;
+    static MemorySegment IDENTITY_MEMORY_ADDRESS_ADDR;
+
+    static final MethodHandle IDENTITY_MEMORY_ADDRESS_3;
+    static final MethodHandle IDENTITY_MEMORY_ADDRESS_3_V;
+    static MemorySegment IDENTITY_MEMORY_ADDRESS_3_ADDR;
+
+    static final MethodHandle ARGS1;
+    static final MethodHandle ARGS1_V;
+    static MemorySegment ARGS1_ADDR;
+
+    static final MethodHandle ARGS2;
+    static final MethodHandle ARGS2_V;
+    static MemorySegment ARGS2_ADDR;
+
+    static final MethodHandle ARGS3;
+    static final MethodHandle ARGS3_V;
+    static MemorySegment ARGS3_ADDR;
+
+    static final MethodHandle ARGS4;
+    static final MethodHandle ARGS4_V;
+    static MemorySegment ARGS4_ADDR;
+
+    static final MethodHandle ARGS5;
+    static final MethodHandle ARGS5_V;
+    static MemorySegment ARGS5_ADDR;
+
+    static final MethodHandle ARGS10;
+    static final MethodHandle ARGS10_V;
+    static MemorySegment ARGS10_ADDR;
 
     static final MemoryLayout POINT_LAYOUT = MemoryLayout.structLayout(
             C_INT, C_INT
     );
 
-    static final MemorySegment sharedPoint;
+    static final MemorySegment SHARED_POINT;
 
     static {
         Arena scope = Arena.ofShared();
-        sharedPoint = scope.allocate(POINT_LAYOUT);
+        SHARED_POINT = scope.allocate(POINT_LAYOUT);
     }
 
-    static final MemorySegment confinedPoint;
+    static final MemorySegment CONFINED_POINT;
 
     static {
         Arena scope = Arena.ofConfined();
-        confinedPoint = scope.allocate(POINT_LAYOUT);
+        CONFINED_POINT = scope.allocate(POINT_LAYOUT);
     }
 
-    static final MemorySegment point;
+    static final MemorySegment POINT;
 
     static {
         Arena scope = Arena.ofAuto();
-        point = scope.allocate(POINT_LAYOUT);
+        POINT = scope.allocate(POINT_LAYOUT);
     }
 
-    static final SegmentAllocator recycling_allocator;
+    static final SegmentAllocator RECYCLING_ALLOCATOR;
 
     static {
         Arena scope = Arena.ofAuto();
-        recycling_allocator = SegmentAllocator.prefixAllocator(scope.allocate(POINT_LAYOUT));
+        RECYCLING_ALLOCATOR = SegmentAllocator.prefixAllocator(scope.allocate(POINT_LAYOUT));
         System.loadLibrary("CallOverheadJNI");
 
         System.loadLibrary("CallOverhead");
         SymbolLookup loaderLibs = SymbolLookup.loaderLookup();
         {
-            func_addr = loaderLibs.findOrThrow("func");
-            MethodType mt = MethodType.methodType(void.class);
+            FUNC_ADDR = loaderLibs.findOrThrow("func");
             FunctionDescriptor fd = FunctionDescriptor.ofVoid();
-            func_v = abi.downcallHandle(fd);
-            func_critical_v = abi.downcallHandle(fd, Linker.Option.critical(false));
-            func = insertArguments(func_v, 0, func_addr);
-            func_critical = insertArguments(func_critical_v, 0, func_addr);
+            FUNC_V = ABI.downcallHandle(fd);
+            FUNC_CRITICAL_V = ABI.downcallHandle(fd, Linker.Option.critical(false));
+            FUNC = insertArguments(FUNC_V, 0, FUNC_ADDR);
+            FUNC_CRITICAL = insertArguments(FUNC_CRITICAL_V, 0, FUNC_ADDR);
         }
         {
-            identity_addr = loaderLibs.findOrThrow("identity");
+            IDENTITY_ADDR = loaderLibs.findOrThrow("identity");
             FunctionDescriptor fd = FunctionDescriptor.of(C_INT, C_INT);
-            identity_v = abi.downcallHandle(fd);
-            identity_critical_v = abi.downcallHandle(fd, Linker.Option.critical(false));
-            identity = insertArguments(identity_v, 0, identity_addr);
-            identity_critical = insertArguments(identity_critical_v, 0, identity_addr);
+            IDENTITY_V = ABI.downcallHandle(fd);
+            IDENTITY_CRITICAL_V = ABI.downcallHandle(fd, Linker.Option.critical(false));
+            IDENTITY = insertArguments(IDENTITY_V, 0, IDENTITY_ADDR);
+            IDENTITY_CRITICAL = insertArguments(IDENTITY_CRITICAL_V, 0, IDENTITY_ADDR);
         }
-        identity_struct_addr = loaderLibs.findOrThrow("identity_struct");
-        identity_struct_v = abi.downcallHandle(
-                FunctionDescriptor.of(POINT_LAYOUT, POINT_LAYOUT));
-        identity_struct = insertArguments(identity_struct_v, 0, identity_struct_addr);
+        {
+            IDENTITY_STRUCT_ADDR = loaderLibs.findOrThrow("identity_struct");
+            FunctionDescriptor fd = FunctionDescriptor.of(POINT_LAYOUT, POINT_LAYOUT);
+            IDENTITY_STRUCT_V = ABI.downcallHandle(fd);
+            IDENTITY_STRUCT_CRITICAL_V = ABI.downcallHandle(fd, Linker.Option.critical(false));
+            IDENTITY_STRUCT = insertArguments(IDENTITY_STRUCT_V, 0, IDENTITY_STRUCT_ADDR);
+            IDENTITY_STRUCT_CRITICAL = insertArguments(IDENTITY_STRUCT_CRITICAL_V, 0, IDENTITY_STRUCT_ADDR);
+        }
 
-        identity_struct_3_addr = loaderLibs.findOrThrow("identity_struct_3");
-        identity_struct_3_v = abi.downcallHandle(
+        IDENTITY_STRUCT_3_ADDR = loaderLibs.findOrThrow("identity_struct_3");
+        IDENTITY_STRUCT_3_V = ABI.downcallHandle(
                 FunctionDescriptor.of(POINT_LAYOUT, POINT_LAYOUT, POINT_LAYOUT, POINT_LAYOUT));
-        identity_struct_3 = insertArguments(identity_struct_3_v, 0, identity_struct_3_addr);
+        IDENTITY_STRUCT_3 = insertArguments(IDENTITY_STRUCT_3_V, 0, IDENTITY_STRUCT_3_ADDR);
 
-        identity_memory_address_addr = loaderLibs.findOrThrow("identity_memory_address");
-        identity_memory_address_v = abi.downcallHandle(
+        IDENTITY_MEMORY_ADDRESS_ADDR = loaderLibs.findOrThrow("identity_memory_address");
+        IDENTITY_MEMORY_ADDRESS_V = ABI.downcallHandle(
                 FunctionDescriptor.of(C_POINTER, C_POINTER));
-        identity_memory_address = insertArguments(identity_memory_address_v, 0, identity_memory_address_addr);
+        IDENTITY_MEMORY_ADDRESS = insertArguments(IDENTITY_MEMORY_ADDRESS_V, 0, IDENTITY_MEMORY_ADDRESS_ADDR);
 
-        identity_memory_address_3_addr = loaderLibs.findOrThrow("identity_memory_address_3");
-        identity_memory_address_3_v = abi.downcallHandle(
+        IDENTITY_MEMORY_ADDRESS_3_ADDR = loaderLibs.findOrThrow("identity_memory_address_3");
+        IDENTITY_MEMORY_ADDRESS_3_V = ABI.downcallHandle(
                 FunctionDescriptor.of(C_POINTER, C_POINTER, C_POINTER, C_POINTER));
-        identity_memory_address_3 = insertArguments(identity_memory_address_3_v, 0, identity_memory_address_3_addr);
+        IDENTITY_MEMORY_ADDRESS_3 = insertArguments(IDENTITY_MEMORY_ADDRESS_3_V, 0, IDENTITY_MEMORY_ADDRESS_3_ADDR);
 
-        args1_addr = loaderLibs.findOrThrow("args1");
-        args1_v = abi.downcallHandle(
+        ARGS1_ADDR = loaderLibs.findOrThrow("args1");
+        ARGS1_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG));
-        args1 = insertArguments(args1_v, 0, args1_addr);
+        ARGS1 = insertArguments(ARGS1_V, 0, ARGS1_ADDR);
 
-        args2_addr = loaderLibs.findOrThrow("args2");
-        args2_v = abi.downcallHandle(
+        ARGS2_ADDR = loaderLibs.findOrThrow("args2");
+        ARGS2_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG, C_DOUBLE));
-        args2 = insertArguments(args2_v, 0, args2_addr);
+        ARGS2 = insertArguments(ARGS2_V, 0, ARGS2_ADDR);
 
-        args3_addr = loaderLibs.findOrThrow("args3");
-        args3_v = abi.downcallHandle(
+        ARGS3_ADDR = loaderLibs.findOrThrow("args3");
+        ARGS3_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG, C_DOUBLE, C_LONG_LONG));
-        args3 = insertArguments(args3_v, 0, args3_addr);
+        ARGS3 = insertArguments(ARGS3_V, 0, ARGS3_ADDR);
 
-        args4_addr = loaderLibs.findOrThrow("args4");
-        args4_v = abi.downcallHandle(
+        ARGS4_ADDR = loaderLibs.findOrThrow("args4");
+        ARGS4_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG, C_DOUBLE, C_LONG_LONG, C_DOUBLE));
-        args4 = insertArguments(args4_v, 0, args4_addr);
+        ARGS4 = insertArguments(ARGS4_V, 0, ARGS4_ADDR);
 
-        args5_addr = loaderLibs.findOrThrow("args5");
-        args5_v = abi.downcallHandle(
+        ARGS5_ADDR = loaderLibs.findOrThrow("args5");
+        ARGS5_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG, C_DOUBLE, C_LONG_LONG, C_DOUBLE, C_LONG_LONG));
-        args5 = insertArguments(args5_v, 0, args5_addr);
+        ARGS5 = insertArguments(ARGS5_V, 0, ARGS5_ADDR);
 
-        args10_addr = loaderLibs.findOrThrow("args10");
-        args10_v = abi.downcallHandle(
+        ARGS10_ADDR = loaderLibs.findOrThrow("args10");
+        ARGS10_V = ABI.downcallHandle(
                 FunctionDescriptor.ofVoid(C_LONG_LONG, C_DOUBLE, C_LONG_LONG, C_DOUBLE, C_LONG_LONG,
                                           C_DOUBLE, C_LONG_LONG, C_DOUBLE, C_LONG_LONG, C_DOUBLE));
-        args10 = insertArguments(args10_v, 0, args10_addr);
+        ARGS10 = insertArguments(ARGS10_V, 0, ARGS10_ADDR);
     }
 
     static native void blank();
