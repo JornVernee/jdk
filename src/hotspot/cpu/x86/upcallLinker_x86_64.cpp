@@ -286,7 +286,7 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Symbol* signature,
     assert(ret_buf_offset != -1, "no return buffer allocated");
     __ lea(as_Register(locs.get(StubLocations::RETURN_BUFFER)), Address(rsp, ret_buf_offset));
   }
-  arg_shuffle.generate(_masm, shuffle_reg, abi._shadow_space_bytes, 0);
+  arg_shuffle.generate(_masm, shuffle_reg, 0, 0);
   __ block_comment("} argument shuffle");
 
   __ block_comment("{ load target ");

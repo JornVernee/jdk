@@ -139,8 +139,7 @@ void DowncallLinker::StubGenerator::generate() {
 
   // in bytes
   int allocated_frame_size = 0;
-  allocated_frame_size += _abi._shadow_space_bytes;
-  allocated_frame_size += ForeignGlobals::compute_out_arg_bytes(_input_registers);
+  allocated_frame_size += MAX2(ForeignGlobals::compute_out_arg_bytes(_input_registers), _abi._shadow_space_bytes);
 
   // when we don't use a return buffer we need to spill the return value around our slow path calls
   bool should_save_return_value = !_needs_return_buffer;
@@ -229,7 +228,7 @@ void DowncallLinker::StubGenerator::generate() {
   }
 
   __ block_comment("{ argument shuffle");
-  arg_shuffle.generate(_masm, shuffle_reg, 0, _abi._shadow_space_bytes);
+  arg_shuffle.generate(_masm, shuffle_reg, 0, 0);
   __ block_comment("} argument shuffle");
 
   __ call(as_Register(locs.get(StubLocations::TARGET_ADDRESS)));

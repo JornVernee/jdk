@@ -33,7 +33,7 @@
 #include "oops/oop.inline.hpp"
 #include "prims/foreignGlobals.hpp"
 
-VMReg* get_VMReg_array(ciArray* array, int shadow_space_bytes) {
+static VMReg* get_VMReg_array(ciArray* array) {
   assert(array->element_basic_type() == T_OBJECT, "Unexpected type");
 
   VMReg* out = NEW_ARENA_ARRAY(CURRENT_ENV->arena(), VMReg, array->length());
@@ -43,7 +43,7 @@ VMReg* get_VMReg_array(ciArray* array, int shadow_space_bytes) {
     ciObject* obj = con.as_object();
     out[i] = obj->is_null_object()
       ? VMRegImpl::Bad()
-      : obj->as_vmstorage()->as_VMReg(shadow_space_bytes);
+      : obj->as_vmstorage()->as_VMReg();
   }
 
   return out;
@@ -59,13 +59,13 @@ static const char* to_C_string(oop string_oop) {
 }
 
 ciNativeEntryPoint::ciNativeEntryPoint(instanceHandle h_i) : ciInstance(h_i) {
+  _arg_moves = get_VMReg_array(CURRENT_ENV->get_object(jdk_internal_foreign_abi_NativeEntryPoint::argMoves(get_oop()))->as_array());
+  _ret_moves = get_VMReg_array(CURRENT_ENV->get_object(jdk_internal_foreign_abi_NativeEntryPoint::returnMoves(get_oop()))->as_array());
+
   _shadow_space = jdk_internal_foreign_abi_NativeEntryPoint::shadow_space(get_oop());
   _needs_transition = jdk_internal_foreign_abi_NativeEntryPoint::needs_transition(get_oop());
   _needs_return_buffer = jdk_internal_foreign_abi_NativeEntryPoint::needs_return_buffer(get_oop());
   _uses_address_pairs = jdk_internal_foreign_abi_NativeEntryPoint::uses_address_pairs(get_oop());
-
-  _arg_moves = get_VMReg_array(CURRENT_ENV->get_object(jdk_internal_foreign_abi_NativeEntryPoint::argMoves(get_oop()))->as_array(), _shadow_space);
-  _ret_moves = get_VMReg_array(CURRENT_ENV->get_object(jdk_internal_foreign_abi_NativeEntryPoint::returnMoves(get_oop()))->as_array(), _shadow_space);
 
   oop c2_reg_save_policy_str = jdk_internal_foreign_abi_NativeEntryPoint::c2RegSavePolicy(get_oop());
   assert(c2_reg_save_policy_str != NULL, "Must have save policy");

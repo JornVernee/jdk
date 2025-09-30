@@ -118,7 +118,7 @@ public class NativeEntryPoint {
             if (downcallStub == 0) {
                 throw new OutOfMemoryError("Failed to allocate downcall stub");
             }
-            String regSavePolicy = computeRegSavePolicy(abi.allVoltatileRegs(), abi.shadowSpace());
+            String regSavePolicy = computeRegSavePolicy(abi.allVoltatileRegs());
             NativeEntryPoint nep = new NativeEntryPoint(methodType, downcallStub,
                     abi.shadowSpace, argMoves, returnMoves,
                     needsTransition, needsReturnBuffer, usingAddressPairs,
@@ -156,7 +156,7 @@ public class NativeEntryPoint {
                                                 boolean needsReturnBuffer,
                                                 int capturedStateMask,
                                                 boolean needsTransition);
-    private static native String computeRegSavePolicy(VMStorage[] allVoltatileRegs, int shadowSpace);
+    private static native String computeRegSavePolicy(VMStorage[] allVoltatileRegs);
 
     private static native boolean freeDowncallStub0(long downcallStub);
     private static void freeDowncallStub(long downcallStub) {

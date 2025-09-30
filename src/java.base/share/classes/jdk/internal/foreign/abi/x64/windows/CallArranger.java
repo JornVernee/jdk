@@ -61,6 +61,8 @@ public class CallArranger {
     public static final int MAX_REGISTER_ARGUMENTS = 4;
     private static final int STACK_SLOT_SIZE = 8;
 
+    private static final int SHADOW_SPACE_BYTES = 32;
+
     private static final ABIDescriptor CWindows = X86_64Architecture.abiFor(
         new VMStorage[] { rcx, rdx, r8, r9 },
         new VMStorage[] { xmm0, xmm1, xmm2, xmm3 },
@@ -72,7 +74,7 @@ public class CallArranger {
                           xmm16, xmm17, xmm18, xmm19, xmm20, xmm21, xmm22, xmm23,
                           xmm24, xmm25, xmm26, xmm27, xmm28, xmm29, xmm30, xmm31 },
         16,
-        32,
+        SHADOW_SPACE_BYTES,
         r10, r11 // scratch 1 & 2
     );
 
@@ -152,7 +154,7 @@ public class CallArranger {
         private final boolean forArguments;
 
         private int nRegs = 0;
-        private long stackOffset = 0;
+        private long stackOffset = SHADOW_SPACE_BYTES;
 
         public StorageCalculator(boolean forArguments) {
             this.forArguments = forArguments;
