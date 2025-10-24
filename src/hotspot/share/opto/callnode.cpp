@@ -1324,7 +1324,7 @@ Node* CallNativeNode::match(const ProjNode *proj, const Matcher *matcher) {
     case TypeFunc::Control:
     case TypeFunc::I_O:
     case TypeFunc::Memory:
-      return new MachProjNode(this,proj->_con,RegMask::Empty,MachProjNode::unmatched_proj);
+      return new MachProjNode(this, proj->_con, RegMask::EMPTY, MachProjNode::unmatched_proj);
     case TypeFunc::ReturnAdr:
     case TypeFunc::FramePtr:
       ShouldNotReachHere();
@@ -1334,14 +1334,14 @@ Node* CallNativeNode::match(const ProjNode *proj, const Matcher *matcher) {
       OptoReg::Name reg = OptoReg::as_OptoReg(_ret_regs.at(proj->_con - TypeFunc::Parms));
       RegMask rm = RegMask(reg);
       if(bt == T_DOUBLE || bt == T_LONG)
-        rm.Insert(reg + 1);
+        rm.insert(reg + 1);
       return new MachProjNode(this, proj->_con, rm, field_at_con->ideal_reg());
     }
     case TypeFunc::Parms + 1: {
       assert(tf()->range()->field_at(proj->_con) == Type::HALF, "Expected HALF");
       assert(_ret_regs.at(proj->_con - TypeFunc::Parms) == VMRegImpl::Bad(), "Unexpected register for Type::HALF");
       // 2nd half of doubles and longs
-      return new MachProjNode(this, proj->_con, RegMask::Empty, (uint) OptoReg::Bad);
+      return new MachProjNode(this, proj->_con, RegMask::EMPTY, (uint) OptoReg::Bad);
     }
     default:
       ShouldNotReachHere();
