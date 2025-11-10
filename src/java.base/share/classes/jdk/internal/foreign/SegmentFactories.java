@@ -25,6 +25,8 @@
 
 package jdk.internal.foreign;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.foreign.UnmapperProxy;
 import jdk.internal.foreign.HeapMemorySegmentImpl.OfByte;
 import jdk.internal.foreign.HeapMemorySegmentImpl.OfChar;
@@ -39,6 +41,8 @@ import jdk.internal.vm.annotation.DontInline;
 import jdk.internal.vm.annotation.ForceInline;
 
 import java.lang.foreign.MemorySegment;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.util.Objects;
 
 /**
@@ -136,6 +140,16 @@ public class SegmentFactories {
         Objects.requireNonNull(arr);
         long byteSize = (long)arr.length * Utils.BaseAndScale.LONG.scale();
         return new OfLong(Utils.BaseAndScale.LONG.base(), arr, byteSize, false,
+                MemorySessionImpl.createHeap(arr));
+    }
+
+    public static OfByte fromString(String string, Charset charset) {
+        ensureInitialized();
+        Objects.requireNonNull(string);
+        Objects.requireNonNull(charset);
+        byte[] arr = StringSupport.toByteArray(string, charset); // TODO support offset + length here too?
+        long byteSize = (long)arr.length * Utils.BaseAndScale.BYTE.scale();
+        return new OfByte(Utils.BaseAndScale.BYTE.base(), arr, byteSize, true,
                 MemorySessionImpl.createHeap(arr));
     }
 

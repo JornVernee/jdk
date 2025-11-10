@@ -103,6 +103,83 @@ public class TestStringEncoding {
     }
 
     @Test(dataProvider = "strings")
+    public void testStringsLength(String testString) {
+        if (!testString.isEmpty()) {
+            for (Charset charset : encodingCharsets()) {
+                for (Arena arena : arenas()) {
+                    try (arena) {
+                        MemorySegment text = arena.allocateFrom(testString, charset, 0, testString.length());
+                        int length = testString.getBytes(charset).length;
+                        String roundTrip = text.getString(0, charset, length);
+                        if (charset.newEncoder().canEncode(testString)) {
+                            assertEquals(roundTrip, testString);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testStringsLengthNegative() {
+        try (Arena arena = Arena.ofConfined()) {
+            var segment = arena.allocateFrom("abc");
+            assertThrows(IndexOutOfBoundsException.class, () -> segment.getString(0, StandardCharsets.UTF_8, -1));
+        }
+    }
+
+    @Test(dataProvider = "strings")
+    public void testOfString(String testString) {
+        if (!testString.isEmpty()) {
+            for (Charset charset : encodingCharsets()) {
+                for (Arena arena : arenas()) {
+                    try (arena) {
+                        MemorySegment dst = MemorySegment.ofString(testString, charset);
+                        byte[] encoded = testString.getBytes(charset);
+                        assertEquals(encoded.length, dst.byteSize());
+                        MemorySegment src = MemorySegment.ofArray(encoded);
+                        assertEquals(src.mismatch(dst), -1);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test(dataProvider = "strings")
+    public void testStringCopy(String testString) {
+        if (!testString.isEmpty()) {
+            for (Charset charset : encodingCharsets()) {
+                for (Arena arena : arenas()) {
+                    try (arena) {
+                        byte[] encoded = testString.getBytes(charset);
+                        MemorySegment dst = arena.allocate(encoded.length);
+                        MemorySegment.copy(testString, 0, dst, charset, 0, testString.length());
+                        MemorySegment src = MemorySegment.ofArray(encoded);
+                        assertEquals(src.mismatch(dst), -1);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test(dataProvider = "strings")
+    public void testAllocateFromString(String testString) {
+        if (!testString.isEmpty()) {
+            for (Charset charset : encodingCharsets()) {
+                for (Arena arena : arenas()) {
+                    try (arena) {
+                        MemorySegment dst = arena.allocateFrom(testString, charset, 0, testString.length());
+                        byte[] encoded = testString.getBytes(charset);
+                        assertEquals(encoded.length, dst.byteSize());
+                        MemorySegment src = MemorySegment.ofArray(encoded);
+                        assertEquals(src.mismatch(dst), -1);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test(dataProvider = "strings")
     public void testStringsHeap(String testString) {
         for (Charset charset : singleByteCharsets()) {
             for (var arena : arenas()) {
@@ -402,7 +479,7 @@ public class TestStringEncoding {
                 {""},
                 {"X"},
                 {"12345"},
-                {"yen \u00A5"},
+                {"section \u00A7"},
                 {"snowman \u26C4"},
                 {"rainbow \uD83C\uDF08"},
                 {"0"},
@@ -439,6 +516,12 @@ public class TestStringEncoding {
     static List<Charset> standardCharsets() {
         return Charset.availableCharsets().values().stream()
                 .filter(TestStringEncoding::isStandard)
+                .toList();
+    }
+
+    static List<Charset> encodingCharsets() {
+        return Charset.availableCharsets().values().stream()
+                .filter(Charset::canEncode)
                 .toList();
     }
 

@@ -46,6 +46,7 @@ import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
@@ -686,6 +687,20 @@ public abstract sealed class AbstractMemorySegmentImpl
         }
     }
 
+    @ForceInline
+    public static void copy(String src, int srcIndex,
+                            MemorySegment dstSegment, Charset dstEncoding, long dstOffset,
+                            int charLength) {
+        String sub = src.substring(srcIndex, srcIndex + charLength); // FIXME avoid copy
+        // FIXME support encoding the string directly into the target segment (without an intermediate byte[])
+        byte[] bytes = StringSupport.toByteArray(sub, dstEncoding);
+        AbstractMemorySegmentImpl destImpl = (AbstractMemorySegmentImpl)dstSegment;
+        destImpl.checkAccess(dstOffset, bytes.length, false);
+        ScopedMemoryAccess.getScopedMemoryAccess().copyMemory(null, destImpl.sessionImpl(),
+                bytes, Utils.BaseAndScale.BYTE.base(),
+                destImpl.unsafeGetBase(), destImpl.unsafeGetOffset() + dstOffset, bytes.length);
+    }
+
     // accessors
 
     @ForceInline
@@ -935,6 +950,14 @@ public abstract sealed class AbstractMemorySegmentImpl
     public String getString(long offset, Charset charset) {
         Objects.requireNonNull(charset);
         return StringSupport.read(this, offset, charset);
+    }
+
+    @ForceInline
+    @Override
+    public String getString(long offset, Charset charset, int length) {
+        Objects.requireNonNull(charset);
+        checkBounds(offset, length);
+        return StringSupport.read(this, offset, charset, length);
     }
 
     @ForceInline
