@@ -237,7 +237,10 @@ public class NativeTestHelper {
         } else if (layout instanceof AddressLayout) {
             MemorySegment value = MemorySegment.ofAddress(random.nextLong());
             return new TestValue(value, actual -> assertEquals(actual, value));
-        }else if (layout instanceof ValueLayout.OfByte) {
+        } else if (layout instanceof ValueLayout.OfBoolean) {
+            boolean value = random.nextBoolean();
+            return new TestValue(value, actual -> assertEquals(actual, value));
+        } else if (layout instanceof ValueLayout.OfByte) {
             byte value = (byte) random.nextInt();
             return new TestValue(value, actual -> assertEquals(actual, value));
         } else if (layout instanceof ValueLayout.OfShort) {

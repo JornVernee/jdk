@@ -194,14 +194,6 @@ public class TestIllegalLink extends NativeTestHelper {
             },
         }));
 
-        for (ValueLayout illegalLayout : List.of(C_CHAR, ValueLayout.JAVA_CHAR, C_BOOL, C_SHORT, C_FLOAT)) {
-            cases.add(new Object[]{
-                FunctionDescriptor.ofVoid(C_INT, illegalLayout),
-                new Linker.Option[]{Linker.Option.firstVariadicArg(1)},
-                "Invalid variadic argument layout"
-            });
-        }
-
         if (IS_SYSV) {
             cases.add(new Object[] {
                     FunctionDescriptor.ofVoid(MemoryLayout.structLayout(

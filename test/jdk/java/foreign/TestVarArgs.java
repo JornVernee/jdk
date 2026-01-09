@@ -35,16 +35,19 @@ import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.foreign.MemorySegment;
 
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static java.lang.foreign.MemoryLayout.PathElement.*;
 
@@ -66,42 +69,55 @@ public class TestVarArgs extends CallGeneratorHelper {
     static final MemorySegment VARARGS_ADDR = findNativeOrThrow("varargs");
 
     @Test(dataProvider = "variadicFunctions")
-    public void testVarArgs(int count, String fName, Ret ret, // ignore this stuff
-                            List<ParamType> paramTypes, List<StructFieldType> fields) throws Throwable {
+    public void testVarArgs(List<ParamType> paramTypes, List<StructFieldType> fields) throws Throwable {
         try (Arena arena = Arena.ofConfined()) {
             List<Arg> args = makeArgs(arena, paramTypes, fields);
-            MethodHandle checker = MethodHandles.insertArguments(MH_CHECK, 2, args);
-            MemorySegment writeBack = LINKER.upcallStub(checker, FunctionDescriptor.ofVoid(C_INT, C_POINTER), arena);
-            MemorySegment callInfo = arena.allocate(CallInfo.LAYOUT);
-            MemoryLayout layout = MemoryLayout.sequenceLayout(args.size(), C_INT);
-            MemorySegment argIDs = arena.allocate(layout);
-
-            CallInfo.writeback(callInfo, writeBack);
-            CallInfo.argIDs(callInfo, argIDs);
-
-            for (int i = 0; i < args.size(); i++) {
-                argIDs.setAtIndex(ValueLayout.JAVA_INT, i, args.get(i).id.ordinal());
-            }
-
-            List<MemoryLayout> argLayouts = new ArrayList<>();
-            argLayouts.add(C_POINTER); // call info
-            argLayouts.add(C_INT); // size
-
-            FunctionDescriptor baseDesc = FunctionDescriptor.ofVoid(argLayouts.toArray(MemoryLayout[]::new));
-            Linker.Option varargIndex = Linker.Option.firstVariadicArg(baseDesc.argumentLayouts().size());
-            FunctionDescriptor desc = baseDesc.appendArgumentLayouts(args.stream().map(a -> a.layout).toArray(MemoryLayout[]::new));
-
-            MethodHandle downcallHandle = LINKER.downcallHandle(VARARGS_ADDR, desc, varargIndex);
-
-            List<Object> argValues = new ArrayList<>();
-            argValues.add(callInfo); // call info
-            argValues.add(args.size());  // size
-            args.forEach(a -> argValues.add(a.value()));
-
-            downcallHandle.invokeWithArguments(argValues);
-
-            // args checked by upcall
+            writebackTest(arena, args);
         }
+    }
+
+    @Test(dataProvider = "promotedLayouts")
+    public void testPromotion(Arg.NativeType nativeType, MemoryLayout layout, Function<Object, Object> promote) throws Throwable {
+        try (Arena arena = Arena.ofConfined()) {
+            TestValue testValue = genTestValue(layout, arena);
+            List<Arg> args = List.of(Arg.primitiveArg(nativeType, layout,
+                    testValue.value(), promote.apply(testValue.value())));
+            writebackTest(arena, args);
+        }
+    }
+
+    private static void writebackTest(Arena arena, List<Arg> args) throws Throwable {
+        MethodHandle checker = MethodHandles.insertArguments(MH_CHECK, 2, args);
+        MemorySegment writeBack = LINKER.upcallStub(checker, FunctionDescriptor.ofVoid(C_INT, C_POINTER), arena);
+        MemorySegment callInfo = arena.allocate(CallInfo.LAYOUT);
+        MemoryLayout argIDLayout = MemoryLayout.sequenceLayout(args.size(), C_INT);
+        MemorySegment argIDs = arena.allocate(argIDLayout);
+
+        CallInfo.writeback(callInfo, writeBack);
+        CallInfo.argIDs(callInfo, argIDs);
+
+        for (int i = 0; i < args.size(); i++) {
+            argIDs.setAtIndex(ValueLayout.JAVA_INT, i, args.get(i).id.ordinal());
+        }
+
+        List<MemoryLayout> argLayouts = new ArrayList<>();
+        argLayouts.add(C_POINTER); // call info
+        argLayouts.add(C_INT); // size
+
+        FunctionDescriptor baseDesc = FunctionDescriptor.ofVoid(argLayouts.toArray(MemoryLayout[]::new));
+        Linker.Option varargIndex = Linker.Option.firstVariadicArg(baseDesc.argumentLayouts().size());
+        FunctionDescriptor desc = baseDesc.appendArgumentLayouts(args.stream().map(a -> a.layout).toArray(MemoryLayout[]::new));
+
+        MethodHandle downcallHandle = LINKER.downcallHandle(VARARGS_ADDR, desc, varargIndex);
+
+        List<Object> argValues = new ArrayList<>();
+        argValues.add(callInfo); // call info
+        argValues.add(args.size());  // size
+        args.forEach(a -> argValues.add(a.value()));
+
+        downcallHandle.invokeWithArguments(argValues);
+
+        // args checked by upcall
     }
 
     private static List<ParamType> createParameterTypesForStruct(int extraIntArgs) {
@@ -127,59 +143,70 @@ public class TestVarArgs extends CallGeneratorHelper {
 
         var functionsDowncalls = functions();
         for (var array : functionsDowncalls) {
-            downcalls.add(array);
+            downcalls.add(new Object[]{ array[3], array[4] });
         }
 
         // Test struct with 4 floats
         int extraIntArgs = 0;
         List<StructFieldType> fields = createFieldsForStruct(4, StructFieldType.FLOAT);
         List<ParamType> paramTypes = createParameterTypesForStruct(extraIntArgs);
-        downcalls.add(new Object[] { 0, "", Ret.VOID, paramTypes, fields });
+        downcalls.add(new Object[] { paramTypes, fields });
 
         // Test struct with 4 floats without enough registers for all fields
         extraIntArgs = 6;
         fields = createFieldsForStruct(4, StructFieldType.FLOAT);
         paramTypes = createParameterTypesForStruct(extraIntArgs);
-        downcalls.add(new Object[] { 0, "", Ret.VOID, paramTypes, fields });
+        downcalls.add(new Object[] { paramTypes, fields });
 
         // Test struct with 2 doubles without enough registers for all fields
         extraIntArgs = 7;
         fields = createFieldsForStruct(2, StructFieldType.DOUBLE);
         paramTypes = createParameterTypesForStruct(extraIntArgs);
-        downcalls.add(new Object[] { 0, "", Ret.VOID, paramTypes, fields });
+        downcalls.add(new Object[] { paramTypes, fields });
 
         // Test struct with 2 ints without enough registers for all fields
         fields = createFieldsForStruct(2, StructFieldType.INT);
         paramTypes = createParameterTypesForStruct(extraIntArgs);
-        downcalls.add(new Object[] { 0, "", Ret.VOID, paramTypes, fields });
+        downcalls.add(new Object[] { paramTypes, fields });
 
         return downcalls.toArray(new Object[0][]);
+    }
+
+    @DataProvider
+    public static Object[][] promotedLayouts() {
+        Map<String, MemoryLayout> l = LINKER.canonicalLayouts();
+        return new Object[][]{
+                { Arg.NativeType.INT, l.get("unsigned char"), (Function<Object, Object>) o -> Byte.toUnsignedInt((byte) o) },
+                { Arg.NativeType.INT, l.get("signed char"), (Function<Object, Object>) o -> (int) (byte) o },
+                { Arg.NativeType.INT, l.get("unsigned short"), (Function<Object, Object>) o -> Short.toUnsignedInt((short) o) },
+                { Arg.NativeType.INT, l.get("signed short"), (Function<Object, Object>) o -> (int) (short) o },
+                { Arg.NativeType.INT, l.get("jchar"), (Function<Object, Object>) o -> (int) (char) o },
+                { Arg.NativeType.INT, l.get("jboolean"), (Function<Object, Object>) o -> (boolean) o ? 1 : 0 },
+                { Arg.NativeType.DOUBLE, l.get("float"), (Function<Object, Object>) o -> (double) (float) o },
+        };
     }
 
     private static List<Arg> makeArgs(Arena arena, List<ParamType> paramTypes, List<StructFieldType> fields) {
         List<Arg> args = new ArrayList<>();
         for (ParamType pType : paramTypes) {
             MemoryLayout layout = pType.layout(fields);
-            if (layout instanceof ValueLayout.OfFloat) {
-                layout = C_DOUBLE; // promote to double, per C spec
-            }
             TestValue testValue = genTestValue(layout, arena);
             Arg.NativeType type = Arg.NativeType.of(pType.type(fields));
             args.add(pType == ParamType.STRUCT
                 ? Arg.structArg(type, layout, testValue)
-                : Arg.primitiveArg(type, layout, testValue));
+                : Arg.primitiveArg(type, layout, testValue.value(),
+                    layout instanceof ValueLayout.OfFloat // we only see float here, none of the other sub-int types
+                            ? (double) (float) testValue.value()
+                            : testValue.value()));
         }
         return args;
     }
 
     private static void check(int index, MemorySegment ptr, List<Arg> args) {
         Arg varArg = args.get(index);
-        MemoryLayout layout = varArg.layout;
         MethodHandle getter = varArg.getter;
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment seg = ptr.asSlice(0, layout)
-                    .reinterpret(arena, null);
-            Object obj = getter.invoke(seg);
+        try {
+            Object obj = getter.invoke(ptr);
             varArg.check(obj);
         } catch (Throwable e) {
             throw new RuntimeException(e);
@@ -203,35 +230,43 @@ public class TestVarArgs extends CallGeneratorHelper {
     }
 
     private static final class Arg {
-        private final TestValue value;
+        private final Object value;
+        private final Consumer<Object> checker;
 
         final NativeType id;
         final MemoryLayout layout;
         final MethodHandle getter;
 
-        private Arg(NativeType id, MemoryLayout layout, TestValue value, MethodHandle getter) {
+        private Arg(NativeType id, MemoryLayout layout, Object value, Consumer<Object> checker, MethodHandle getter) {
             this.id = id;
             this.layout = layout;
             this.value = value;
+            this.checker = checker;
             this.getter = getter;
         }
 
-        private static Arg primitiveArg(NativeType id, MemoryLayout layout, TestValue value) {
-            MethodHandle getterHandle = layout.varHandle().toMethodHandle(VarHandle.AccessMode.GET);
+        private static Arg primitiveArg(NativeType id, MemoryLayout inputLayout, Object inputValue, Object expectedValue) {
+            VarHandle vh = switch (id) {
+                case INT -> ValueLayout.JAVA_INT.varHandle();
+                case DOUBLE -> ValueLayout.JAVA_DOUBLE.varHandle();
+                case POINTER -> ValueLayout.ADDRESS.varHandle();
+                default -> throw new IllegalArgumentException("Not a primitive: " + id);
+            };
+            MethodHandle getterHandle = vh.toMethodHandle(VarHandle.AccessMode.GET);
             getterHandle = MethodHandles.insertArguments(getterHandle, 1, 0L); // align signature with getter for structs
-            return new Arg(id, layout, value, getterHandle);
+            return new Arg(id, inputLayout, inputValue, o -> Assert.assertEquals(o, expectedValue), getterHandle);
         }
 
         private static Arg structArg(NativeType id, MemoryLayout layout, TestValue value) {
-            return new Arg(id, layout, value, MethodHandles.identity(MemorySegment.class));
+            return new Arg(id, layout, value.value(), value.check(), MethodHandles.identity(MemorySegment.class));
         }
 
         public void check(Object actual) {
-            value.check().accept(actual);
+            checker.accept(actual);
         }
 
         public Object value() {
-            return value.value();
+            return value;
         }
 
         enum NativeType {

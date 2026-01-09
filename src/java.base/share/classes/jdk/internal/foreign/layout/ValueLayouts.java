@@ -117,7 +117,8 @@ public final class ValueLayouts {
                     other instanceof AbstractValueLayout<?> otherValue &&
                             super.equals(other) &&
                             carrier.equals(otherValue.carrier) &&
-                            order.equals(otherValue.order);
+                            order.equals(otherValue.order) &&
+                            unsigned == otherValue.unsigned;
         }
 
         /**
@@ -129,7 +130,7 @@ public final class ValueLayouts {
 
         @Override
         public int hashCode() {
-            return Objects.hash(super.hashCode(), order, carrier);
+            return Objects.hash(super.hashCode(), order, carrier, unsigned);
         }
 
         @Override

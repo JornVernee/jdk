@@ -54,6 +54,7 @@ import java.lang.foreign.StructLayout;
 import java.lang.foreign.UnionLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.HashSet;
 import java.util.List;
@@ -110,16 +111,77 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
         checkLayouts(function);
         function = stripNames(function);
         LinkerOptions optionSet = LinkerOptions.forDowncall(function, options);
-        validateVariadicLayouts(function, optionSet);
 
         return DOWNCALL_CACHE.get(new LinkRequest(function, optionSet), linkRequest ->  {
-            FunctionDescriptor fd = linkRequest.descriptor();
+            FunctionDescriptor origFd = linkRequest.descriptor();
+            FunctionDescriptor fd = origFd;
+            if (optionSet.isVariadicFunction()) {
+                // promote layouts in fd
+                fd = promoteVariadicLayouts(origFd);
+            }
             MethodType type = fd.toMethodType();
             MethodHandle handle = arrangeDowncall(type, fd, linkRequest.options());
+            if (optionSet.isVariadicFunction()) {
+                // <target address>, SegmentAllocator, [<capture state>], ...
+                int argStartIndex = linkRequest.options().hasCapturedCallState() ? 3 : 2;
+                handle = promoteVariadicArguments(handle, origFd, argStartIndex);
+            }
             handle = SharedUtils.maybeCheckCaptureSegment(handle, linkRequest.options());
             handle = SharedUtils.maybeInsertAllocator(fd, handle);
             return handle;
         });
+    }
+
+    // C spec mandates that variadic arguments smaller than int are promoted to int,
+    // and float is promoted to double
+    // See: https://en.cppreference.com/w/c/language/conversion#Default_argument_promotions
+    // We promote the corresponding layouts here.
+    private static FunctionDescriptor promoteVariadicLayouts(FunctionDescriptor origFd) {
+        List<MemoryLayout> origLayouts = origFd.argumentLayouts();
+        MemoryLayout[] newLayouts = new MemoryLayout[origLayouts.size()];
+        for (int i = 0; i < origLayouts.size(); i++) {
+            MemoryLayout orig = origLayouts.get(i);
+            MemoryLayout replacement = orig;
+            if (orig instanceof ValueLayout.OfBoolean
+                || orig instanceof ValueLayout.OfByte
+                || orig instanceof ValueLayout.OfChar
+                || orig instanceof ValueLayout.OfShort) {
+                replacement = ValueLayout.JAVA_INT;
+            } else if (orig instanceof ValueLayout.OfFloat) {
+                replacement = ValueLayout.JAVA_DOUBLE;
+            }
+            newLayouts[i] = replacement;
+        }
+        return origFd.returnLayout()
+                .map(rl -> FunctionDescriptor.of(rl, newLayouts))
+                .orElseGet(() -> FunctionDescriptor.ofVoid(newLayouts));
+    }
+
+    private static MethodHandle promoteVariadicArguments(MethodHandle handle, FunctionDescriptor origFd, int startIndex) {
+        List<MemoryLayout> origLayouts = origFd.argumentLayouts();
+        for (int i = 0; i < origLayouts.size(); i++) {
+            MemoryLayout orig = origLayouts.get(i);
+            MethodHandle filter;
+            if (orig instanceof ValueLayout.OfBoolean) {
+                filter = Converters.MH_BOOLEAN_TO_INT;
+            } else if(orig instanceof ValueLayout.OfByte) {
+                filter = SharedUtils.isUnsigned(orig)
+                    ? Converters.MH_UNSIGNED_BYTE_TO_INT
+                    : Converters.MH_SIGNED_BYTE_TO_INT;
+            } else if (orig instanceof ValueLayout.OfChar) {
+                filter = Converters.MH_CHAR_TO_INT;
+            } else if (orig instanceof ValueLayout.OfShort) {
+                filter = SharedUtils.isUnsigned(orig)
+                    ? Converters.MH_UNSIGNED_SHORT_TO_INT
+                    : Converters.MH_SIGNED_SHORT_TO_INT;
+            } else if (orig instanceof ValueLayout.OfFloat) {
+                filter = Converters.MH_FLOAT_TO_DOUBLE;
+            } else {
+                continue;
+            }
+            handle = MethodHandles.filterArguments(handle, startIndex + i, filter);
+        }
+        return handle;
     }
 
     protected abstract MethodHandle arrangeDowncall(MethodType inferredMethodType, FunctionDescriptor function, LinkerOptions options);
@@ -151,28 +213,6 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
     @Override
     public SystemLookup defaultLookup() {
         return SystemLookup.getInstance();
-    }
-
-    // C spec mandates that variadic arguments smaller than int are promoted to int,
-    // and float is promoted to double
-    // See: https://en.cppreference.com/w/c/language/conversion#Default_argument_promotions
-    // We reject the corresponding layouts here, to avoid issues where unsigned values
-    // are sign extended when promoted. (as we don't have a way to unambiguously represent signed-ness atm).
-    private void validateVariadicLayouts(FunctionDescriptor function, LinkerOptions optionSet) {
-        if (optionSet.isVariadicFunction()) {
-            List<MemoryLayout> argumentLayouts = function.argumentLayouts();
-            List<MemoryLayout> variadicLayouts = argumentLayouts.subList(optionSet.firstVariadicArgIndex(), argumentLayouts.size());
-
-            for (MemoryLayout variadicLayout : variadicLayouts) {
-                if (variadicLayout.equals(ValueLayout.JAVA_BOOLEAN)
-                    || variadicLayout.equals(ValueLayout.JAVA_BYTE)
-                    || variadicLayout.equals(ValueLayout.JAVA_CHAR)
-                    || variadicLayout.equals(ValueLayout.JAVA_SHORT)
-                    || variadicLayout.equals(ValueLayout.JAVA_FLOAT)) {
-                    throw new IllegalArgumentException("Invalid variadic argument layout: " + variadicLayout);
-                }
-            }
-        }
     }
 
     private void checkLayouts(FunctionDescriptor descriptor) {
@@ -346,5 +386,66 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
             return FunctionDescriptor.ofVoid(stripNames(function.argumentLayouts()));
         }
         return FunctionDescriptor.of(stripNames(retLayout.get()), stripNames(function.argumentLayouts()));
+    }
+
+    private static class Converters {
+        static final MethodHandle MH_BOOLEAN_TO_INT;
+        static final MethodHandle MH_CHAR_TO_INT;
+        static final MethodHandle MH_UNSIGNED_BYTE_TO_INT;
+        static final MethodHandle MH_SIGNED_BYTE_TO_INT;
+        static final MethodHandle MH_UNSIGNED_SHORT_TO_INT;
+        static final MethodHandle MH_SIGNED_SHORT_TO_INT;
+        static final MethodHandle MH_FLOAT_TO_DOUBLE;
+
+        static {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+            try {
+                MH_BOOLEAN_TO_INT = lookup.findStatic(Converters.class, "booleanToInt",
+                        MethodType.methodType(int.class, boolean.class));
+                MH_CHAR_TO_INT = lookup.findStatic(Converters.class, "charToInt",
+                        MethodType.methodType(int.class, char.class));
+                MH_UNSIGNED_BYTE_TO_INT = lookup.findStatic(Converters.class, "unsignedByteToInt",
+                        MethodType.methodType(int.class, byte.class));
+                MH_SIGNED_BYTE_TO_INT = lookup.findStatic(Converters.class, "signedByteToInt",
+                        MethodType.methodType(int.class, byte.class));
+                MH_UNSIGNED_SHORT_TO_INT = lookup.findStatic(Converters.class, "unsignedShortToInt",
+                        MethodType.methodType(int.class, short.class));
+                MH_SIGNED_SHORT_TO_INT = lookup.findStatic(Converters.class, "signedShortToInt",
+                        MethodType.methodType(int.class, short.class));
+                MH_FLOAT_TO_DOUBLE = lookup.findStatic(Converters.class, "floatToDouble",
+                        MethodType.methodType(double.class, float.class));
+            } catch (ReflectiveOperationException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
+
+        private static int booleanToInt(boolean b) {
+            return b ? 1 : 0;
+        }
+
+        private static int charToInt(char c) {
+            return c;
+        }
+
+        private static int unsignedByteToInt(byte b) {
+            return Byte.toUnsignedInt(b);
+        }
+
+        private static int signedByteToInt(byte b) {
+            return b;
+        }
+
+        private static int unsignedShortToInt(short s) {
+            return Short.toUnsignedInt(s);
+        }
+
+        private static int signedShortToInt(short s) {
+            return s;
+        }
+
+        private static double floatToDouble(float f) {
+            return f;
+        }
     }
 }
