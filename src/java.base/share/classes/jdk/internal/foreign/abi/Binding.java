@@ -39,6 +39,7 @@ import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Function;
 
 import static java.lang.foreign.ValueLayout.*;
 
@@ -303,6 +304,10 @@ public sealed interface Binding {
     }
 
     static Binding cast(Class<?> fromType, Class<?> toType) {
+        return cast(fromType, toType, false);
+    }
+
+    static Binding cast(Class<?> fromType, Class<?> toType, boolean unsigned) {
         if (fromType == int.class) {
             if (toType == boolean.class) {
                 return Cast.INT_TO_BOOLEAN;
@@ -313,15 +318,15 @@ public sealed interface Binding {
             } else if (toType == char.class) {
                 return Cast.INT_TO_CHAR;
             } else if (toType == long.class) {
-                return Cast.INT_TO_LONG;
+                return unsigned ? Cast.UNSIGNED_INT_TO_LONG : Cast.INT_TO_LONG;
             }
         } else if (toType == int.class) {
             if (fromType == boolean.class) {
                 return Cast.BOOLEAN_TO_INT;
             } else if (fromType == byte.class) {
-                return Cast.BYTE_TO_INT;
+                return unsigned ? Cast.UNSIGNED_BYTE_TO_INT : Cast.BYTE_TO_INT;
             } else if (fromType == short.class) {
-                return Cast.SHORT_TO_INT;
+                return unsigned ? Cast.UNSIGNED_SHORT_TO_INT : Cast.SHORT_TO_INT;
             } else if (fromType == char.class) {
                 return Cast.CHAR_TO_INT;
             } else if (fromType == long.class) {
@@ -337,9 +342,9 @@ public sealed interface Binding {
             }
         } else if (toType == long.class) {
             if (fromType == byte.class) {
-                return Cast.BYTE_TO_LONG;
+                return unsigned ? Cast.UNSIGNED_BYTE_TO_LONG : Cast.BYTE_TO_LONG;
             } else if (fromType == short.class) {
-                return Cast.SHORT_TO_LONG;
+                return unsigned ? Cast.UNSIGNED_SHORT_TO_LONG : Cast.SHORT_TO_LONG;
             } else if (fromType == char.class) {
                 return Cast.CHAR_TO_LONG;
             }
@@ -463,6 +468,15 @@ public sealed interface Binding {
             if (type != long.class) {
                 bindings.add(Binding.cast(long.class, type));
             }
+            return this;
+        }
+
+        public Binding.Builder cast(Class<?> fromType, Class<?> toType) {
+            return cast(fromType, toType, false);
+        }
+
+        public Binding.Builder cast(Class<?> fromType, Class<?> toType, boolean unsigned) {
+            bindings.add(Binding.cast(fromType, toType, unsigned));
             return this;
         }
 
@@ -848,11 +862,17 @@ public sealed interface Binding {
         INT_TO_CHAR(int.class, char.class),
         INT_TO_SHORT(int.class, short.class),
         INT_TO_LONG(int.class, long.class),
+        UNSIGNED_INT_TO_LONG(int.class, long.class,
+                true, o -> Integer.toUnsignedLong((int) o)),
 
         BOOLEAN_TO_INT(boolean.class, int.class),
         BYTE_TO_INT(byte.class, int.class),
+        UNSIGNED_BYTE_TO_INT(byte.class, int.class,
+                true, o -> Byte.toUnsignedInt((byte) o)),
         CHAR_TO_INT(char.class, int.class),
         SHORT_TO_INT(short.class, int.class),
+        UNSIGNED_SHORT_TO_INT(short.class, int.class,
+                true, o -> Short.toUnsignedInt((short) o)),
         LONG_TO_INT(long.class, int.class),
 
         LONG_TO_BYTE(long.class, byte.class),
@@ -860,15 +880,27 @@ public sealed interface Binding {
         LONG_TO_CHAR(long.class, char.class),
 
         BYTE_TO_LONG(byte.class, long.class),
+        UNSIGNED_BYTE_TO_LONG(byte.class, long.class,
+                true, o -> Byte.toUnsignedLong((byte) o)),
         SHORT_TO_LONG(short.class, long.class),
+        UNSIGNED_SHORT_TO_LONG(short.class, long.class,
+                true, o -> Short.toUnsignedLong((short) o)),
         CHAR_TO_LONG(char.class, long.class);
 
         private final Class<?> fromType;
         private final Class<?> toType;
+        private final boolean unsigned;
+        private final Function<Object, Object> converter;
 
-        Cast(Class<?> fromType, Class<?> toType) {
+        Cast(Class<?> fromType, Class<?> toType, boolean unsigned, Function<Object, Object> converter) {
             this.fromType = fromType;
             this.toType = toType;
+            this.unsigned = unsigned;
+            this.converter = converter;
+        }
+
+        Cast(Class<?> fromType, Class<?> toType) {
+            this(fromType, toType, false, null);
         }
 
         public Class<?> fromType() {
@@ -877,6 +909,10 @@ public sealed interface Binding {
 
         public Class<?> toType() {
             return toType;
+        }
+
+        public boolean isUnsigned() {
+            return unsigned;
         }
 
         @Override
@@ -890,14 +926,19 @@ public sealed interface Binding {
         public void interpret(Deque<Object> stack, StoreFunc storeFunc,
                               LoadFunc loadFunc, SegmentAllocator allocator) {
             Object arg = stack.pop();
-            MethodHandle converter = MethodHandles.explicitCastArguments(MethodHandles.identity(toType),
-                    MethodType.methodType(toType, fromType));
-            try {
-                Object result = converter.invoke(arg);
-                stack.push(result);
-            } catch (Throwable e) {
-                throw new InternalError(e);
+            Object result;
+            if (converter != null) {
+                result = converter.apply(arg);
+            } else {
+                MethodHandle converter = MethodHandles.explicitCastArguments(MethodHandles.identity(toType),
+                        MethodType.methodType(toType, fromType));
+                try {
+                    result = converter.invoke(arg);
+                } catch (Throwable e) {
+                    throw new InternalError(e);
+                }
             }
+            stack.push(result);
         }
     }
 }

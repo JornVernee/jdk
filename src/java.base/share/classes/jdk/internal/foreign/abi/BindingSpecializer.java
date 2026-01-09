@@ -127,7 +127,9 @@ public class BindingSpecializer {
     private static final MethodTypeDesc MTD_ACQUIRE0 = MTD_void;
     private static final MethodTypeDesc MTD_INTEGER_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_int);
     private static final MethodTypeDesc MTD_SHORT_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_short);
+    private static final MethodTypeDesc MTD_SHORT_TO_UNSIGNED_INT = MethodTypeDesc.of(CD_int, CD_short);
     private static final MethodTypeDesc MTD_BYTE_TO_UNSIGNED_LONG = MethodTypeDesc.of(CD_long, CD_byte);
+    private static final MethodTypeDesc MTD_BYTE_TO_UNSIGNED_INT = MethodTypeDesc.of(CD_int, CD_byte);
     private static final MethodTypeDesc MTD_BYTE_TO_BOOLEAN = MethodTypeDesc.of(CD_boolean, CD_byte);
 
     private static final ConstantDesc CLASS_DATA_DESC = DynamicConstantDesc.of(BSM_CLASS_DATA);
@@ -792,6 +794,11 @@ public class BindingSpecializer {
             case BOOLEAN_TO_INT, BYTE_TO_INT, CHAR_TO_INT, SHORT_TO_INT -> {
                 // no-op in bytecode
             }
+            case UNSIGNED_BYTE_TO_INT -> cb.invokestatic(CD_Byte, "toUnsignedInt", MTD_BYTE_TO_UNSIGNED_INT);
+            case UNSIGNED_BYTE_TO_LONG -> cb.invokestatic(CD_Byte, "toUnsignedLong", MTD_BYTE_TO_UNSIGNED_LONG);
+            case UNSIGNED_SHORT_TO_INT -> cb.invokestatic(CD_Short, "toUnsignedInt", MTD_SHORT_TO_UNSIGNED_INT);
+            case UNSIGNED_SHORT_TO_LONG -> cb.invokestatic(CD_Short, "toUnsignedLong", MTD_SHORT_TO_UNSIGNED_LONG);
+            case UNSIGNED_INT_TO_LONG -> cb.invokestatic(CD_Integer, "toUnsignedLong", MTD_INTEGER_TO_UNSIGNED_LONG);
             default -> throw new IllegalStateException("Unknown cast: " + cast);
         }
         pushType(toType);

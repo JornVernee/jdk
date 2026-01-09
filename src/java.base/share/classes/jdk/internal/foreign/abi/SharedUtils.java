@@ -40,6 +40,7 @@ import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
 import jdk.internal.foreign.abi.s390.linux.LinuxS390Linker;
 import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
+import jdk.internal.foreign.layout.ValueLayouts;
 import jdk.internal.vm.annotation.ForceInline;
 
 import java.lang.foreign.AddressLayout;
@@ -384,6 +385,10 @@ public final class SharedUtils {
         return Integer.bitCount(width) == 1;
     }
 
+    public static boolean isUnsigned(MemoryLayout layout) {
+        return layout instanceof ValueLayout vl && ValueLayouts.isUnsigned(vl);
+    }
+
     static long pickChunkOffset(long chunkOffset, long byteWidth, int chunkWidth) {
         return ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN
                 ? byteWidth - chunkWidth - chunkOffset
@@ -391,6 +396,7 @@ public final class SharedUtils {
     }
 
     private static final int LINKER_STACK_SIZE = Integer.getInteger("jdk.internal.foreign.LINKER_STACK_SIZE", 256);
+
     private static final BufferStack LINKER_STACK = BufferStack.of(LINKER_STACK_SIZE, 1);
 
     @ForceInline
@@ -492,23 +498,37 @@ public final class SharedUtils {
                 // specified canonical layouts
                 Map.entry("bool", ValueLayout.JAVA_BOOLEAN),
                 Map.entry("char", ValueLayout.JAVA_BYTE),
+                Map.entry("signed char", ValueLayout.JAVA_BYTE),
+                Map.entry("unsigned char", ValueLayouts.valueLayout(byte.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("short", ValueLayout.JAVA_SHORT),
+                Map.entry("signed short", ValueLayout.JAVA_SHORT),
+                Map.entry("unsigned short", ValueLayouts.valueLayout(short.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("int", ValueLayout.JAVA_INT),
+                Map.entry("signed int", ValueLayout.JAVA_INT),
+                Map.entry("unsigned int", ValueLayouts.valueLayout(int.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("float", ValueLayout.JAVA_FLOAT),
                 Map.entry("long", longLayout),
+                Map.entry("signed long", longLayout),
+                Map.entry("unsigned long", ValueLayouts.valueLayout(long.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("long long", ValueLayout.JAVA_LONG),
+                Map.entry("signed long long", ValueLayout.JAVA_LONG),
+                Map.entry("unsigned long long", ValueLayouts.valueLayout(long.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("double", ValueLayout.JAVA_DOUBLE),
                 Map.entry("void*", ValueLayout.ADDRESS),
                 Map.entry("size_t", sizetLayout),
                 Map.entry("wchar_t", wchartLayout),
                 // unspecified size-dependent layouts
                 Map.entry("int8_t", ValueLayout.JAVA_BYTE),
+                Map.entry("uint8_t", ValueLayouts.valueLayout(byte.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("int16_t", ValueLayout.JAVA_SHORT),
+                Map.entry("uint16_t", ValueLayouts.valueLayout(short.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("int32_t", ValueLayout.JAVA_INT),
+                Map.entry("uint32_t", ValueLayouts.valueLayout(int.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("int64_t", ValueLayout.JAVA_LONG),
+                Map.entry("uint64_t", ValueLayouts.valueLayout(long.class, ByteOrder.nativeOrder(), true)),
                 // unspecified JNI layouts
                 Map.entry("jboolean", ValueLayout.JAVA_BOOLEAN),
-                Map.entry("jchar", ValueLayout.JAVA_CHAR),
+                Map.entry("jchar", ValueLayouts.valueLayout(char.class, ByteOrder.nativeOrder(), true)),
                 Map.entry("jbyte", ValueLayout.JAVA_BYTE),
                 Map.entry("jshort", ValueLayout.JAVA_SHORT),
                 Map.entry("jint", ValueLayout.JAVA_INT),

@@ -431,7 +431,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * A value layout constant whose size is the same as that of a Java {@code char},
      * byte alignment set to 2, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
-    OfChar JAVA_CHAR = ValueLayouts.OfCharImpl.of(ByteOrder.nativeOrder());
+    OfChar JAVA_CHAR = ValueLayouts.OfCharImpl.ofUnsigned(ByteOrder.nativeOrder());
 
     /**
      * A value layout constant whose size is the same as that of a Java {@code short},
