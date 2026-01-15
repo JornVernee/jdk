@@ -29,6 +29,7 @@
 #include "ci/ciKlass.hpp"
 #include "ci/ciMethod.hpp"
 #include "ci/ciMethodHandle.hpp"
+#include "ci/ciSpeculationFence.hpp"
 #include "code/compressedStream.hpp"
 #include "code/nmethod.hpp"
 #include "memory/resourceArea.hpp"
@@ -62,6 +63,7 @@ class   KlassDepChange;
 class     NewKlassDepChange;
 class     KlassInitDepChange;
 class   CallSiteDepChange;
+class   SpecFenceDepChange;
 class NoSafepointVerifier;
 
 class Dependencies: public ResourceObj {
@@ -155,6 +157,9 @@ class Dependencies: public ResourceObj {
     // This dependency asserts when the CallSite.target value changed.
     call_site_target_value,
 
+    // This dependency asserts whether a speculation fence has be triggered.
+    speculation_fence,
+
     TYPE_LIMIT
   };
   enum {
@@ -163,10 +168,10 @@ class Dependencies: public ResourceObj {
     // handy categorizations of dependency types:
     all_types           = ((1 << TYPE_LIMIT) - 1) & ((~0u) << FIRST_TYPE),
 
-    non_klass_types     = (1 << call_site_target_value),
+    non_klass_types     = (1 << speculation_fence),
     klass_types         = all_types & ~non_klass_types,
 
-    non_ctxk_types      = (1 << evol_method) | (1 << call_site_target_value),
+    non_ctxk_types      = (1 << evol_method) | (1 << speculation_fence),
     implicit_ctxk_types = 0,
     explicit_ctxk_types = all_types & ~(non_ctxk_types | implicit_ctxk_types),
 
@@ -354,6 +359,7 @@ class Dependencies: public ResourceObj {
   void assert_unique_implementor(ciInstanceKlass* ctxk, ciInstanceKlass* uniqk);
   void assert_has_no_finalizable_subclasses(ciKlass* ctxk);
   void assert_call_site_target_value(ciCallSite* call_site, ciMethodHandle* method_handle);
+  void assert_speculation_fence(ciSpeculationFence* fence);
 #if INCLUDE_JVMCI
  private:
   static void check_ctxk(Klass* ctxk) {
@@ -378,6 +384,7 @@ class Dependencies: public ResourceObj {
   void assert_unique_concrete_method(Klass* ctxk, Method* uniqm);
   void assert_abstract_with_unique_concrete_subtype(Klass* ctxk, Klass* conck);
   void assert_call_site_target_value(oop callSite, oop methodHandle);
+  void assert_speculation_fence(oop fence);
 #endif // INCLUDE_JVMCI
 
   // Define whether a given method or type is concrete.
@@ -585,6 +592,7 @@ class Dependencies: public ResourceObj {
     Klass* check_new_klass_dependency(NewKlassDepChange* changes);
     Klass* check_klass_init_dependency(KlassInitDepChange* changes);
     Klass* check_call_site_dependency(CallSiteDepChange* changes);
+    Klass* check_speculation_fence_dependency(SpecFenceDepChange* changes);
 
     void trace_and_log_witness(Klass* witness);
 
@@ -607,7 +615,7 @@ class Dependencies: public ResourceObj {
     bool next();
 
     DepType type()               { return _type; }
-    bool is_oop_argument(int i)  { return type() == call_site_target_value; }
+    bool is_oop_argument(int i)  { return type() == call_site_target_value || type() == speculation_fence; }
     uintptr_t get_identifier(int i);
 
     int argument_count()         { return dep_args(type()); }
@@ -686,6 +694,7 @@ class DepChange : public StackObj {
   virtual bool is_new_klass_change()  const { return false; }
   virtual bool is_klass_init_change() const { return false; }
   virtual bool is_call_site_change()  const { return false; }
+  virtual bool is_spec_fence_change() const { return false; }
 
   // Subclass casting with assertions.
   KlassDepChange*    as_klass_change() {
@@ -703,6 +712,10 @@ class DepChange : public StackObj {
   CallSiteDepChange* as_call_site_change() {
     assert(is_call_site_change(), "bad cast");
     return (CallSiteDepChange*) this;
+  }
+  SpecFenceDepChange* as_spec_fence_change() {
+    assert(is_spec_fence_change(), "bad cast");
+    return (SpecFenceDepChange*) this;
   }
 
   void print();
@@ -824,6 +837,19 @@ class CallSiteDepChange : public DepChange {
 
   oop call_site()     const { return _call_site();     }
   oop method_handle() const { return _method_handle(); }
+};
+
+// A SpeculationFence has been triggered.
+class SpecFenceDepChange : public DepChange {
+ private:
+  Handle _fence;
+
+ public:
+  SpecFenceDepChange(Handle fence);
+
+  virtual bool is_spec_fence_change() const { return true; }
+
+  oop fence() const { return _fence(); }
 };
 
 #endif // SHARE_CODE_DEPENDENCIES_HPP

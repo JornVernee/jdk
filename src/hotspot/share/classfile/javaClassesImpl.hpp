@@ -43,7 +43,8 @@
   VTHREAD_INJECTED_FIELDS(macro)            \
   INTERNALERROR_INJECTED_FIELDS(macro)      \
   STACKCHUNK_INJECTED_FIELDS(macro)         \
-  CONSTANTPOOL_INJECTED_FIELDS(macro)
+  CONSTANTPOOL_INJECTED_FIELDS(macro)       \
+  SPECULATIONFENCE_INJECTED_FIELDS(macro)
 
 #define INJECTED_FIELD_COMPUTE_OFFSET(klass, name, signature, may_be_java) \
   klass::_##name##_offset = JavaClasses::compute_injected_offset(InjectedFieldID::klass##_##name##_enum);

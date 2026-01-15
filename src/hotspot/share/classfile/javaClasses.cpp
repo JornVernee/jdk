@@ -39,6 +39,7 @@
 #include "classfile/vmClasses.hpp"
 #include "classfile/vmSymbols.hpp"
 #include "code/debugInfo.hpp"
+#include "code/dependencies.hpp"
 #include "code/dependencyContext.hpp"
 #include "code/pcDesc.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
@@ -4707,6 +4708,56 @@ DependencyContext java_lang_invoke_CallSite::vmdependencies(oop call_site) {
   return dep_ctx;
 }
 
+int jdk_internal_misc_SpeculationFence::_vmdependencies_offset;
+int jdk_internal_misc_SpeculationFence::_last_cleanup_offset;
+
+void jdk_internal_misc_SpeculationFence::compute_offsets() {
+  InstanceKlass* k = vmClasses::SpeculationFence_klass();
+  SPECULATIONFENCE_INJECTED_FIELDS(INJECTED_FIELD_COMPUTE_OFFSET);
+}
+
+#if INCLUDE_CDS
+void jdk_internal_misc_SpeculationFence::serialize_offsets(SerializeClosure* f) {
+  SPECULATIONFENCE_INJECTED_FIELDS(INJECTED_FIELD_SERIALIZE_OFFSET);
+}
+#endif
+
+DependencyContext jdk_internal_misc_SpeculationFence::vmdependencies(oop fence) {
+  assert(jdk_internal_misc_SpeculationFence::is_instance(fence), "");
+  nmethodBucket* volatile* vmdeps_addr = fence->field_addr<nmethodBucket* volatile>(_vmdependencies_offset);
+  volatile uint64_t* last_cleanup_addr = fence->field_addr<volatile uint64_t>(_last_cleanup_offset);
+  DependencyContext dep_ctx(vmdeps_addr, last_cleanup_addr);
+  return dep_ctx;
+}
+
+void jdk_internal_misc_SpeculationFence::add_dependent_nmethod(oop fence, nmethod* nm) {
+  assert(jdk_internal_misc_SpeculationFence::is_instance(fence), "");
+  assert_lock_strong(Compile_lock);
+
+  DependencyContext deps = vmdependencies(fence);
+  deps.add_dependent_nmethod(nm);
+}
+
+void jdk_internal_misc_SpeculationFence::clean_dependency_context(oop fence) {
+  assert(jdk_internal_misc_SpeculationFence::is_instance(fence), "");
+
+  DependencyContext deps = vmdependencies(fence);
+  deps.clean_unloading_dependents();
+}
+
+void jdk_internal_misc_SpeculationFence::mark_dependent_nmethods(DeoptimizationScope* deopt_scope, Handle fence) {
+  assert_lock_strong(Compile_lock);
+
+  SpecFenceDepChange changes(fence);
+  {
+    NoSafepointVerifier nsv;
+    MutexLocker ml(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+
+    DependencyContext deps = vmdependencies(fence());
+    deps.mark_dependent_nmethods(deopt_scope, changes);
+  }
+}
+
 // Support for java_lang_invoke_ConstantCallSite
 
 int java_lang_invoke_ConstantCallSite::_is_frozen_offset;
@@ -5395,6 +5446,7 @@ void java_lang_InternalError::serialize_offsets(SerializeClosure* f) {
   f(jdk_internal_foreign_abi_VMStorage) \
   f(jdk_internal_foreign_abi_CallConv) \
   f(jdk_internal_misc_UnsafeConstants) \
+  f(jdk_internal_misc_SpeculationFence) \
   f(java_lang_boxing_object) \
   f(vector_VectorPayload) \
   //end

@@ -641,6 +641,12 @@ void CodeInstaller::initialize_dependencies(HotSpotCompiledCodeStream* stream, u
           _dependencies->assert_call_site_target_value(callSite(), methodHandle());
           break;
         }
+        case SPECULATION_FENCE: {
+          u1 obj_tag = stream->read_u1("tag");
+          Handle fence = read_oop(stream, obj_tag, JVMCI_CHECK);
+          _dependencies->assert_speculation_fence(fence());
+          break;
+        }
         default: {
           JVMCI_ERROR("unexpected assumption tag %d%s", tag, stream->context());
         }

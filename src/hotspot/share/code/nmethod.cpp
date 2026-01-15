@@ -1197,6 +1197,10 @@ nmethod* nmethod::new_nmethod(const methodHandle& method,
           // CallSite dependencies are managed on per-CallSite instance basis.
           oop call_site = deps.argument_oop(0);
           MethodHandles::add_dependent_nmethod(call_site, nm);
+        } else if(deps.type() == Dependencies::speculation_fence) {
+          // SpeculationFence dependencies are managed on a per-instance basis.
+          oop fence = deps.argument_oop(0);
+          jdk_internal_misc_SpeculationFence::add_dependent_nmethod(fence, nm);
         } else {
           InstanceKlass* ik = deps.context_type();
           if (ik == nullptr) {
@@ -1578,6 +1582,10 @@ nmethod* nmethod::relocate(CodeBlobType code_blob_type) {
       // CallSite dependencies are managed on per-CallSite instance basis.
       oop call_site = deps.argument_oop(0);
       MethodHandles::add_dependent_nmethod(call_site, nm_copy);
+    } else if(deps.type() == Dependencies::speculation_fence) {
+      // SpeculationFence dependencies are managed on a per-instance basis.
+      oop fence = deps.argument_oop(0);
+      jdk_internal_misc_SpeculationFence::add_dependent_nmethod(fence, nm_copy);
     } else {
       InstanceKlass* ik = deps.context_type();
       if (ik == nullptr) {
@@ -2525,6 +2533,9 @@ void nmethod::flush_dependencies() {
         // CallSite dependencies are managed on per-CallSite instance basis.
         oop call_site = deps.argument_oop(0);
         MethodHandles::clean_dependency_context(call_site);
+      } else if (deps.type() == Dependencies::speculation_fence) {
+        oop fence = deps.argument_oop(0);
+        jdk_internal_misc_SpeculationFence::clean_dependency_context(fence);
       } else {
         InstanceKlass* ik = deps.context_type();
         if (ik == nullptr) {

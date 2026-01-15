@@ -129,6 +129,10 @@ void Dependencies::assert_call_site_target_value(ciCallSite* call_site, ciMethod
   assert_common_2(call_site_target_value, call_site, method_handle);
 }
 
+void Dependencies::assert_speculation_fence(ciSpeculationFence* fence) {
+  assert_common_1(speculation_fence, fence);
+}
+
 #if INCLUDE_JVMCI
 
 Dependencies::Dependencies(Arena* arena, OopRecorder* oop_recorder, CompileLog* log) {
@@ -192,6 +196,10 @@ void Dependencies::assert_unique_concrete_method(Klass* ctxk, Method* uniqm) {
 
 void Dependencies::assert_call_site_target_value(oop call_site, oop method_handle) {
   assert_common_2(call_site_target_value, DepValue(_oop_recorder, JNIHandles::make_local(call_site)), DepValue(_oop_recorder, JNIHandles::make_local(method_handle)));
+}
+
+void Dependencies::assert_speculation_fence(oop fence) {
+  assert_common_1(speculation_fence, DepValue(_oop_recorder, JNIHandles::make_local(fence)));
 }
 
 #endif // INCLUDE_JVMCI
@@ -591,7 +599,8 @@ const char* Dependencies::_dep_name[TYPE_LIMIT] = {
   "unique_concrete_method_4",
   "unique_implementor",
   "no_finalizable_subclasses",
-  "call_site_target_value"
+  "call_site_target_value",
+  "speculation_fence"
 };
 
 int Dependencies::_dep_args[TYPE_LIMIT] = {
@@ -603,7 +612,8 @@ int Dependencies::_dep_args[TYPE_LIMIT] = {
   4, // unique_concrete_method_4 ctxk, m, resolved_klass, resolved_method
   2, // unique_implementor ctxk, implementor
   1, // no_finalizable_subclasses ctxk
-  2  // call_site_target_value call_site, method_handle
+  2, // call_site_target_value call_site, method_handle
+  1  // speculation_fence fence
 };
 
 const char* Dependencies::dep_name(Dependencies::DepType dept) {
@@ -2151,6 +2161,28 @@ Klass* Dependencies::DepStream::check_call_site_dependency(CallSiteDepChange* ch
   return witness;
 }
 
+Klass* Dependencies::DepStream::check_speculation_fence_dependency(SpecFenceDepChange* changes) {
+  assert_locked_or_safepoint(Compile_lock);
+  Dependencies::check_valid_dependency_type(type());
+  if (type() != speculation_fence) {
+    return nullptr; // not for this change type
+  }
+
+  assert(changes != nullptr, "only spot check expected");
+
+  oop fence = argument_oop(0);
+  assert(fence != nullptr, "sanity");
+  assert(fence->klass() == vmClasses::SpeculationFence_klass(), "sanity");
+
+  Klass* witness = nullptr; // default as OK
+  if (fence == changes->fence()) {
+    witness = fence->klass(); // assertion failed
+  }
+
+  trace_and_log_witness(witness);
+  return witness;
+}
+
 
 Klass* Dependencies::DepStream::spot_check_dependency_at(DepChange& changes) {
   // Handle klass dependency
@@ -2160,6 +2192,11 @@ Klass* Dependencies::DepStream::spot_check_dependency_at(DepChange& changes) {
   // Handle CallSite dependency
   if (changes.is_call_site_change())
     return check_call_site_dependency(changes.as_call_site_change());
+
+  // Handle SpeculationFence dependency
+  if (changes.is_spec_fence_change()) {
+    return check_speculation_fence_dependency(changes.as_spec_fence_change());
+  }
 
   // irrelevant dependency; skip it
   return nullptr;
@@ -2310,6 +2347,11 @@ CallSiteDepChange::CallSiteDepChange(Handle call_site, Handle method_handle) :
   _method_handle(method_handle) {
   assert(_call_site()->is_a(vmClasses::CallSite_klass()), "must be");
   assert(_method_handle.is_null() || _method_handle()->is_a(vmClasses::MethodHandle_klass()), "must be");
+}
+
+SpecFenceDepChange::SpecFenceDepChange(Handle fence) :
+  _fence(fence) {
+  assert(_fence()->is_a(vmClasses::SpeculationFence_klass()), "must be");
 }
 
 void dependencies_init() {

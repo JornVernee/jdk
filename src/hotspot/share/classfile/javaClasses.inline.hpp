@@ -255,6 +255,10 @@ inline bool java_lang_invoke_CallSite::is_instance(oop obj) {
   return obj != nullptr && is_subclass(obj->klass());
 }
 
+inline bool jdk_internal_misc_SpeculationFence::is_instance(oop obj) {
+  return obj != nullptr && obj->klass() == vmClasses::SpeculationFence_klass();
+}
+
 inline jboolean java_lang_invoke_ConstantCallSite::is_frozen(oop site) {
   return site->bool_field(_is_frozen_offset);
 }

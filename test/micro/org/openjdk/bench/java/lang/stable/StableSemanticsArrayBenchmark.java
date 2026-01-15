@@ -60,7 +60,7 @@ public class StableSemanticsArrayBenchmark {
     public int sumArrayUnsafeStable() {
         int sum = 0;
         for (int i = 0; i < LENGTH; i++) {
-            sum += UNSAFE.getIntStable(INT_ARRAY, Unsafe.ARRAY_INT_BASE_OFFSET + (long) Unsafe.ARRAY_INT_INDEX_SCALE * i);
+            sum += UNSAFE.getIntStable(INT_ARRAY, Unsafe.ARRAY_INT_BASE_OFFSET + (long) Unsafe.ARRAY_INT_INDEX_SCALE * i, null);
         }
         return sum;
     }

@@ -101,6 +101,12 @@ public final class Unsafe {
         return theUnsafe;
     }
 
+    /**
+     * Helper for SpeculationFence.
+     * @param speculationFence the fence to fence
+     */
+    static native void internalDoFence(SpeculationFence speculationFence);
+
     //--- peek and poke operations
     // (compilers should optimize these to memory ops)
 
@@ -3528,31 +3534,31 @@ public final class Unsafe {
      * @since 99
      */
     @IntrinsicCandidate
-    public Object getReferenceStable(Object o, long offset) {
+    public Object getReferenceStable(Object o, long offset, SpeculationFence fence) {
         return getReference(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public boolean getBooleanStable(Object o, long offset) {
+    public boolean getBooleanStable(Object o, long offset, SpeculationFence fence) {
         return getBoolean(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public byte getByteStable(Object o, long offset) {
+    public byte getByteStable(Object o, long offset, SpeculationFence fence) {
         return getByte(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public short getShortStable(Object o, long offset) {
+    public short getShortStable(Object o, long offset, SpeculationFence fence) {
         return getShort(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public char getCharStable(Object o, long offset) {
+    public char getCharStable(Object o, long offset, SpeculationFence fence) {
         return getChar(o, offset);
     }
 
@@ -3573,6 +3579,7 @@ public final class Unsafe {
      * @param offset indication of where the variable resides in a Java heap
      *        object, if any, else a memory address locating the variable
      *        statically
+     * @param fence the speculation fence used to invalidate optimization on this load. May be {@code null}
      * @return the value fetched from the indicated Java variable using plain
      *         stable semantics
      * @throws RuntimeException No defined exceptions are thrown, not even
@@ -3582,25 +3589,25 @@ public final class Unsafe {
      * @since 99
      */
     @IntrinsicCandidate
-    public int getIntStable(Object o, long offset) {
+    public int getIntStable(Object o, long offset, SpeculationFence fence) {
         return getInt(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public long getLongStable(Object o, long offset){
+    public long getLongStable(Object o, long offset, SpeculationFence fence){
         return getLong(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public float getFloatStable(Object o, long offset) {
+    public float getFloatStable(Object o, long offset, SpeculationFence fence) {
         return getFloat(o, offset);
     }
 
-    /** @see #getIntStable(Object, long) @since 99 */
+    /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public double getDoubleStable(Object o, long offset) {
+    public double getDoubleStable(Object o, long offset, SpeculationFence fence) {
         return getDouble(o, offset);
     }
 
@@ -3620,31 +3627,31 @@ public final class Unsafe {
      * @since 99
      */
     @IntrinsicCandidate
-    public Object getReferenceStableVolatile(Object o, long offset) {
+    public Object getReferenceStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getReferenceVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public boolean getBooleanStableVolatile(Object o, long offset) {
+    public boolean getBooleanStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getBooleanVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public byte getByteStableVolatile(Object o, long offset) {
+    public byte getByteStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getByteVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public short getShortStableVolatile(Object o, long offset) {
+    public short getShortStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getShortVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public char getCharStableVolatile(Object o, long offset) {
+    public char getCharStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getCharVolatile(o, offset);
     }
 
@@ -3665,6 +3672,7 @@ public final class Unsafe {
      * @param offset indication of where the variable resides in a Java heap
      *        object, if any, else a memory address locating the variable
      *        statically
+     * @param fence the speculation fence used to invalidate optimization on this load. May be {@code null}
      * @return the value fetched from the indicated Java variable using plain
      *         stable semantics
      * @throws RuntimeException No defined exceptions are thrown, not even
@@ -3674,25 +3682,25 @@ public final class Unsafe {
      * @since 99
      */
     @IntrinsicCandidate
-    public int getIntStableVolatile(Object o, long offset) {
+    public int getIntStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getIntVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public long getLongStableVolatile(Object o, long offset){
+    public long getLongStableVolatile(Object o, long offset, SpeculationFence fence){
         return getLongVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public float getFloatStableVolatile(Object o, long offset) {
+    public float getFloatStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getFloatVolatile(o, offset);
     }
 
-    /** @see #getIntStableVolatile(Object, long) @since 99 */
+    /** @see #getIntStableVolatile(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
-    public double getDoubleStableVolatile(Object o, long offset) {
+    public double getDoubleStableVolatile(Object o, long offset, SpeculationFence fence) {
         return getDoubleVolatile(o, offset);
     }
 

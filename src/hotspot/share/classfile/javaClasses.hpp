@@ -40,6 +40,8 @@ class RecordComponent;
 class SerializeClosure;
 class ObjectWaiter;
 class ObjectMonitor;
+class DeoptimizationScope;
+class nmethod;
 
 #define CHECK_INIT(offset)  assert(offset != 0, "should be initialized"); return offset;
 
@@ -1750,6 +1752,31 @@ class jdk_internal_misc_UnsafeConstants : AllStatic {
   static void set_unsafe_constants();
   static void compute_offsets() { }
   static void serialize_offsets(SerializeClosure* f) { }
+};
+
+ // Interface to jdk.internal.misc.SpeculationFence
+#define SPECULATIONFENCE_INJECTED_FIELDS(macro) \
+  macro(jdk_internal_misc_SpeculationFence, vmdependencies, intptr_signature, false) \
+  macro(jdk_internal_misc_SpeculationFence, last_cleanup, long_signature, false)
+
+class jdk_internal_misc_SpeculationFence : AllStatic {
+  friend class JavaClasses;
+
+private:
+  static int _vmdependencies_offset;
+  static int _last_cleanup_offset;
+
+  static void compute_offsets();
+  static DependencyContext vmdependencies(oop fence);
+
+public:
+  static void serialize_offsets(SerializeClosure* f) NOT_CDS_RETURN;
+
+  static void add_dependent_nmethod(oop fence, nmethod* nm);
+  static void clean_dependency_context(oop fence);
+  static void mark_dependent_nmethods(DeoptimizationScope* deopt_scope, Handle fence);
+
+  static bool is_instance(oop obj);
 };
 
 // Interface to jdk.internal.vm.vector.VectorSupport.VectorPayload objects

@@ -1914,6 +1914,7 @@ JVMCI::CodeInstallResult JVMCIRuntime::validate_compile_task_dependencies(Depend
     return JVMCI::ok;
   }
   if (result == Dependencies::call_site_target_value) {
+    // @@@ TODO
     failing_dep_is_call_site = true;
   }
   return JVMCI::dependencies_failed;

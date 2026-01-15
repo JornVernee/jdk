@@ -2364,6 +2364,8 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
   assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
 
+  bool is_stable = (kind == Stable) || (kind == Stable_Volatile);
+
   if (is_reference_type(type)) {
     decorators |= ON_UNKNOWN_OOP_REF;
   }
@@ -2382,9 +2384,10 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
       // Object getReference(Object base, int/long offset), etc.
       BasicType rtype = sig->return_type()->basic_type();
       assert(rtype == type, "getter must return the expected value");
-      assert(sig->count() == 2, "oop getter has 2 arguments");
+      assert(sig->count() == (is_stable ? 3 : 2), "oop getter has 2 arguments");
       assert(sig->type_at(0)->basic_type() == T_OBJECT, "getter base is object");
       assert(sig->type_at(1)->basic_type() == T_LONG, "getter offset is correct");
+      assert(!is_stable || sig->type_at(2)->basic_type() == T_OBJECT, "spec fence is correct");
     } else {
       // void putReference(Object base, int/long offset, Object x), etc.
       assert(sig->return_type()->basic_type() == T_VOID, "putter must not return a value");
@@ -2420,9 +2423,20 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   // Save state and restore on bailout
   SavedState old_state(this);
 
-  bool is_stable = (kind == Stable) || (kind == Stable_Volatile);
+  ciSpeculationFence* spec_fence = nullptr;
   if (is_stable) {
-    decorators |= ACCESS_STABLE;
+    Node* spec_fence_n = argument(4); // offset takes 2 slots
+    if (spec_fence_n->Opcode() != Op_ConP) {
+      return false; // fence is not a constant, bail out
+    }
+    const TypeOopPtr* fence_t = spec_fence_n->bottom_type()->isa_oopptr();
+    if (fence_t == nullptr) {
+      // only decorate loads as stable when there is no fence
+      // since we might lose track of it @@@ TODO
+      decorators |= ACCESS_STABLE;
+    } else {
+      spec_fence = fence_t->const_oop()->as_speculation_fence();
+    }
   }
 
   Node* adr = make_unsafe_address(base, offset, type, (kind == Relaxed || is_stable));
@@ -2519,6 +2533,9 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
     if (heap_base_oop != top() && field != nullptr && (field->is_constant() || is_stable) && !mismatched) {
       // final or stable field
       p = make_constant_from_field(field, heap_base_oop, is_stable);
+      if (is_stable && p != nullptr && spec_fence != nullptr) {
+        C->dependencies()->assert_speculation_fence(spec_fence);
+      }
     }
 
     if (p == nullptr) { // Could not constant fold the load

@@ -47,6 +47,7 @@ class ciObject;
 class   ciNullObject;
 class   ciInstance;
 class     ciCallSite;
+class     ciSpeculationFence;
 class     ciMemberName;
 class     ciMethodHandle;
 class     ciMethodType;

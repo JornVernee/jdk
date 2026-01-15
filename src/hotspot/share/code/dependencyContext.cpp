@@ -81,7 +81,7 @@ void DependencyContext::mark_dependent_nmethods(DeoptimizationScope* deopt_scope
         nm->print_on(&ls);
         nm->print_dependencies_on(&ls);
       }
-      deopt_scope->mark(nm, !changes.is_call_site_change());
+      deopt_scope->mark(nm, !(changes.is_call_site_change() || changes.is_spec_fence_change()));
     }
   }
 }

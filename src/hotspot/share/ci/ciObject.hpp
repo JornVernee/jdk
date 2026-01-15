@@ -121,6 +121,7 @@ public:
   // What kind of ciObject is this?
   virtual bool is_null_object()       const { return false; }
   virtual bool is_call_site()         const { return false; }
+  virtual bool is_speculation_fence() const { return false; }
   virtual bool is_instance()                { return false; }
   virtual bool is_member_name()       const { return false; }
   virtual bool is_method_handle()     const { return false; }
@@ -153,6 +154,10 @@ public:
   ciCallSite* as_call_site() {
     assert(is_call_site(), "bad cast");
     return (ciCallSite*)this;
+  }
+  ciSpeculationFence* as_speculation_fence() {
+    assert(is_speculation_fence(), "bad cast");
+    return (ciSpeculationFence*)this;
   }
   ciInstance* as_instance() {
     assert(is_instance(), "bad cast");

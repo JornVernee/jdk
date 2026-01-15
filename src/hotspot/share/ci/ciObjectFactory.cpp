@@ -36,6 +36,7 @@
 #include "ci/ciObject.hpp"
 #include "ci/ciObjectFactory.hpp"
 #include "ci/ciReplay.hpp"
+#include "ci/ciSpeculationFence.hpp"
 #include "ci/ciSymbol.hpp"
 #include "ci/ciSymbols.hpp"
 #include "ci/ciTypeArray.hpp"
@@ -391,6 +392,8 @@ ciObject* ciObjectFactory::create_new_object(oop o) {
     instanceHandle h_i(THREAD, (instanceOop)o);
     if (java_lang_invoke_CallSite::is_instance(o))
       return new (arena()) ciCallSite(h_i);
+    if (jdk_internal_misc_SpeculationFence::is_instance(o))
+      return new (arena()) ciSpeculationFence(h_i);
     else if (java_lang_invoke_MemberName::is_instance(o))
       return new (arena()) ciMemberName(h_i);
     else if (java_lang_invoke_MethodHandle::is_instance(o))

@@ -837,17 +837,30 @@ UNSAFE_ENTRY(jint, Unsafe_GetLoadAverage0(JNIEnv *env, jobject unsafe, jdoubleAr
   return ret;
 } UNSAFE_END
 
+UNSAFE_ENTRY(void, Unsafe_InternalDoFence(JNIEnv* env, jclass unsafe, jobject fence_jh)) {
+  Handle fence(THREAD, JNIHandles::resolve_non_null(fence_jh));
+  DeoptimizationScope deopt_scope;
+  {
+    // Walk all nmethods depending on this fence.
+    MutexLocker mu(thread, Compile_lock);
+    jdk_internal_misc_SpeculationFence::mark_dependent_nmethods(&deopt_scope, fence);
+    deopt_scope.deoptimize_marked();
+  }
+} UNSAFE_END
+
 
 /// JVM_RegisterUnsafeMethods
 
 #define ADR "J"
 
 #define LANG "Ljava/lang/"
+#define MISC "Ljdk/internal/misc/"
 
 #define OBJ LANG "Object;"
 #define CLS LANG "Class;"
 #define FLD LANG "reflect/Field;"
 #define THR LANG "Throwable;"
+#define SPF MISC "SpeculationFence;"
 
 #define DC_Args  LANG "String;[BII" LANG "ClassLoader;" "Ljava/security/ProtectionDomain;"
 #define DAC_Args CLS "[B[" OBJ
@@ -916,6 +929,7 @@ static JNINativeMethod jdk_internal_misc_Unsafe_methods[] = {
     {CC "shouldBeInitialized0", CC "(" CLS ")Z",         FN_PTR(Unsafe_ShouldBeInitialized0)},
 
     {CC "fullFence",          CC "()V",                  FN_PTR(Unsafe_FullFence)},
+    {CC "internalDoFence",    CC "(" SPF ")V",           FN_PTR(Unsafe_InternalDoFence)},
 };
 
 #undef CC

@@ -667,6 +667,7 @@ class methodHandle;
   do_class(jdk_internal_misc_Unsafe,               "jdk/internal/misc/Unsafe")                                          \
   do_class(sun_misc_Unsafe,                        "sun/misc/Unsafe")                                                   \
   do_class(jdk_internal_misc_ScopedMemoryAccess,   "jdk/internal/misc/ScopedMemoryAccess")                              \
+  do_class(jdk_internal_misc_SpeculationFence,     "jdk/internal/misc/SpeculationFence")                                \
                                                                                                                         \
   do_intrinsic(_writeback0,               jdk_internal_misc_Unsafe,     writeback0_name, long_void_signature , F_RN)             \
    do_name(     writeback0_name,                                        "writeback0")                                            \
@@ -716,22 +717,31 @@ class methodHandle;
                                                                                                                         \
   /* unsafe memory references (there are a lot of them...) */                                                           \
   do_signature(getReference_signature,    "(Ljava/lang/Object;J)Ljava/lang/Object;")                                    \
+  do_signature(getReferenceStable_signature, "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)Ljava/lang/Object;") \
   do_signature(putReference_signature,    "(Ljava/lang/Object;JLjava/lang/Object;)V")                                   \
   do_signature(getBoolean_signature,      "(Ljava/lang/Object;J)Z")                                                     \
+  do_signature(getBooleanStable_signature,"(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)Z")                 \
   do_signature(putBoolean_signature,      "(Ljava/lang/Object;JZ)V")                                                    \
   do_signature(getByte_signature,         "(Ljava/lang/Object;J)B")                                                     \
+  do_signature(getByteStable_signature,   "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)B")                 \
   do_signature(putByte_signature,         "(Ljava/lang/Object;JB)V")                                                    \
   do_signature(getShort_signature,        "(Ljava/lang/Object;J)S")                                                     \
+  do_signature(getShortStable_signature,  "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)S")                 \
   do_signature(putShort_signature,        "(Ljava/lang/Object;JS)V")                                                    \
   do_signature(getChar_signature,         "(Ljava/lang/Object;J)C")                                                     \
+  do_signature(getCharStable_signature,   "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)C")                 \
   do_signature(putChar_signature,         "(Ljava/lang/Object;JC)V")                                                    \
   do_signature(getInt_signature,          "(Ljava/lang/Object;J)I")                                                     \
+  do_signature(getIntStable_signature,    "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)I")                 \
   do_signature(putInt_signature,          "(Ljava/lang/Object;JI)V")                                                    \
   do_signature(getLong_signature,         "(Ljava/lang/Object;J)J")                                                     \
+  do_signature(getLongStable_signature,   "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)J")                 \
   do_signature(putLong_signature,         "(Ljava/lang/Object;JJ)V")                                                    \
   do_signature(getFloat_signature,        "(Ljava/lang/Object;J)F")                                                     \
+  do_signature(getFloatStable_signature,  "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)F")                 \
   do_signature(putFloat_signature,        "(Ljava/lang/Object;JF)V")                                                    \
   do_signature(getDouble_signature,       "(Ljava/lang/Object;J)D")                                                     \
+  do_signature(getDoubleStable_signature, "(Ljava/lang/Object;JLjdk/internal/misc/SpeculationFence;)D")                 \
   do_signature(putDouble_signature,       "(Ljava/lang/Object;JD)V")                                                    \
                                                                                                                         \
   do_name(getReference_name,"getReference")     do_name(putReference_name,"putReference")                               \
@@ -869,24 +879,24 @@ class methodHandle;
   do_name(getFloatStableVolatile_name,"getFloatStableVolatile")                                                         \
   do_name(getDoubleStableVolatile_name,"getDoubleStableVolatile")                                                       \
                                                                                                                         \
-  do_intrinsic(_getReferenceStable,         jdk_internal_misc_Unsafe,    getReferenceStable_name, getReference_signature,          F_R)  \
-  do_intrinsic(_getBooleanStable,           jdk_internal_misc_Unsafe,    getBooleanStable_name, getBoolean_signature,              F_R)  \
-  do_intrinsic(_getByteStable,              jdk_internal_misc_Unsafe,    getByteStable_name, getByte_signature,                    F_R)  \
-  do_intrinsic(_getShortStable,             jdk_internal_misc_Unsafe,    getShortStable_name, getShort_signature,                  F_R)  \
-  do_intrinsic(_getCharStable,              jdk_internal_misc_Unsafe,    getCharStable_name, getChar_signature,                    F_R)  \
-  do_intrinsic(_getIntStable,               jdk_internal_misc_Unsafe,    getIntStable_name, getInt_signature,                      F_R)  \
-  do_intrinsic(_getLongStable,              jdk_internal_misc_Unsafe,    getLongStable_name, getLong_signature,                    F_R)  \
-  do_intrinsic(_getFloatStable,             jdk_internal_misc_Unsafe,    getFloatStable_name, getFloat_signature,                  F_R)  \
-  do_intrinsic(_getDoubleStable,            jdk_internal_misc_Unsafe,    getDoubleStable_name, getDouble_signature,                F_R)  \
-  do_intrinsic(_getReferenceStableVolatile, jdk_internal_misc_Unsafe,    getReferenceStableVolatile_name, getReference_signature,  F_R)  \
-  do_intrinsic(_getBooleanStableVolatile,   jdk_internal_misc_Unsafe,    getBooleanStableVolatile_name, getBoolean_signature,      F_R)  \
-  do_intrinsic(_getByteStableVolatile,      jdk_internal_misc_Unsafe,    getByteStableVolatile_name, getByte_signature,            F_R)  \
-  do_intrinsic(_getShortStableVolatile,     jdk_internal_misc_Unsafe,    getShortStableVolatile_name, getShort_signature,          F_R)  \
-  do_intrinsic(_getCharStableVolatile,      jdk_internal_misc_Unsafe,    getCharStableVolatile_name, getChar_signature,            F_R)  \
-  do_intrinsic(_getIntStableVolatile,       jdk_internal_misc_Unsafe,    getIntStableVolatile_name, getInt_signature,              F_R)  \
-  do_intrinsic(_getLongStableVolatile,      jdk_internal_misc_Unsafe,    getLongStableVolatile_name, getLong_signature,            F_R)  \
-  do_intrinsic(_getFloatStableVolatile,     jdk_internal_misc_Unsafe,    getFloatStableVolatile_name, getFloat_signature,          F_R)  \
-  do_intrinsic(_getDoubleStableVolatile,    jdk_internal_misc_Unsafe,    getDoubleStableVolatile_name, getDouble_signature,        F_R)  \
+  do_intrinsic(_getReferenceStable,         jdk_internal_misc_Unsafe,    getReferenceStable_name, getReferenceStable_signature,          F_R)  \
+  do_intrinsic(_getBooleanStable,           jdk_internal_misc_Unsafe,    getBooleanStable_name, getBooleanStable_signature,              F_R)  \
+  do_intrinsic(_getByteStable,              jdk_internal_misc_Unsafe,    getByteStable_name, getByteStable_signature,                    F_R)  \
+  do_intrinsic(_getShortStable,             jdk_internal_misc_Unsafe,    getShortStable_name, getShortStable_signature,                  F_R)  \
+  do_intrinsic(_getCharStable,              jdk_internal_misc_Unsafe,    getCharStable_name, getCharStable_signature,                    F_R)  \
+  do_intrinsic(_getIntStable,               jdk_internal_misc_Unsafe,    getIntStable_name, getIntStable_signature,                      F_R)  \
+  do_intrinsic(_getLongStable,              jdk_internal_misc_Unsafe,    getLongStable_name, getLongStable_signature,                    F_R)  \
+  do_intrinsic(_getFloatStable,             jdk_internal_misc_Unsafe,    getFloatStable_name, getFloatStable_signature,                  F_R)  \
+  do_intrinsic(_getDoubleStable,            jdk_internal_misc_Unsafe,    getDoubleStable_name, getDoubleStable_signature,                F_R)  \
+  do_intrinsic(_getReferenceStableVolatile, jdk_internal_misc_Unsafe,    getReferenceStableVolatile_name, getReferenceStable_signature,  F_R)  \
+  do_intrinsic(_getBooleanStableVolatile,   jdk_internal_misc_Unsafe,    getBooleanStableVolatile_name, getBooleanStable_signature,      F_R)  \
+  do_intrinsic(_getByteStableVolatile,      jdk_internal_misc_Unsafe,    getByteStableVolatile_name, getByteStable_signature,            F_R)  \
+  do_intrinsic(_getShortStableVolatile,     jdk_internal_misc_Unsafe,    getShortStableVolatile_name, getShortStable_signature,          F_R)  \
+  do_intrinsic(_getCharStableVolatile,      jdk_internal_misc_Unsafe,    getCharStableVolatile_name, getCharStable_signature,            F_R)  \
+  do_intrinsic(_getIntStableVolatile,       jdk_internal_misc_Unsafe,    getIntStableVolatile_name, getIntStable_signature,              F_R)  \
+  do_intrinsic(_getLongStableVolatile,      jdk_internal_misc_Unsafe,    getLongStableVolatile_name, getLongStable_signature,            F_R)  \
+  do_intrinsic(_getFloatStableVolatile,     jdk_internal_misc_Unsafe,    getFloatStableVolatile_name, getFloatStable_signature,          F_R)  \
+  do_intrinsic(_getDoubleStableVolatile,    jdk_internal_misc_Unsafe,    getDoubleStableVolatile_name, getDoubleStable_signature,        F_R)  \
                                                                                                                         \
   do_name(getShortUnaligned_name,"getShortUnaligned")     do_name(putShortUnaligned_name,"putShortUnaligned")           \
   do_name(getCharUnaligned_name,"getCharUnaligned")       do_name(putCharUnaligned_name,"putCharUnaligned")             \
