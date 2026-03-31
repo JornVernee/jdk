@@ -333,6 +333,9 @@ void HandshakeOperation::do_handshake(JavaThread* thread) {
     start_time_ns = os::javaTimeNanos();
   }
 
+  log_debug(handshake, task)("Operation: %s for thread " PTR_FORMAT ", is_vm_thread: %s",
+                             name(), p2i(thread), BOOL_TO_STR(Thread::current()->is_VM_thread()));
+
   // Only actually execute the operation for non terminated threads.
   if (!thread->is_terminated()) {
     _handshake_cl->do_thread(thread);

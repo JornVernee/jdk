@@ -32,6 +32,7 @@
 #include "runtime/safepointMechanism.inline.hpp"
 #include "runtime/stackWatermarkSet.hpp"
 #include "utilities/globalDefinitions.hpp"
+#include "utilities/nativeStackPrinter.hpp"
 #if INCLUDE_JFR
 #include "jfr/jfr.inline.hpp"
 #endif
@@ -136,6 +137,20 @@ void SafepointMechanism::process(JavaThread *thread, bool allow_suspend, bool ch
   DEBUG_ONLY(intptr_t* sp_before = thread->last_Java_sp();)
   // Read global poll and has_handshake after local poll
   OrderAccess::loadload();
+
+  log_info(safepoint)("Processing for thread " INTPTR_FORMAT " allow_suspend=%s check_async_exception=%s",
+           p2i(thread), BOOL_TO_STR(allow_suspend), BOOL_TO_STR(check_async_exception));
+
+  if (!check_async_exception) {
+    ResourceMark rm;
+    LogMessage(safepoint) msg;
+    NonInterleavingLogStream ls{LogLevelType::Info, msg};
+
+    char buf[O_BUFLEN];
+    address lastpc = nullptr;
+    NativeStackPrinter nsp(thread); // or nsp(context, thread, file, line)
+    nsp.print_stack(&ls, buf, O_BUFLEN, lastpc, true /*source info*/, -1 /*max*/);
+  }
 
   // local poll already checked, if used.
   bool need_rechecking;

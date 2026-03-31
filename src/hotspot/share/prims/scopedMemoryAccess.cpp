@@ -38,13 +38,13 @@
 #include "runtime/vframe.inline.hpp"
 
 template<typename Func>
-static void for_scoped_methods(JavaThread* jt, bool agents_loaded, const Func& func) {
+static void for_scoped_methods(JavaThread* jt, bool agents_loaded, bool is_recheck, const Func& func) {
   ResourceMark rm;
 #ifdef ASSERT
   LogMessage(foreign) msg;
   NonInterleavingLogStream ls{LogLevelType::Trace, msg};
   if (ls.is_enabled()) {
-    ls.print_cr("Walking thread: %s", jt->name());
+    ls.print_cr("Walking thread (is_recheck=%d): %s", is_recheck, jt->name());
   }
 
   bool would_have_bailed = false;
@@ -52,6 +52,14 @@ static void for_scoped_methods(JavaThread* jt, bool agents_loaded, const Func& f
 
   for (vframeStream stream(jt); !stream.at_end(); stream.next()) {
     Method* m = stream.method();
+    bool is_scoped = m->is_scoped();
+
+#ifdef ASSERT
+    if (ls.is_enabled()) {
+      stream.asJavaVFrame()->print_value(&ls);
+      ls.print_cr("    is_scoped=%s", is_scoped ? "true" : "false");
+    }
+#endif
 
     if (!agents_loaded &&
       (m->method_holder()->module()->name() != vmSymbols::java_base())) {
@@ -65,15 +73,6 @@ static void for_scoped_methods(JavaThread* jt, bool agents_loaded, const Func& f
       would_have_bailed = true;
 #endif
     }
-
-    bool is_scoped = m->is_scoped();
-
-#ifdef ASSERT
-    if (ls.is_enabled()) {
-      stream.asJavaVFrame()->print_value(&ls);
-      ls.print_cr("    is_scoped=%s", is_scoped ? "true" : "false");
-    }
-#endif
 
     if (is_scoped) {
       assert(!would_have_bailed, "would have missed scoped method on release build");
@@ -89,7 +88,7 @@ static void for_scoped_methods(JavaThread* jt, bool agents_loaded, const Func& f
   }
 }
 
-static bool is_accessing_session(JavaThread* jt, oop session, bool& in_scoped) {
+static bool is_accessing_session(JavaThread* jt, oop session, bool& in_scoped, bool is_recheck) {
   bool agents_loaded = JvmtiEnv::environments_might_exist();
   if (!agents_loaded && jt->is_throwing_unsafe_access_error()) {
     // Ignore this thread. It is in the process of throwing another exception
@@ -98,7 +97,7 @@ static bool is_accessing_session(JavaThread* jt, oop session, bool& in_scoped) {
   }
 
   bool is_accessing_session = false;
-  for_scoped_methods(jt, agents_loaded, [&](vframeStream& stream){
+  for_scoped_methods(jt, agents_loaded, is_recheck, [&](vframeStream& stream){
     in_scoped = true;
     StackValueCollection* locals = stream.asJavaVFrame()->locals();
     for (int i = 0; i < locals->size(); i++) {
@@ -133,7 +132,7 @@ class ScopedAsyncExceptionHandshakeClosure : public AsyncExceptionHandshakeClosu
 
 public:
   ScopedAsyncExceptionHandshakeClosure(OopHandle& session, OopHandle& error)
-    : AsyncExceptionHandshakeClosure(error),
+    : AsyncExceptionHandshakeClosure(error, "ScopedAsyncExceptionHandshakeClosure"),
       _session(session) {}
 
   ~ScopedAsyncExceptionHandshakeClosure() {
@@ -143,10 +142,11 @@ public:
   virtual void do_thread(Thread* thread) {
     JavaThread* jt = JavaThread::cast(thread);
     bool ignored;
-    if (is_accessing_session(jt, _session.resolve(), ignored)) {
-      // Throw exception to unwind out from the scoped access
-      AsyncExceptionHandshakeClosure::do_thread(thread);
-    }
+    ResourceMark rm;
+    assert(is_accessing_session(jt, _session.resolve(), ignored, true), "Rolled forward: %s", jt->name());
+
+    // Throw exception to unwind out from the scoped access
+    AsyncExceptionHandshakeClosure::do_thread(thread);
   }
 };
 
@@ -175,7 +175,7 @@ public:
     }
 
     bool in_scoped = false;
-    if (is_accessing_session(jt, JNIHandles::resolve(_session), in_scoped)) {
+    if (is_accessing_session(jt, JNIHandles::resolve(_session), in_scoped, false)) {
       // We have found that the target thread is inside of a scoped access.
       // An asynchronous handshake is sent to the target thread, telling it
       // to throw an exception, which will unwind the target thread out from

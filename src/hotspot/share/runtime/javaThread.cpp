@@ -1113,10 +1113,8 @@ void JavaThread::install_async_exception(AsyncExceptionHandshakeClosure* aehc) {
   Handshake::execute(aehc, this);  // Install asynchronous handshake
 
   ResourceMark rm;
-  if (log_is_enabled(Info, exceptions)) {
-    log_info(exceptions)("Pending Async. exception installed of type: %s",
-                         exception->klass()->external_name());
-  }
+  log_info(exceptions, async)("Pending Async. exception installed of type: %s",
+                        exception->klass()->external_name());
   // for AbortVMOnException flag
   Exceptions::debug_check_abort(exception->klass()->external_name());
 
