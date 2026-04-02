@@ -31,6 +31,7 @@ import jdk.internal.foreign.SegmentBulkOperations;
 import jdk.internal.foreign.SegmentFactories;
 import jdk.internal.javac.Restricted;
 import jdk.internal.reflect.CallerSensitive;
+import jdk.internal.reflect.CallerSensitiveAdapter;
 import jdk.internal.vm.annotation.ForceInline;
 
 import java.io.UncheckedIOException;
@@ -754,6 +755,12 @@ public sealed interface MemorySegment permits AbstractMemorySegmentImpl {
     @Restricted
     MemorySegment reinterpret(long newSize);
 
+    // must be private here
+    @CallerSensitiveAdapter
+    private MemorySegment reinterpret(long newSize, Class<?> caller) {
+        return ((AbstractMemorySegmentImpl) this).reinterpret(newSize, caller);
+    }
+
     /**
      * Returns a new memory segment with the same address and size as this segment, but
      * with the provided arena's scope. As such, the returned segment cannot be accessed
@@ -809,6 +816,12 @@ public sealed interface MemorySegment permits AbstractMemorySegmentImpl {
     @CallerSensitive
     @Restricted
     MemorySegment reinterpret(Arena arena, Consumer<MemorySegment> cleanup);
+
+    // must be private here
+    @CallerSensitiveAdapter
+    private MemorySegment reinterpret(Arena arena, Consumer<MemorySegment> cleanup, Class<?> caller) {
+        return ((AbstractMemorySegmentImpl) this).reinterpret(arena, cleanup, caller);
+    }
 
     /**
      * Returns a new segment with the same address as this segment, but with the provided
@@ -870,6 +883,12 @@ public sealed interface MemorySegment permits AbstractMemorySegmentImpl {
     MemorySegment reinterpret(long newSize,
                               Arena arena,
                               Consumer<MemorySegment> cleanup);
+
+    // must be private here
+    @CallerSensitiveAdapter
+    private MemorySegment reinterpret(long newSize, Arena arena, Consumer<MemorySegment> cleanup, Class<?> caller) {
+        return ((AbstractMemorySegmentImpl) this).reinterpret(newSize, arena, cleanup, caller);
+    }
 
     /**
      * {@return {@code true}, if this segment is read-only}

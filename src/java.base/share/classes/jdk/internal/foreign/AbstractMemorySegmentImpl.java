@@ -133,7 +133,12 @@ public abstract sealed class AbstractMemorySegmentImpl
     @ForceInline
     public final MemorySegment reinterpret(long newSize, Arena arena, Consumer<MemorySegment> cleanup) {
         Objects.requireNonNull(arena);
-        return reinterpretInternal(Reflection.getCallerClass(), newSize,
+        return reinterpret(newSize, arena, cleanup, Reflection.getCallerClass());
+    }
+
+    public final MemorySegment reinterpret(long newSize, Arena arena, Consumer<MemorySegment> cleanup, Class<?> caller) {
+        Objects.requireNonNull(arena);
+        return reinterpretInternal(caller, newSize,
                 MemorySessionImpl.toMemorySession(arena), cleanup);
     }
 
@@ -141,15 +146,23 @@ public abstract sealed class AbstractMemorySegmentImpl
     @CallerSensitive
     @ForceInline
     public final MemorySegment reinterpret(long newSize) {
-        return reinterpretInternal(Reflection.getCallerClass(), newSize, scope, null);
+        return reinterpret(newSize, Reflection.getCallerClass());
+    }
+
+    public final MemorySegment reinterpret(long newSize, Class<?> caller) {
+        return reinterpretInternal(caller, newSize, scope, null);
     }
 
     @Override
     @CallerSensitive
     @ForceInline
     public final MemorySegment reinterpret(Arena arena, Consumer<MemorySegment> cleanup) {
+        return reinterpret(arena, cleanup, Reflection.getCallerClass());
+    }
+
+    public final MemorySegment reinterpret(Arena arena, Consumer<MemorySegment> cleanup, Class<?> caller) {
         Objects.requireNonNull(arena);
-        return reinterpretInternal(Reflection.getCallerClass(), byteSize(),
+        return reinterpretInternal(caller, byteSize(),
                 MemorySessionImpl.toMemorySession(arena), cleanup);
     }
 
