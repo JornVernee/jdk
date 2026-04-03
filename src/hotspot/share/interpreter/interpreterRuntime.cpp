@@ -36,6 +36,7 @@
 #include "interpreter/interpreter.hpp"
 #include "interpreter/interpreterRuntime.hpp"
 #include "interpreter/linkResolver.hpp"
+#include "interpreter/oopMapCache.hpp"
 #include "interpreter/templateTable.hpp"
 #include "jvm_io.h"
 #include "logging/log.hpp"
@@ -120,6 +121,18 @@ public:
 
   frame& get_frame()                             { return _last_frame; }
 };
+
+static bool can_throw_async_exception(Bytecodes::Code bc) {
+  if (!Bytecodes::can_trap(bc)) {
+    return false;
+  } else {
+    // These bytecodes are defined with can_trap attribute but do not always create
+    // exception edges in in GenerateOopMap so they cannot throw async exceptions.
+    // See GenerateOopMap::do_exception_edge().
+    return (bc != Bytecodes::_aload_0 && bc != Bytecodes::_monitorexit);
+  }
+}
+
 
 //------------------------------------------------------------------------------------------------------------------------
 // State accessors
@@ -788,8 +801,17 @@ JRT_ENTRY(void, InterpreterRuntime::set_original_bytecode_at(JavaThread* current
   method->set_orig_bytecode_at(method->bci_from(bcp), new_code);
 JRT_END
 
-JRT_ENTRY(void, InterpreterRuntime::_breakpoint(JavaThread* current, Method* method, address bcp))
-  JvmtiExport::post_raw_breakpoint(current, method, bcp);
+JRT_BLOCK_ENTRY(void, InterpreterRuntime::_breakpoint(JavaThread* current, Method* method, address bcp))
+  Bytecodes::Code code = Bytecodes::code_at(method, bcp);
+  if (can_throw_async_exception(code)) {
+    JRT_BLOCK
+    JvmtiExport::post_raw_breakpoint(current, method, bcp);
+    JRT_BLOCK_END
+  } else {
+    JRT_BLOCK_NO_ASYNC
+    JvmtiExport::post_raw_breakpoint(current, method, bcp);
+    JRT_BLOCK_END
+  }
 JRT_END
 
 void InterpreterRuntime::resolve_invoke(Bytecodes::Code bytecode, TRAPS) {
@@ -1151,7 +1173,7 @@ JRT_ENTRY(MethodCounters*, InterpreterRuntime::build_method_counters(JavaThread*
 JRT_END
 
 
-JRT_ENTRY(void, InterpreterRuntime::at_safepoint(JavaThread* current))
+static void post_single_step(JavaThread* current) {
   // We used to need an explicit preserve_arguments here for invoke bytecodes. However,
   // stack traversal automatically takes care of preserving arguments for invoke, so
   // this is no longer needed.
@@ -1170,6 +1192,21 @@ JRT_ENTRY(void, InterpreterRuntime::at_safepoint(JavaThread* current))
     // then we may have JVMTI work to do.
     LastFrameAccessor last_frame(current);
     JvmtiExport::at_single_stepping_point(current, last_frame.method(), last_frame.bcp());
+  }
+}
+
+JRT_BLOCK_ENTRY(void, InterpreterRuntime::at_safepoint(JavaThread* current))
+  LastFrameAccessor last_frame(current);
+  assert(last_frame.is_interpreted_frame(), "must be");
+  Bytecodes::Code code = last_frame.code();
+  if (can_throw_async_exception(code)) {
+    JRT_BLOCK
+    post_single_step(current);
+    JRT_BLOCK_END
+  } else {
+    JRT_BLOCK_NO_ASYNC
+    post_single_step(current);
+    JRT_BLOCK_END
   }
 JRT_END
 
@@ -1528,5 +1565,18 @@ bool InterpreterRuntime::is_preemptable_call(address entry_point) {
   return entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorenter) ||
          entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::resolve_from_cache) ||
          entry_point == CAST_FROM_FN_PTR(address, InterpreterRuntime::_new);
+}
+
+void InterpreterRuntime::generate_oop_map_alot() {
+  JavaThread* current = JavaThread::current();
+  LastFrameAccessor last_frame(current);
+  if (last_frame.is_interpreted_frame()) {
+    ResourceMark rm;
+    InterpreterOopMap mask;
+    methodHandle mh(current, last_frame.method());
+    int bci = last_frame.bci();
+    log_info(generateoopmap)("Generating oopmap for method %s at bci %d", mh->name_and_sig_as_C_string(), bci);
+    OopMapCache::compute_one_oop_map(mh, bci, &mask);
+  }
 }
 #endif // ASSERT
