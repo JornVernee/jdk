@@ -26,10 +26,11 @@
  * @requires vm.flavor != "zero"
  * @modules java.base/jdk.internal.vm.annotation java.base/jdk.internal.misc
  * @key randomness
- * @run testng/othervm TestHandshake
- * @run testng/othervm -Xint TestHandshake
- * @run testng/othervm -XX:TieredStopAtLevel=1 TestHandshake
- * @run testng/othervm -XX:-TieredCompilation TestHandshake
+ * @run testng/othervm
+ *   -Xlog:handshake+task=debug:file=handshakes.txt:tid
+ *   -Xlog:exceptions+async:file=async.txt:tid
+ *   -Xlog:safepoint:file=safepoint.txt:tid
+ *   TestHandshake
  */
 
 import java.lang.foreign.Arena;
