@@ -143,7 +143,7 @@ public:
     JavaThread* jt = JavaThread::cast(thread);
     bool ignored;
     ResourceMark rm;
-    assert(is_accessing_session(jt, _session.resolve(), ignored, true), "Rolled forward: %s", jt->name());
+    guarantee(is_accessing_session(jt, _session.resolve(), ignored, true), "Rolled forward: %s", jt->name());
 
     // Throw exception to unwind out from the scoped access
     AsyncExceptionHandshakeClosure::do_thread(thread);
