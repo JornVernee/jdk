@@ -369,16 +369,6 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_getFloatStable:           return inline_unsafe_access(!is_store, T_FLOAT,    Stable, false);
   case vmIntrinsics::_getDoubleStable:          return inline_unsafe_access(!is_store, T_DOUBLE,   Stable, false);
 
-  case vmIntrinsics::_getReferenceStableVolatile:  return inline_unsafe_access(!is_store, T_OBJECT,   Stable_Volatile, false);
-  case vmIntrinsics::_getBooleanStableVolatile:    return inline_unsafe_access(!is_store, T_BOOLEAN,  Stable_Volatile, false);
-  case vmIntrinsics::_getByteStableVolatile:       return inline_unsafe_access(!is_store, T_BYTE,     Stable_Volatile, false);
-  case vmIntrinsics::_getShortStableVolatile:      return inline_unsafe_access(!is_store, T_SHORT,    Stable_Volatile, false);
-  case vmIntrinsics::_getCharStableVolatile:       return inline_unsafe_access(!is_store, T_CHAR,     Stable_Volatile, false);
-  case vmIntrinsics::_getIntStableVolatile:        return inline_unsafe_access(!is_store, T_INT,      Stable_Volatile, false);
-  case vmIntrinsics::_getLongStableVolatile:       return inline_unsafe_access(!is_store, T_LONG,     Stable_Volatile, false);
-  case vmIntrinsics::_getFloatStableVolatile:      return inline_unsafe_access(!is_store, T_FLOAT,    Stable_Volatile, false);
-  case vmIntrinsics::_getDoubleStableVolatile:     return inline_unsafe_access(!is_store, T_DOUBLE,   Stable_Volatile, false);
-
   case vmIntrinsics::_getShortUnaligned:        return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, true);
   case vmIntrinsics::_getCharUnaligned:         return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, true);
   case vmIntrinsics::_getIntUnaligned:          return inline_unsafe_access(!is_store, T_INT,      Relaxed, true);
@@ -2349,7 +2339,6 @@ DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
       case Release:
         return MO_RELEASE;
       case Volatile:
-      case Stable_Volatile:
         return MO_SEQ_CST;
       default:
         ShouldNotReachHere();
