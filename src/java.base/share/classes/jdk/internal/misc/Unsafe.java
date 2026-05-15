@@ -3535,31 +3535,31 @@ public final class Unsafe {
      */
     @IntrinsicCandidate
     public Object getReferenceStable(Object o, long offset, SpeculationFence fence) {
-        return getReference(o, offset);
+        return getReferenceVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public boolean getBooleanStable(Object o, long offset, SpeculationFence fence) {
-        return getBoolean(o, offset);
+        return getBooleanVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public byte getByteStable(Object o, long offset, SpeculationFence fence) {
-        return getByte(o, offset);
+        return getByteVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public short getShortStable(Object o, long offset, SpeculationFence fence) {
-        return getShort(o, offset);
+        return getShortVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public char getCharStable(Object o, long offset, SpeculationFence fence) {
-        return getChar(o, offset);
+        return getCharVolatile(o, offset);
     }
 
     /**
@@ -3590,25 +3590,25 @@ public final class Unsafe {
      */
     @IntrinsicCandidate
     public int getIntStable(Object o, long offset, SpeculationFence fence) {
-        return getInt(o, offset);
+        return getIntVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public long getLongStable(Object o, long offset, SpeculationFence fence){
-        return getLong(o, offset);
+        return getLongVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public float getFloatStable(Object o, long offset, SpeculationFence fence) {
-        return getFloat(o, offset);
+        return getFloatVolatile(o, offset);
     }
 
     /** @see #getIntStable(Object, long, SpeculationFence) @since 99 */
     @IntrinsicCandidate
     public double getDoubleStable(Object o, long offset, SpeculationFence fence) {
-        return getDouble(o, offset);
+        return getDoubleVolatile(o, offset);
     }
 
     /**
