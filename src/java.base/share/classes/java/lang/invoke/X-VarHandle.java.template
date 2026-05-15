@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
  */
 package java.lang.invoke;
 
+import jdk.internal.misc.SpeculationFence;
 import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 
@@ -116,6 +117,13 @@ final class VarHandle$Type$s {
             FieldInstanceReadOnly handle = (FieldInstanceReadOnly)ob;
             return UNSAFE.get$Type$Acquire(Objects.requireNonNull(handle.receiverType.cast(holder)),
                                  handle.fieldOffset);
+        }
+
+        @ForceInline
+        static $type$ getStable(VarHandle ob, Object holder) {
+            FieldInstanceReadOnly handle = (FieldInstanceReadOnly)ob;
+            return UNSAFE.get$Type$Stable(Objects.requireNonNull(handle.receiverType.cast(holder)),
+                                 handle.fieldOffset, null);
         }
 
         static final VarForm FORM = new VarForm(FieldInstanceReadOnly.class, Object.class, $type$.class);
@@ -464,6 +472,13 @@ final class VarHandle$Type$s {
             FieldStaticReadOnly handle = (FieldStaticReadOnly) ob.target();
             return UNSAFE.get$Type$Acquire(handle.base,
                                  handle.fieldOffset);
+        }
+
+        @ForceInline
+        static $type$ getStable(VarHandle ob) {
+            FieldStaticReadOnly handle = (FieldStaticReadOnly) ob.target();
+            return UNSAFE.get$Type$Stable(handle.base,
+                                 handle.fieldOffset, null);
         }
 
         static final VarForm FORM = new VarForm(FieldStaticReadOnly.class, null, $type$.class);
@@ -898,6 +913,19 @@ final class VarHandle$Type$s {
                     {#if[Object]?runtimeTypeCheck(handle, array, value):value});
         }
 #if[CAS]
+
+        @ForceInline
+        static $type$ getStable(VarHandle ob, Object oarray, int index) {
+            Array handle = (Array)ob;
+#if[Object]
+            Object[] array = (Object[]) handle.arrayType.cast(oarray);
+#else[Object]
+            $type$[] array = ($type$[]) oarray;
+#end[Object]
+            return UNSAFE.get$Type$Stable(array,
+                    (((long) Preconditions.checkIndex(index, array.length, Preconditions.AIOOBE_FORMATTER)) << handle.ashift) + handle.abase,
+                    null);
+        }
 
         @ForceInline
         static boolean compareAndSet(VarHandle ob, Object oarray, int index, $type$ expected, $type$ value) {
