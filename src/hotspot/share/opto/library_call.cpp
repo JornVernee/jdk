@@ -2364,7 +2364,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
   assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
 
-  bool is_stable = (kind == Stable) || (kind == Stable_Volatile);
+  bool is_stable = kind == Stable;
 
   if (is_reference_type(type)) {
     decorators |= ON_UNKNOWN_OOP_REF;
@@ -2439,7 +2439,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
     }
   }
 
-  Node* adr = make_unsafe_address(base, offset, type, (kind == Relaxed || is_stable));
+  Node* adr = make_unsafe_address(base, offset, type, kind == Relaxed);
   assert(!stopped(), "Inlining of unsafe access failed: address construction stopped unexpectedly");
 
   if (_gvn.type(base->uncast())->isa_ptr() == TypePtr::NULL_PTR) {
