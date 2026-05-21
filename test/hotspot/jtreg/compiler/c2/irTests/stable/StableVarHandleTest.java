@@ -33,6 +33,7 @@ package compiler.c2.irTests.stable;
 
 import compiler.lib.ir_framework.*;
 
+import java.lang.invoke.Condition;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
@@ -72,18 +73,18 @@ public class StableVarHandleTest {
     @Test
     @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
     static int testFoldInstanceField() {
-        return (int) VH_INSTANCE_FIELD.getStable(CARRIER);
+        return (int) VH_INSTANCE_FIELD.getStable(CARRIER, Condition.NON_DEFAULT);
     }
 
     @Test
     @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
     static int testFoldStaticField() {
-        return (int) VH_STATIC_FIELD.getStable();
+        return (int) VH_STATIC_FIELD.getStable(Condition.NON_DEFAULT);
     }
 
     @Test
     @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
     static int testFoldArrayElement() {
-        return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0);
+        return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0, Condition.NON_DEFAULT);
     }
 }

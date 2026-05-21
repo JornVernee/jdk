@@ -242,19 +242,19 @@ final class VarHandleSegmentAs$Type$sAligned extends VarHandleSegmentAs$Type$s {
     }
 
     @ForceInline
-    static $type$ getStable(VarHandle ob, Object obb, long base) {
-        return getStable(ob, obb, base, ((SegmentVarHandle) ob).offset);
+    static $type$ getStable(VarHandle ob, Object obb, long base, Condition condition) {
+        return getStable(ob, obb, base, ((SegmentVarHandle) ob).offset, condition);
     }
 
     @ForceInline
-    static $type$ getStable(VarHandle ob, Object obb, long base, long offset) {
+    static $type$ getStable(VarHandle ob, Object obb, long base, long offset, Condition condition) {
         SegmentVarHandle handle = (SegmentVarHandle)ob;
         AbstractMemorySegmentImpl bb = handle.checkSegment(obb, base, true);
         return convEndian(handle.be,
                           SCOPED_MEMORY_ACCESS.get$RawType$Stable(bb.sessionImpl(),
                                   bb.unsafeGetBase(),
                                   offset(bb, base, offset),
-                                  null));
+                                  condition.fence));
     }
 #if[CAS]
 

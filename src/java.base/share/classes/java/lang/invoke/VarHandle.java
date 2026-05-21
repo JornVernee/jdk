@@ -1698,9 +1698,10 @@ public abstract sealed class VarHandle implements Constable
         SET(void.class),
         COMPARE_AND_SET(boolean.class),
         COMPARE_AND_EXCHANGE(Object.class),
-        GET_AND_UPDATE(Object.class);
+        GET_AND_UPDATE(Object.class),
+        GET_STABLE(Object.class);
 
-        static final int COUNT = GET_AND_UPDATE.ordinal() + 1;
+        static final int COUNT = GET_STABLE.ordinal() + 1;
         static {
             assert (COUNT == values().length);
         }
@@ -1742,6 +1743,11 @@ public abstract sealed class VarHandle implements Constable
                     ps = allocateParameters(1, receiver, intermediate);
                     i = fillParameters(ps, receiver, intermediate);
                     ps[i] = value;
+                    return MethodType.methodType(value, ps);
+                case GET_STABLE:
+                    ps = allocateParameters(1, receiver, intermediate);
+                    i = fillParameters(ps, receiver, intermediate);
+                    ps[i] = Condition.class;
                     return MethodType.methodType(value, ps);
                 default:
                     throw new InternalError("Unknown AccessType");
@@ -1811,7 +1817,7 @@ public abstract sealed class VarHandle implements Constable
          * method
          * {@link VarHandle#getStable VarHandle.getStable}
          */
-        GET_STABLE("getStable", AccessType.GET),
+        GET_STABLE("getStable", AccessType.GET_STABLE),
         /**
          * The access mode whose access is specified by the corresponding
          * method

@@ -319,14 +319,14 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         }
 
         @ForceInline
-        static $type$ getStable(VarHandle ob, Object obb, int index) {
+        static $type$ getStable(VarHandle ob, Object obb, int index, Condition condition) {
             ByteBufferHandle handle = (ByteBufferHandle)ob;
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               SCOPED_MEMORY_ACCESS.get$RawType$Stable(session(bb),
                                       checkNullHeapBase(UNSAFE.getReference(bb, BYTE_BUFFER_HB)),
                                       address(bb, index(bb, index)),
-                                      null));
+                                      condition.fence));
         }
 #if[CAS]
 

@@ -120,10 +120,10 @@ final class VarHandle$Type$s {
         }
 
         @ForceInline
-        static $type$ getStable(VarHandle ob, Object holder) {
+        static $type$ getStable(VarHandle ob, Object holder, Condition condition) {
             FieldInstanceReadOnly handle = (FieldInstanceReadOnly)ob;
             return UNSAFE.get$Type$Stable(Objects.requireNonNull(handle.receiverType.cast(holder)),
-                                 handle.fieldOffset, null);
+                                 handle.fieldOffset, condition.fence);
         }
 
         static final VarForm FORM = new VarForm(FieldInstanceReadOnly.class, Object.class, $type$.class);
@@ -475,10 +475,10 @@ final class VarHandle$Type$s {
         }
 
         @ForceInline
-        static $type$ getStable(VarHandle ob) {
+        static $type$ getStable(VarHandle ob, Condition condition) {
             FieldStaticReadOnly handle = (FieldStaticReadOnly) ob.target();
             return UNSAFE.get$Type$Stable(handle.base,
-                                 handle.fieldOffset, null);
+                                 handle.fieldOffset, condition.fence);
         }
 
         static final VarForm FORM = new VarForm(FieldStaticReadOnly.class, null, $type$.class);
@@ -915,7 +915,7 @@ final class VarHandle$Type$s {
 #if[CAS]
 
         @ForceInline
-        static $type$ getStable(VarHandle ob, Object oarray, int index) {
+        static $type$ getStable(VarHandle ob, Object oarray, int index, Condition condition) {
             Array handle = (Array)ob;
 #if[Object]
             Object[] array = (Object[]) handle.arrayType.cast(oarray);
@@ -924,7 +924,7 @@ final class VarHandle$Type$s {
 #end[Object]
             return UNSAFE.get$Type$Stable(array,
                     (((long) Preconditions.checkIndex(index, array.length, Preconditions.AIOOBE_FORMATTER)) << handle.ashift) + handle.abase,
-                    null);
+                    condition.fence);
         }
 
         @ForceInline

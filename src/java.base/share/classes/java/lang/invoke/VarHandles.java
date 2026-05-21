@@ -399,7 +399,7 @@ final class VarHandles {
                 (mode, modeHandle) -> {
                     int lastParameterPos = modeHandle.type().parameterCount() - 1;
                     return switch (mode.at) {
-                        case GET -> MethodHandles.collectReturnValue(modeHandle, filterFromTarget);
+                        case GET, GET_STABLE -> MethodHandles.collectReturnValue(modeHandle, filterFromTarget);
                         case SET -> MethodHandles.collectArguments(modeHandle, lastParameterPos, filterToTarget);
                         case GET_AND_UPDATE -> {
                             MethodHandle adapter = MethodHandles.collectReturnValue(modeHandle, filterFromTarget);
@@ -536,7 +536,7 @@ final class VarHandles {
     private static int numTrailingArgs(VarHandle.AccessType at) {
         return switch (at) {
             case GET -> 0;
-            case GET_AND_UPDATE, SET -> 1;
+            case GET_AND_UPDATE, GET_STABLE, SET -> 1;
             case COMPARE_AND_SET, COMPARE_AND_EXCHANGE -> 2;
         };
     }

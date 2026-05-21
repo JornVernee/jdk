@@ -98,6 +98,10 @@ final class VarForm {
         // (Receiver, <Intermediates>)Value
         methodType_table[VarHandle.AccessType.GET.ordinal()] = type;
 
+        // (Receiver, <Intermediates>, Condition)Value
+        methodType_table[VarHandle.AccessType.GET_STABLE.ordinal()] =
+                type.appendParameterTypes(Condition.class);
+
         // (Receiver, <Intermediates>, Value)Value
         type = methodType_table[VarHandle.AccessType.GET_AND_UPDATE.ordinal()] =
                 type.appendParameterTypes(value);
