@@ -2330,15 +2330,15 @@ const TypeOopPtr* LibraryCallKit::sharpen_unsafe_type(Compile::AliasType* alias_
 DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
   switch (kind) {
       case Relaxed:
-      case Stable:
-        return MO_UNORDERED;
+      return MO_UNORDERED;
       case Opaque:
-        return MO_RELAXED;
+      return MO_RELAXED;
       case Acquire:
-        return MO_ACQUIRE;
+      return MO_ACQUIRE;
       case Release:
-        return MO_RELEASE;
+      return MO_RELEASE;
       case Volatile:
+      case Stable:
         return MO_SEQ_CST;
       default:
         ShouldNotReachHere();
@@ -2416,15 +2416,23 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   if (is_stable) {
     Node* spec_fence_n = argument(4); // offset takes 2 slots
     if (spec_fence_n->Opcode() != Op_ConP) {
-      return false; // fence is not a constant, bail out
+      return false; // fence is not a constant, bail out (TODO fall back to regular access?)
     }
     const TypeOopPtr* fence_t = spec_fence_n->bottom_type()->isa_oopptr();
     if (fence_t == nullptr) {
-      // only decorate loads as stable when there is no fence
-      // since we might lose track of it @@@ TODO
+      // No fence. Always try to fold
       decorators |= ACCESS_STABLE;
     } else {
       spec_fence = fence_t->const_oop()->as_speculation_fence();
+      if (spec_fence->is_initialized()) {
+        // Only try to fold this access later if the fence has been initialized
+        decorators |= ACCESS_STABLE;
+        // Conservativly record a dependency
+        // TODO only do this when we actually fold
+        // requires LoadNode keeping track of speculation fence
+        // so we can add the dependency later when we fold during IGVN (always for array accesses)
+        C->dependencies()->assert_speculation_fence(spec_fence);
+      }
     }
   }
 
@@ -2519,12 +2527,13 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
     Node* p = nullptr;
     // Try to constant fold a load from a constant field
     ciField* field = alias_type->field();
-    if (heap_base_oop != top() && field != nullptr && (field->is_constant() || is_stable) && !mismatched) {
+    bool should_fold_stable_access = is_stable && (spec_fence == nullptr || spec_fence->is_initialized());
+    if (heap_base_oop != top() && field != nullptr && (field->is_constant() || should_fold_stable_access) && !mismatched) {
       // final or stable field
       p = make_constant_from_field(field, heap_base_oop, is_stable);
-      if (is_stable && p != nullptr && spec_fence != nullptr) {
-        C->dependencies()->assert_speculation_fence(spec_fence);
-      }
+      // if (is_stable && p != nullptr && spec_fence != nullptr) {
+      //   C->dependencies()->assert_speculation_fence(spec_fence);
+      // }
     }
 
     if (p == nullptr) { // Could not constant fold the load

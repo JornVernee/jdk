@@ -1765,6 +1765,7 @@ class jdk_internal_misc_SpeculationFence : AllStatic {
 private:
   static int _vmdependencies_offset;
   static int _last_cleanup_offset;
+  static int _epoch_offset;
 
   static void compute_offsets();
   static DependencyContext vmdependencies(oop fence);
@@ -1775,6 +1776,7 @@ public:
   static void add_dependent_nmethod(oop fence, nmethod* nm);
   static void clean_dependency_context(oop fence);
   static void mark_dependent_nmethods(DeoptimizationScope* deopt_scope, Handle fence);
+  static jlong epoch(oop fence);
 
   static bool is_instance(oop obj);
 };

@@ -4710,14 +4710,20 @@ DependencyContext java_lang_invoke_CallSite::vmdependencies(oop call_site) {
 
 int jdk_internal_misc_SpeculationFence::_vmdependencies_offset;
 int jdk_internal_misc_SpeculationFence::_last_cleanup_offset;
+int jdk_internal_misc_SpeculationFence::_epoch_offset;
+
+#define SPECULATIONFENCE_FIELDS_DO(macro) \
+  macro(_epoch_offset,  k, "epoch", long_signature, false); \
 
 void jdk_internal_misc_SpeculationFence::compute_offsets() {
   InstanceKlass* k = vmClasses::SpeculationFence_klass();
+  SPECULATIONFENCE_FIELDS_DO(FIELD_COMPUTE_OFFSET);
   SPECULATIONFENCE_INJECTED_FIELDS(INJECTED_FIELD_COMPUTE_OFFSET);
 }
 
 #if INCLUDE_CDS
 void jdk_internal_misc_SpeculationFence::serialize_offsets(SerializeClosure* f) {
+  SPECULATIONFENCE_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
   SPECULATIONFENCE_INJECTED_FIELDS(INJECTED_FIELD_SERIALIZE_OFFSET);
 }
 #endif
@@ -4756,6 +4762,11 @@ void jdk_internal_misc_SpeculationFence::mark_dependent_nmethods(DeoptimizationS
     DependencyContext deps = vmdependencies(fence());
     deps.mark_dependent_nmethods(deopt_scope, changes);
   }
+}
+
+jlong jdk_internal_misc_SpeculationFence::epoch(oop fence) {
+  assert(jdk_internal_misc_SpeculationFence::is_instance(fence), "");
+  return AtomicAccess::load(fence->field_addr<jlong>(_epoch_offset));
 }
 
 // Support for java_lang_invoke_ConstantCallSite

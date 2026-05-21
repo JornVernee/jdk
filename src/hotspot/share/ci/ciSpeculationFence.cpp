@@ -23,8 +23,17 @@
  */
 
 #include "ci/ciSpeculationFence.hpp"
+#include "ci/ciUtilities.inline.hpp"
 #include "classfile/javaClasses.inline.hpp"
 
 void ciSpeculationFence::print() {
   Unimplemented();
+}
+
+bool ciSpeculationFence::is_initialized() {
+  if (_epoch_cache < 0) {
+    VM_ENTRY_MARK;
+    _epoch_cache = jdk_internal_misc_SpeculationFence::epoch(get_oop());
+  }
+  return _epoch_cache > 0;
 }

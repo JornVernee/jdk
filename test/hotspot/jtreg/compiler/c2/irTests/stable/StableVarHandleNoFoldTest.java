@@ -26,18 +26,21 @@
  * @requires vm.compiler2.enabled
  * @summary Check getStable folding for var handles
  * @library /test/lib /
- * @run driver compiler.c2.irTests.stable.StableVarHandleTest
+ * @run driver compiler.c2.irTests.stable.StableVarHandleNoFoldTest
  */
 
 package compiler.c2.irTests.stable;
 
-import compiler.lib.ir_framework.*;
+import compiler.lib.ir_framework.IR;
+import compiler.lib.ir_framework.IRNode;
+import compiler.lib.ir_framework.Test;
+import compiler.lib.ir_framework.TestFramework;
 
 import java.lang.invoke.Condition;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
-public class StableVarHandleTest {
+public class StableVarHandleNoFoldTest {
 
     public static void main(String[] args) {
         TestFramework.run();
@@ -55,6 +58,9 @@ public class StableVarHandleTest {
     static final VarHandle VH_INSTANCE_FIELD;
     static final VarHandle VH_STATIC_FIELD;
     static final VarHandle VH_ARRAY_ELEMENT;
+    // We never trigger these conditions, which should result in accesses not being folded
+    static final Condition INIT_CONDITION = Condition.initialized();
+    static final Condition RESETTABLE_CONDITION = Condition.resttable();
 
     static final Carrier CARRIER = new Carrier(42);
     static final int[] ARR = { 42 };
@@ -71,20 +77,44 @@ public class StableVarHandleTest {
     }
 
     @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldInstanceField() {
-        return (int) VH_INSTANCE_FIELD.getStable(CARRIER, Condition.NON_DEFAULT);
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldInstanceFieldInit() {
+        return (int) VH_INSTANCE_FIELD.getStable(CARRIER, INIT_CONDITION);
     }
 
     @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldStaticField() {
-        return (int) VH_STATIC_FIELD.getStable(Condition.NON_DEFAULT);
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldStaticFieldInit() {
+        return (int) VH_STATIC_FIELD.getStable(INIT_CONDITION);
     }
 
     @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldArrayElement() {
-        return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0, Condition.NON_DEFAULT);
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldArrayElementInit() {
+        return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0, INIT_CONDITION);
+    }
+
+    @Test
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldInstanceFieldResettable() {
+        return (int) VH_INSTANCE_FIELD.getStable(CARRIER, RESETTABLE_CONDITION);
+    }
+
+    @Test
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldStaticFieldResettable() {
+        return (int) VH_STATIC_FIELD.getStable(RESETTABLE_CONDITION);
+    }
+
+    @Test
+    @IR(counts = { IRNode.LOAD, ">0" })
+    @IR(counts = { IRNode.MEMBAR, ">0" })
+    static int testNoFoldArrayElementResettable() {
+        return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0, RESETTABLE_CONDITION);
     }
 }
