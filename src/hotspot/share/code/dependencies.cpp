@@ -26,6 +26,7 @@
 #include "ci/ciEnv.hpp"
 #include "ci/ciKlass.hpp"
 #include "ci/ciMethod.hpp"
+#include "ci/ciUtilities.inline.hpp"
 #include "classfile/javaClasses.inline.hpp"
 #include "classfile/vmClasses.hpp"
 #include "code/dependencies.hpp"
@@ -130,7 +131,18 @@ void Dependencies::assert_call_site_target_value(ciCallSite* call_site, ciMethod
 }
 
 void Dependencies::assert_speculation_fence(ciSpeculationFence* fence) {
-  assert_common_1(speculation_fence, fence);
+  jvalue epoch;
+  epoch.j = fence->epoch().as_long();
+  // dependencies must be either Metadata* or oop.
+  // store this as java.lang.Long for now
+  ciObject* epoch_as_Long;
+  {
+    VM_ENTRY_MARK;
+    epoch_as_Long = CURRENT_ENV->get_object(java_lang_boxing_object::create(T_LONG, &epoch, THREAD));
+    // TODO handle allocation failure
+    assert(!HAS_PENDING_EXCEPTION, "exception when boxing");
+  }
+  assert_common_2(speculation_fence, fence, epoch_as_Long);
 }
 
 #if INCLUDE_JVMCI
@@ -613,7 +625,7 @@ int Dependencies::_dep_args[TYPE_LIMIT] = {
   2, // unique_implementor ctxk, implementor
   1, // no_finalizable_subclasses ctxk
   2, // call_site_target_value call_site, method_handle
-  1  // speculation_fence fence
+  2  // speculation_fence fence
 };
 
 const char* Dependencies::dep_name(Dependencies::DepType dept) {
@@ -2168,15 +2180,25 @@ Klass* Dependencies::DepStream::check_speculation_fence_dependency(SpecFenceDepC
     return nullptr; // not for this change type
   }
 
-  assert(changes != nullptr, "only spot check expected");
-
   oop fence = argument_oop(0);
   assert(fence != nullptr, "sanity");
   assert(fence->klass() == vmClasses::SpeculationFence_klass(), "sanity");
 
   Klass* witness = nullptr; // default as OK
-  if (fence == changes->fence()) {
-    witness = fence->klass(); // assertion failed
+  if (changes != nullptr) {
+    // An explicit trigger of a particular SpeculationFence happened
+    if (fence == changes->fence()) {
+      witness = fence->klass(); // assertion failed
+    }
+  } else {
+    // No explicit trigger. Check if this dependency is self-consistent.
+    // This may not be the case e.g. if we were racing with an update
+    // when we recorded the dependency.
+    jlong current_epoch = jdk_internal_misc_SpeculationFence::epoch(fence);
+    jlong recorded_epoch = java_lang_Long::value(argument_oop(1));
+    if (current_epoch != recorded_epoch) {
+      witness = fence->klass(); // assertion failed
+    }
   }
 
   trace_and_log_witness(witness);

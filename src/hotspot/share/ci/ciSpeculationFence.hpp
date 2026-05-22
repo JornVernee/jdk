@@ -31,13 +31,15 @@
 //
 // The class represents a jdk.internal.misc.SpeculationFence object.
 class ciSpeculationFence : public ciInstance {
-  jlong _epoch_cache;
+  ciConstant _epoch;
+  void do_init();
  public:
-  ciSpeculationFence(instanceHandle h_i) : ciInstance(h_i), _epoch_cache(-1) {}
+  ciSpeculationFence(instanceHandle h_i) : ciInstance(h_i), _epoch() {}
 
   // What kind of ciObject is this?
   bool is_speculation_fence() const { return true; }
 
+  ciConstant epoch(); // as java.lang.Long
   bool is_initialized();
 
   void print();

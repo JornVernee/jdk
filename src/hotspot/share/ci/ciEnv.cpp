@@ -960,6 +960,9 @@ void ciEnv::validate_compile_task_dependencies(ciMethod* target) {
     if (result == Dependencies::call_site_target_value) {
       _inc_decompile_count_on_failure = false;
       record_failure("call site target change");
+    } if (result == Dependencies::speculation_fence) {
+      _inc_decompile_count_on_failure = false;
+      record_failure("speculation fence triggered");
     } else if (Dependencies::is_klass_type(result)) {
       record_failure("concurrent class loading");
     } else {

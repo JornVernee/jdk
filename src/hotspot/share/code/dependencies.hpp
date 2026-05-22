@@ -642,7 +642,9 @@ class Dependencies: public ResourceObj {
     Klass* check_dependency() {
       Klass* result = check_klass_dependency(nullptr);
       if (result != nullptr)  return result;
-      return check_call_site_dependency(nullptr);
+      result = check_call_site_dependency(nullptr);
+      if (result != nullptr)  return result;
+      return check_speculation_fence_dependency(nullptr);
     }
 
     // A lighter version:  Checks only around recent changes in a class

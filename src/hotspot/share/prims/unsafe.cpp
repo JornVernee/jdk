@@ -843,6 +843,10 @@ UNSAFE_ENTRY(void, Unsafe_InternalDoFence(JNIEnv* env, jclass unsafe, jobject fe
   {
     // Walk all nmethods depending on this fence.
     MutexLocker mu(thread, Compile_lock);
+    // We do this under Compile_lock to avoid a race
+    // with an nmethod being installed that depends on the current fence state.
+    // This code is mutually exclusive with 'validate_compile_task_dependencies'
+    // in ciEnv::register_method
     jdk_internal_misc_SpeculationFence::mark_dependent_nmethods(&deopt_scope, fence);
     deopt_scope.deoptimize_marked();
   }

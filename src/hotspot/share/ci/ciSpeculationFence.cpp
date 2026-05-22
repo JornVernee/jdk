@@ -30,10 +30,21 @@ void ciSpeculationFence::print() {
   Unimplemented();
 }
 
-bool ciSpeculationFence::is_initialized() {
-  if (_epoch_cache < 0) {
-    VM_ENTRY_MARK;
-    _epoch_cache = jdk_internal_misc_SpeculationFence::epoch(get_oop());
+void ciSpeculationFence::do_init() {
+  VM_ENTRY_MARK;
+  _epoch = ciConstant(jdk_internal_misc_SpeculationFence::epoch(get_oop()));
+}
+
+ciConstant ciSpeculationFence::epoch() {
+  if (!_epoch.is_valid()) {
+    do_init();
   }
-  return _epoch_cache > 0;
+  return _epoch;
+}
+
+bool ciSpeculationFence::is_initialized() {
+  if (!_epoch.is_valid()) {
+    do_init();
+  }
+  return _epoch.as_long() > 0;
 }
