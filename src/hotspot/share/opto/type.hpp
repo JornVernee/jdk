@@ -2510,7 +2510,7 @@ inline const TypeLong* Type::try_cast<TypeLong>() const {
 #define RShiftXNode  RShiftLNode
 // For card marks and hashcodes
 #define URShiftXNode URShiftLNode
-// For shenandoahSupport
+// For pointer-sized accesses
 #define LoadXNode    LoadLNode
 #define StoreXNode   StoreLNode
 // Opcodes
@@ -2556,7 +2556,7 @@ inline const TypeLong* Type::try_cast<TypeLong>() const {
 #define RShiftXNode  RShiftINode
 // For card marks and hashcodes
 #define URShiftXNode URShiftINode
-// For shenandoahSupport
+// For pointer-sized accesses
 #define LoadXNode    LoadINode
 #define StoreXNode   StoreINode
 // Opcodes
