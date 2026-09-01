@@ -183,6 +183,7 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
 #if[CAS]
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
@@ -365,13 +366,19 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
         // Lazy
         {
             $type$ x = ($type$) vh.getAcquire(recv);
-            assertEquals($value1$, x, "getRelease $type$ value");
+            assertEquals($value1$, x, "getAcquire $type$ value");
         }
 
         // Opaque
         {
             $type$ x = ($type$) vh.getOpaque(recv);
             assertEquals($value1$, x, "getOpaque $type$ value");
+        }
+
+        // Stable
+        {
+            $type$ x = ($type$) vh.getStable(recv);
+            assertEquals($value1$, x, "getStable $type$ value");
         }
     }
 
@@ -509,13 +516,19 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
         // Lazy
         {
             $type$ x = ($type$) vh.getAcquire();
-            assertEquals($value1$, x, "getRelease $type$ value");
+            assertEquals($value1$, x, "getAcquire $type$ value");
         }
 
         // Opaque
         {
             $type$ x = ($type$) vh.getOpaque();
             assertEquals($value1$, x, "getOpaque $type$ value");
+        }
+
+        // Stable
+        {
+            $type$ x = ($type$) vh.getStable();
+            assertEquals($value1$, x, "getStable $type$ value");
         }
     }
 
@@ -664,6 +677,13 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
             vh.setOpaque(recv, $value2$);
             $type$ x = ($type$) vh.getOpaque(recv);
             assertEquals($value2$, x, "setOpaque $type$ value");
+        }
+
+        // Stable
+        {
+            vh.set(recv, $value1$);
+            $type$ x = ($type$) vh.getStable(recv);
+            assertEquals($value1$, x, "getStable $type$ value");
         }
 
 #if[CAS]
@@ -1073,6 +1093,13 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
             vh.setOpaque($value2$);
             $type$ x = ($type$) vh.getOpaque();
             assertEquals($value2$, x, "setOpaque $type$ value");
+        }
+
+        // Stable
+        {
+            vh.set($value1$);
+            $type$ x = ($type$) vh.getStable();
+            assertEquals($value1$, x, "getStable $type$ value");
         }
 
 #if[CAS]
@@ -1485,6 +1512,13 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
                 vh.setOpaque(array, i, $value2$);
                 $type$ x = ($type$) vh.getOpaque(array, i);
                 assertEquals($value2$, x, "setOpaque $type$ value");
+            }
+
+            // Stable
+            {
+                vh.sete(array, i, $value1$);
+                $type$ x = ($type$) vh.getStable(array, i);
+                assertEquals($value1$, x, "getStable $type$ value");
             }
 
 #if[CAS]
@@ -1905,6 +1939,10 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, $value1$);
+            });
+
+            checkAIOOBE(() -> {
+                $type$ x = ($type$) vh.getStable(array, ci);
             });
 
 #if[CAS]
