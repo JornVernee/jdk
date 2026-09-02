@@ -169,6 +169,7 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         // Lazy
         {
             char x = (char) vh.getAcquire(recv);
-            assertEquals('\u0123', x, "getRelease char value");
+            assertEquals('\u0123', x, "getAcquire char value");
         }
 
         // Opaque
         {
             char x = (char) vh.getOpaque(recv);
             assertEquals('\u0123', x, "getOpaque char value");
+        }
+
+        // Stable
+        {
+            char x = (char) vh.getStable(recv);
+            assertEquals('\u0123', x, "getStable char value");
         }
     }
 
@@ -359,13 +366,19 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         // Lazy
         {
             char x = (char) vh.getAcquire();
-            assertEquals('\u0123', x, "getRelease char value");
+            assertEquals('\u0123', x, "getAcquire char value");
         }
 
         // Opaque
         {
             char x = (char) vh.getOpaque();
             assertEquals('\u0123', x, "getOpaque char value");
+        }
+
+        // Stable
+        {
+            char x = (char) vh.getStable();
+            assertEquals('\u0123', x, "getStable char value");
         }
     }
 
@@ -419,6 +432,14 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
             vh.setOpaque(recv, '\u4567');
             char x = (char) vh.getOpaque(recv);
             assertEquals('\u4567', x, "setOpaque char value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, '\u0123');
+            //char x = (char) vh.getStable(recv);
+            //assertEquals('\u0123', x, "getStable char value");
         }
 
         vh.set(recv, '\u0123');
@@ -727,6 +748,14 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
             vh.setOpaque('\u4567');
             char x = (char) vh.getOpaque();
             assertEquals('\u4567', x, "setOpaque char value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set('\u0123');
+            //char x = (char) vh.getStable();
+            //assertEquals('\u0123', x, "getStable char value");
         }
 
         vh.set('\u0123');
@@ -1038,6 +1067,14 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
                 vh.setOpaque(array, i, '\u4567');
                 char x = (char) vh.getOpaque(array, i);
                 assertEquals('\u4567', x, "setOpaque char value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, '\u0123');
+                //char x = (char) vh.getStable(array, i);
+                //assertEquals('\u0123', x, "getStable char value");
             }
 
             vh.set(array, i, '\u0123');
@@ -1357,6 +1394,10 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, '\u0123');
+            });
+
+            checkAIOOBE(() -> {
+                char x = (char) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

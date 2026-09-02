@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessByte extends VarHandleBaseTest {
             assertEquals((byte)0x23, x, "setOpaque byte value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, (byte)0x23);
+            //byte x = (byte) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals((byte)0x23, x, "getStable byte value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, (byte)0x01);
 
         // Compare
@@ -441,6 +449,14 @@ public class VarHandleTestMethodHandleAccessByte extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact((byte)0x23);
             byte x = (byte) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals((byte)0x23, x, "setOpaque byte value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact((byte)0x23);
+            //byte x = (byte) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals((byte)0x23, x, "getStable byte value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact((byte)0x01);
@@ -759,6 +775,14 @@ public class VarHandleTestMethodHandleAccessByte extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, (byte)0x23);
                 byte x = (byte) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals((byte)0x23, x, "setOpaque byte value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, (byte)0x23);
+                //byte x = (byte) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals((byte)0x23, x, "getStable byte value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, (byte)0x01);

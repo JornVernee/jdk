@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessShort extends VarHandleBaseTest {
             assertEquals((short)0x4567, x, "setOpaque short value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, (short)0x4567);
+            //short x = (short) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals((short)0x4567, x, "getStable short value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, (short)0x0123);
 
         // Compare
@@ -441,6 +449,14 @@ public class VarHandleTestMethodHandleAccessShort extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact((short)0x4567);
             short x = (short) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals((short)0x4567, x, "setOpaque short value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact((short)0x4567);
+            //short x = (short) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals((short)0x4567, x, "getStable short value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact((short)0x0123);
@@ -759,6 +775,14 @@ public class VarHandleTestMethodHandleAccessShort extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, (short)0x4567);
                 short x = (short) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals((short)0x4567, x, "setOpaque short value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, (short)0x4567);
+                //short x = (short) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals((short)0x4567, x, "getStable short value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, (short)0x0123);

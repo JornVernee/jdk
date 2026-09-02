@@ -327,6 +327,33 @@ public class VarHandleTestMethodTypeLong extends VarHandleBaseTest {
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null receiver
+            long x = (long) vh.getStable(null);
+        });
+        checkCCE(() -> { // receiver reference class
+            long x = (long) vh.getStable(Void.class);
+        });
+        checkWMTE(() -> { // receiver primitive class
+            long x = (long) vh.getStable(0);
+        });
+        // Incorrect return type
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStable(recv);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(recv);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            long x = (long) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            long x = (long) vh.getStable(recv, Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkNPE(() -> { // null receiver
@@ -1361,6 +1388,19 @@ public class VarHandleTestMethodTypeLong extends VarHandleBaseTest {
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStable();
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            long x = (long) vh.getStable(Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkWMTE(() -> { // expected reference class
@@ -2224,6 +2264,35 @@ public class VarHandleTestMethodTypeLong extends VarHandleBaseTest {
             vh.setRelease(array, 0, 0x0123456789ABCDEFL, Void.class);
         });
 
+
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null array
+            long x = (long) vh.getStable(null, 0);
+        });
+        checkCCE(() -> { // array reference class
+            long x = (long) vh.getStable(Void.class, 0);
+        });
+        checkWMTE(() -> { // array primitive class
+            long x = (long) vh.getStable(0, 0);
+        });
+        checkWMTE(() -> { // index reference class
+            long x = (long) vh.getStable(array, Void.class);
+        });
+        // Incorrect return type
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStable(array, 0);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(array, 0);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            long x = (long) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            long x = (long) vh.getStable(array, 0, Void.class);
+        });
 
         // CompareAndSet
         // Incorrect argument types

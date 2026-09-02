@@ -169,6 +169,7 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
         // Lazy
         {
             boolean x = (boolean) vh.getAcquire(recv);
-            assertEquals(true, x, "getRelease boolean value");
+            assertEquals(true, x, "getAcquire boolean value");
         }
 
         // Opaque
         {
             boolean x = (boolean) vh.getOpaque(recv);
             assertEquals(true, x, "getOpaque boolean value");
+        }
+
+        // Stable
+        {
+            boolean x = (boolean) vh.getStable(recv);
+            assertEquals(true, x, "getStable boolean value");
         }
     }
 
@@ -370,13 +377,19 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
         // Lazy
         {
             boolean x = (boolean) vh.getAcquire();
-            assertEquals(true, x, "getRelease boolean value");
+            assertEquals(true, x, "getAcquire boolean value");
         }
 
         // Opaque
         {
             boolean x = (boolean) vh.getOpaque();
             assertEquals(true, x, "getOpaque boolean value");
+        }
+
+        // Stable
+        {
+            boolean x = (boolean) vh.getStable();
+            assertEquals(true, x, "getStable boolean value");
         }
     }
 
@@ -441,6 +454,14 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
             vh.setOpaque(recv, false);
             boolean x = (boolean) vh.getOpaque(recv);
             assertEquals(false, x, "setOpaque boolean value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, true);
+            //boolean x = (boolean) vh.getStable(recv);
+            //assertEquals(true, x, "getStable boolean value");
         }
 
         vh.set(recv, true);
@@ -733,6 +754,14 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
             vh.setOpaque(false);
             boolean x = (boolean) vh.getOpaque();
             assertEquals(false, x, "setOpaque boolean value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(true);
+            //boolean x = (boolean) vh.getStable();
+            //assertEquals(true, x, "getStable boolean value");
         }
 
         vh.set(true);
@@ -1028,6 +1057,14 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
                 vh.setOpaque(array, i, false);
                 boolean x = (boolean) vh.getOpaque(array, i);
                 assertEquals(false, x, "setOpaque boolean value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, true);
+                //boolean x = (boolean) vh.getStable(array, i);
+                //assertEquals(true, x, "getStable boolean value");
             }
 
             vh.set(array, i, true);
@@ -1331,6 +1368,10 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, true);
+            });
+
+            checkAIOOBE(() -> {
+                boolean x = (boolean) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

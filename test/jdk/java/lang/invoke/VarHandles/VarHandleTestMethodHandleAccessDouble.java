@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessDouble extends VarHandleBaseTest {
             assertEquals(2.0d, x, "setOpaque double value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, 2.0d);
+            //double x = (double) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals(2.0d, x, "getStable double value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, 1.0d);
 
         // Compare
@@ -363,6 +371,14 @@ public class VarHandleTestMethodHandleAccessDouble extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact(2.0d);
             double x = (double) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals(2.0d, x, "setOpaque double value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(2.0d);
+            //double x = (double) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals(2.0d, x, "getStable double value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact(1.0d);
@@ -603,6 +619,14 @@ public class VarHandleTestMethodHandleAccessDouble extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, 2.0d);
                 double x = (double) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals(2.0d, x, "setOpaque double value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, 2.0d);
+                //double x = (double) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals(2.0d, x, "getStable double value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, 1.0d);

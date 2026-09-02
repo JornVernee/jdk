@@ -169,6 +169,7 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
         // Lazy
         {
             int x = (int) vh.getAcquire(recv);
-            assertEquals(0x01234567, x, "getRelease int value");
+            assertEquals(0x01234567, x, "getAcquire int value");
         }
 
         // Opaque
         {
             int x = (int) vh.getOpaque(recv);
             assertEquals(0x01234567, x, "getOpaque int value");
+        }
+
+        // Stable
+        {
+            int x = (int) vh.getStable(recv);
+            assertEquals(0x01234567, x, "getStable int value");
         }
     }
 
@@ -359,13 +366,19 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
         // Lazy
         {
             int x = (int) vh.getAcquire();
-            assertEquals(0x01234567, x, "getRelease int value");
+            assertEquals(0x01234567, x, "getAcquire int value");
         }
 
         // Opaque
         {
             int x = (int) vh.getOpaque();
             assertEquals(0x01234567, x, "getOpaque int value");
+        }
+
+        // Stable
+        {
+            int x = (int) vh.getStable();
+            assertEquals(0x01234567, x, "getStable int value");
         }
     }
 
@@ -419,6 +432,14 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
             vh.setOpaque(recv, 0x89ABCDEF);
             int x = (int) vh.getOpaque(recv);
             assertEquals(0x89ABCDEF, x, "setOpaque int value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, 0x01234567);
+            //int x = (int) vh.getStable(recv);
+            //assertEquals(0x01234567, x, "getStable int value");
         }
 
         vh.set(recv, 0x01234567);
@@ -727,6 +748,14 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
             vh.setOpaque(0x89ABCDEF);
             int x = (int) vh.getOpaque();
             assertEquals(0x89ABCDEF, x, "setOpaque int value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(0x01234567);
+            //int x = (int) vh.getStable();
+            //assertEquals(0x01234567, x, "getStable int value");
         }
 
         vh.set(0x01234567);
@@ -1038,6 +1067,14 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
                 vh.setOpaque(array, i, 0x89ABCDEF);
                 int x = (int) vh.getOpaque(array, i);
                 assertEquals(0x89ABCDEF, x, "setOpaque int value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, 0x01234567);
+                //int x = (int) vh.getStable(array, i);
+                //assertEquals(0x01234567, x, "getStable int value");
             }
 
             vh.set(array, i, 0x01234567);
@@ -1357,6 +1394,10 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, 0x01234567);
+            });
+
+            checkAIOOBE(() -> {
+                int x = (int) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

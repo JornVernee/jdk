@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
             assertEquals('\u4567', x, "setOpaque char value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, '\u4567');
+            //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals('\u4567', x, "getStable char value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, '\u0123');
 
         // Compare
@@ -441,6 +449,14 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact('\u4567');
             char x = (char) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals('\u4567', x, "setOpaque char value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact('\u4567');
+            //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals('\u4567', x, "getStable char value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact('\u0123');
@@ -759,6 +775,14 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, '\u4567');
                 char x = (char) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals('\u4567', x, "setOpaque char value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, '\u4567');
+                //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals('\u4567', x, "getStable char value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, '\u0123');

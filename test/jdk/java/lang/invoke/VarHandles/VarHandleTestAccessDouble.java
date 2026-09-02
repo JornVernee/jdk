@@ -169,6 +169,7 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
         // Lazy
         {
             double x = (double) vh.getAcquire(recv);
-            assertEquals(1.0d, x, "getRelease double value");
+            assertEquals(1.0d, x, "getAcquire double value");
         }
 
         // Opaque
         {
             double x = (double) vh.getOpaque(recv);
             assertEquals(1.0d, x, "getOpaque double value");
+        }
+
+        // Stable
+        {
+            double x = (double) vh.getStable(recv);
+            assertEquals(1.0d, x, "getStable double value");
         }
     }
 
@@ -394,13 +401,19 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
         // Lazy
         {
             double x = (double) vh.getAcquire();
-            assertEquals(1.0d, x, "getRelease double value");
+            assertEquals(1.0d, x, "getAcquire double value");
         }
 
         // Opaque
         {
             double x = (double) vh.getOpaque();
             assertEquals(1.0d, x, "getOpaque double value");
+        }
+
+        // Stable
+        {
+            double x = (double) vh.getStable();
+            assertEquals(1.0d, x, "getStable double value");
         }
     }
 
@@ -489,6 +502,14 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
             vh.setOpaque(recv, 2.0d);
             double x = (double) vh.getOpaque(recv);
             assertEquals(2.0d, x, "setOpaque double value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, 1.0d);
+            //double x = (double) vh.getStable(recv);
+            //assertEquals(1.0d, x, "getStable double value");
         }
 
         vh.set(recv, 1.0d);
@@ -749,6 +770,14 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
             vh.setOpaque(2.0d);
             double x = (double) vh.getOpaque();
             assertEquals(2.0d, x, "setOpaque double value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(1.0d);
+            //double x = (double) vh.getStable();
+            //assertEquals(1.0d, x, "getStable double value");
         }
 
         vh.set(1.0d);
@@ -1012,6 +1041,14 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
                 vh.setOpaque(array, i, 2.0d);
                 double x = (double) vh.getOpaque(array, i);
                 assertEquals(2.0d, x, "setOpaque double value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, 1.0d);
+                //double x = (double) vh.getStable(array, i);
+                //assertEquals(1.0d, x, "getStable double value");
             }
 
             vh.set(array, i, 1.0d);
@@ -1283,6 +1320,10 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, 1.0d);
+            });
+
+            checkAIOOBE(() -> {
+                double x = (double) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

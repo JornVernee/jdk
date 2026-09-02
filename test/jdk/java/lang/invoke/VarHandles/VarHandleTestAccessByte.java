@@ -169,6 +169,7 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
         // Lazy
         {
             byte x = (byte) vh.getAcquire(recv);
-            assertEquals((byte)0x01, x, "getRelease byte value");
+            assertEquals((byte)0x01, x, "getAcquire byte value");
         }
 
         // Opaque
         {
             byte x = (byte) vh.getOpaque(recv);
             assertEquals((byte)0x01, x, "getOpaque byte value");
+        }
+
+        // Stable
+        {
+            byte x = (byte) vh.getStable(recv);
+            assertEquals((byte)0x01, x, "getStable byte value");
         }
     }
 
@@ -359,13 +366,19 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
         // Lazy
         {
             byte x = (byte) vh.getAcquire();
-            assertEquals((byte)0x01, x, "getRelease byte value");
+            assertEquals((byte)0x01, x, "getAcquire byte value");
         }
 
         // Opaque
         {
             byte x = (byte) vh.getOpaque();
             assertEquals((byte)0x01, x, "getOpaque byte value");
+        }
+
+        // Stable
+        {
+            byte x = (byte) vh.getStable();
+            assertEquals((byte)0x01, x, "getStable byte value");
         }
     }
 
@@ -419,6 +432,14 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
             vh.setOpaque(recv, (byte)0x23);
             byte x = (byte) vh.getOpaque(recv);
             assertEquals((byte)0x23, x, "setOpaque byte value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, (byte)0x01);
+            //byte x = (byte) vh.getStable(recv);
+            //assertEquals((byte)0x01, x, "getStable byte value");
         }
 
         vh.set(recv, (byte)0x01);
@@ -727,6 +748,14 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
             vh.setOpaque((byte)0x23);
             byte x = (byte) vh.getOpaque();
             assertEquals((byte)0x23, x, "setOpaque byte value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set((byte)0x01);
+            //byte x = (byte) vh.getStable();
+            //assertEquals((byte)0x01, x, "getStable byte value");
         }
 
         vh.set((byte)0x01);
@@ -1038,6 +1067,14 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
                 vh.setOpaque(array, i, (byte)0x23);
                 byte x = (byte) vh.getOpaque(array, i);
                 assertEquals((byte)0x23, x, "setOpaque byte value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, (byte)0x01);
+                //byte x = (byte) vh.getStable(array, i);
+                //assertEquals((byte)0x01, x, "getStable byte value");
             }
 
             vh.set(array, i, (byte)0x01);
@@ -1357,6 +1394,10 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, (byte)0x01);
+            });
+
+            checkAIOOBE(() -> {
+                byte x = (byte) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

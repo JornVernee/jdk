@@ -126,6 +126,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
         } else {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_VOLATILE));
@@ -133,6 +134,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
         }
 
 #if[CAS]
@@ -325,6 +327,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
 
         checkNPE(() -> {
             $type$ x = ($type$) vh.getOpaque(array, ci);
+        });
+
+        checkNPE(() -> {
+            $type$ x = ($type$) vh.getStable(array, ci);
         });
 
         checkNPE(() -> {
@@ -1009,6 +1015,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                     $type$ x = ($type$) vh.getOpaque(array, ci);
                 });
 
+                checkIOOBE(() -> {
+                    $type$ x = ($type$) vh.getStable(array, ci);
+                });
+
                 if (!readOnly) {
                     checkIOOBE(() -> {
                         vh.setVolatile(array, ci, VALUE_1);
@@ -1147,6 +1157,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
 
                 checkISE(() -> {
                     $type$ x = ($type$) vh.getOpaque(array, ci);
+                });
+
+                checkISE(() -> {
+                    $type$ x = ($type$) vh.getStable(array, ci);
                 });
 
                 if (!readOnly) {
@@ -1314,6 +1328,14 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                     vh.setOpaque(array, i, VALUE_2);
                     $type$ x = ($type$) vh.getOpaque(array, i);
                     assertEquals(VALUE_2, x, "setOpaque $type$ value");
+                }
+
+                // Stable
+                {
+                    // TODO separate storage
+                    //vh.set(array, i, VALUE_2);
+                    //$type$ x = ($type$) vh.getStable(array, i);
+                    //assertEquals(VALUE_2, x, "getStable $type$ value");
                 }
 #if[CAS]
 
@@ -1634,6 +1656,12 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                 {
                     $type$ x = ($type$) vh.getOpaque(array, i);
                     assertEquals(v, x, "getOpaque $type$ value");
+                }
+
+                // Stable
+                {
+                    $type$ x = ($type$) vh.getStable(array, i);
+                    assertEquals(v, x, "getStable $type$ value");
                 }
             }
         }

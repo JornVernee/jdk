@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessBoolean extends VarHandleBaseTest {
             assertEquals(false, x, "setOpaque boolean value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, false);
+            //boolean x = (boolean) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals(false, x, "getStable boolean value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, true);
 
         // Compare
@@ -419,6 +427,14 @@ public class VarHandleTestMethodHandleAccessBoolean extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact(false);
             boolean x = (boolean) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals(false, x, "setOpaque boolean value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(false);
+            //boolean x = (boolean) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals(false, x, "getStable boolean value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact(true);
@@ -715,6 +731,14 @@ public class VarHandleTestMethodHandleAccessBoolean extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, false);
                 boolean x = (boolean) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals(false, x, "setOpaque boolean value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, false);
+                //boolean x = (boolean) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals(false, x, "getStable boolean value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, true);

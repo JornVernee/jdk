@@ -159,6 +159,7 @@ abstract class VarHandleBaseTest {
         SET_RELEASE(TestAccessType.SET),
         GET_OPAQUE(TestAccessType.GET),
         SET_OPAQUE(TestAccessType.SET),
+        GET_STABLE(TestAccessType.GET),
         COMPARE_AND_SET(TestAccessType.COMPARE_AND_SET),
         COMPARE_AND_EXCHANGE(TestAccessType.COMPARE_AND_EXCHANGE),
         COMPARE_AND_EXCHANGE_ACQUIRE(TestAccessType.COMPARE_AND_EXCHANGE),

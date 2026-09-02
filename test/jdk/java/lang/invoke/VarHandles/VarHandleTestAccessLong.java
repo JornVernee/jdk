@@ -169,6 +169,7 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -310,13 +311,19 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
         // Lazy
         {
             long x = (long) vh.getAcquire(recv);
-            assertEquals(0x0123456789ABCDEFL, x, "getRelease long value");
+            assertEquals(0x0123456789ABCDEFL, x, "getAcquire long value");
         }
 
         // Opaque
         {
             long x = (long) vh.getOpaque(recv);
             assertEquals(0x0123456789ABCDEFL, x, "getOpaque long value");
+        }
+
+        // Stable
+        {
+            long x = (long) vh.getStable(recv);
+            assertEquals(0x0123456789ABCDEFL, x, "getStable long value");
         }
     }
 
@@ -359,13 +366,19 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
         // Lazy
         {
             long x = (long) vh.getAcquire();
-            assertEquals(0x0123456789ABCDEFL, x, "getRelease long value");
+            assertEquals(0x0123456789ABCDEFL, x, "getAcquire long value");
         }
 
         // Opaque
         {
             long x = (long) vh.getOpaque();
             assertEquals(0x0123456789ABCDEFL, x, "getOpaque long value");
+        }
+
+        // Stable
+        {
+            long x = (long) vh.getStable();
+            assertEquals(0x0123456789ABCDEFL, x, "getStable long value");
         }
     }
 
@@ -419,6 +432,14 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
             vh.setOpaque(recv, 0xCAFEBABECAFEBABEL);
             long x = (long) vh.getOpaque(recv);
             assertEquals(0xCAFEBABECAFEBABEL, x, "setOpaque long value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, 0x0123456789ABCDEFL);
+            //long x = (long) vh.getStable(recv);
+            //assertEquals(0x0123456789ABCDEFL, x, "getStable long value");
         }
 
         vh.set(recv, 0x0123456789ABCDEFL);
@@ -727,6 +748,14 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
             vh.setOpaque(0xCAFEBABECAFEBABEL);
             long x = (long) vh.getOpaque();
             assertEquals(0xCAFEBABECAFEBABEL, x, "setOpaque long value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(0x0123456789ABCDEFL);
+            //long x = (long) vh.getStable();
+            //assertEquals(0x0123456789ABCDEFL, x, "getStable long value");
         }
 
         vh.set(0x0123456789ABCDEFL);
@@ -1038,6 +1067,14 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
                 vh.setOpaque(array, i, 0xCAFEBABECAFEBABEL);
                 long x = (long) vh.getOpaque(array, i);
                 assertEquals(0xCAFEBABECAFEBABEL, x, "setOpaque long value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, 0x0123456789ABCDEFL);
+                //long x = (long) vh.getStable(array, i);
+                //assertEquals(0x0123456789ABCDEFL, x, "getStable long value");
             }
 
             vh.set(array, i, 0x0123456789ABCDEFL);
@@ -1357,6 +1394,10 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, 0x0123456789ABCDEFL);
+            });
+
+            checkAIOOBE(() -> {
+                long x = (long) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

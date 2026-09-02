@@ -173,6 +173,7 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -319,13 +320,19 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
         // Lazy
         {
             Value x = (Value) vh.getAcquire(recv);
-            assertEquals(Value.getInstance(10), x, "getRelease Value value");
+            assertEquals(Value.getInstance(10), x, "getAcquire Value value");
         }
 
         // Opaque
         {
             Value x = (Value) vh.getOpaque(recv);
             assertEquals(Value.getInstance(10), x, "getOpaque Value value");
+        }
+
+        // Stable
+        {
+            Value x = (Value) vh.getStable(recv);
+            assertEquals(Value.getInstance(10), x, "getStable Value value");
         }
     }
 
@@ -414,13 +421,19 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
         // Lazy
         {
             Value x = (Value) vh.getAcquire();
-            assertEquals(Value.getInstance(10), x, "getRelease Value value");
+            assertEquals(Value.getInstance(10), x, "getAcquire Value value");
         }
 
         // Opaque
         {
             Value x = (Value) vh.getOpaque();
             assertEquals(Value.getInstance(10), x, "getOpaque Value value");
+        }
+
+        // Stable
+        {
+            Value x = (Value) vh.getStable();
+            assertEquals(Value.getInstance(10), x, "getStable Value value");
         }
     }
 
@@ -520,6 +533,14 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
             vh.setOpaque(recv, Value.getInstance(20));
             Value x = (Value) vh.getOpaque(recv);
             assertEquals(Value.getInstance(20), x, "setOpaque Value value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(recv, Value.getInstance(10));
+            //Value x = (Value) vh.getStable(recv);
+            //assertEquals(Value.getInstance(10), x, "getStable Value value");
         }
 
         vh.set(recv, Value.getInstance(10));
@@ -764,6 +785,14 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
             vh.setOpaque(Value.getInstance(20));
             Value x = (Value) vh.getOpaque();
             assertEquals(Value.getInstance(20), x, "setOpaque Value value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //vh.set(Value.getInstance(10));
+            //Value x = (Value) vh.getStable();
+            //assertEquals(Value.getInstance(10), x, "getStable Value value");
         }
 
         vh.set(Value.getInstance(10));
@@ -1011,6 +1040,14 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
                 vh.setOpaque(array, i, Value.getInstance(20));
                 Value x = (Value) vh.getOpaque(array, i);
                 assertEquals(Value.getInstance(20), x, "setOpaque Value value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //vh.set(array, i, Value.getInstance(10));
+                //Value x = (Value) vh.getStable(array, i);
+                //assertEquals(Value.getInstance(10), x, "getStable Value value");
             }
 
             vh.set(array, i, Value.getInstance(10));
@@ -1266,6 +1303,10 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, Value.getInstance(10));
+            });
+
+            checkAIOOBE(() -> {
+                Value x = (Value) vh.getStable(array, ci);
             });
 
             checkAIOOBE(() -> {

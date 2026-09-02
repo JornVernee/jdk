@@ -327,6 +327,33 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null receiver
+            String x = (String) vh.getStable(null);
+        });
+        checkCCE(() -> { // receiver reference class
+            String x = (String) vh.getStable(Void.class);
+        });
+        checkWMTE(() -> { // receiver primitive class
+            String x = (String) vh.getStable(0);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable(recv);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(recv);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            String x = (String) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            String x = (String) vh.getStable(recv, Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkNPE(() -> { // null receiver
@@ -935,6 +962,19 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable();
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            String x = (String) vh.getStable(Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkCCE(() -> { // expected reference class
@@ -1500,6 +1540,35 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
             vh.setRelease(array, 0, "foo", Void.class);
         });
 
+
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null array
+            String x = (String) vh.getStable(null, 0);
+        });
+        checkCCE(() -> { // array reference class
+            String x = (String) vh.getStable(Void.class, 0);
+        });
+        checkWMTE(() -> { // array primitive class
+            String x = (String) vh.getStable(0, 0);
+        });
+        checkWMTE(() -> { // index reference class
+            String x = (String) vh.getStable(array, Void.class);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable(array, 0);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(array, 0);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            String x = (String) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            String x = (String) vh.getStable(array, 0, Void.class);
+        });
 
         // CompareAndSet
         // Incorrect argument types

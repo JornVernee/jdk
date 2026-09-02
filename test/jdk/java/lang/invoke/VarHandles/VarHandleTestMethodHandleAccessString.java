@@ -151,6 +151,14 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
             assertEquals("bar", x, "setOpaque String value");
         }
 
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact(recv, "bar");
+            //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+            //assertEquals("bar", x, "getStable String value");
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, "foo");
 
         // Compare
@@ -341,6 +349,14 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact("bar");
             String x = (String) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals("bar", x, "setOpaque String value");
+        }
+
+        // Stable
+        {
+            // TODO separate storage
+            //hs.get(TestAccessMode.SET).invokeExact("bar");
+            //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+            //assertEquals("bar", x, "getStable String value");
         }
 
         hs.get(TestAccessMode.SET).invokeExact("foo");
@@ -559,6 +575,14 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, "bar");
                 String x = (String) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals("bar", x, "setOpaque String value");
+            }
+
+            // Stable
+            {
+                // TODO separate storage
+                //hs.get(TestAccessMode.SET).invokeExact(array, i, "bar");
+                //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+                //assertEquals("bar", x, "getStable String value");
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, "foo");
