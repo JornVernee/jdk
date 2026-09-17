@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,8 @@
  * @test
  * @run junit/othervm -Diters=10   -Xint                                                   VarHandleTestAccessLong
  *
- * @comment Set CompileThresholdScaling to 0.1 so that the warmup loop sets to 2000 iterations
- *          to hit compilation thresholds
+ * @comment Set CompileThresholdScaling to 0.1 so that the warmup loop set to 2000 iterations
+ *          hits compilation thresholds
  *
  * @run junit/othervm -Diters=2000 -XX:CompileThresholdScaling=0.1 -XX:TieredStopAtLevel=1 VarHandleTestAccessLong
  * @run junit/othervm -Diters=2000 -XX:CompileThresholdScaling=0.1                         VarHandleTestAccessLong
@@ -52,17 +52,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class VarHandleTestAccessLong extends VarHandleBaseTest {
     static final long static_final_v = 0x0123456789ABCDEFL;
 
-    static long static_v;
+    static long static_v = 0x0123456789ABCDEFL;
 
-    final long final_v = 0x0123456789ABCDEFL;
+    final long final_v;
 
     long v;
 
     static final long static_final_v2 = 0x0123456789ABCDEFL;
 
-    static long static_v2;
+    static long static_v2 = 0x0123456789ABCDEFL;
 
-    final long final_v2 = 0x0123456789ABCDEFL;
+    final long final_v2;
 
     long v2;
 
@@ -76,6 +76,13 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
 
     VarHandle vhArray;
 
+    public VarHandleTestAccessLong() {
+        final_v = 0x0123456789ABCDEFL;
+        v = 0x0123456789ABCDEFL;
+        final_v2 = 0x0123456789ABCDEFL;
+        v2 = 0x0123456789ABCDEFL;
+        super();
+    }
 
     VarHandle[] allocate(boolean same) {
         List<VarHandle> vhs = new ArrayList<>();
@@ -624,7 +631,7 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
             vh.set(recv, 0x0123456789ABCDEFL);
 
             long o = (long) vh.getAndAddRelease(recv, 0xCAFEBABECAFEBABEL);
-            assertEquals(0x0123456789ABCDEFL, o, "getAndAddReleaselong");
+            assertEquals(0x0123456789ABCDEFL, o, "getAndAddRelease long");
             long x = (long) vh.get(recv);
             assertEquals((long)(0x0123456789ABCDEFL + 0xCAFEBABECAFEBABEL), x, "getAndAddRelease long value");
         }
@@ -940,7 +947,7 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
             vh.set(0x0123456789ABCDEFL);
 
             long o = (long) vh.getAndAddRelease(0xCAFEBABECAFEBABEL);
-            assertEquals(0x0123456789ABCDEFL, o, "getAndAddReleaselong");
+            assertEquals(0x0123456789ABCDEFL, o, "getAndAddRelease long");
             long x = (long) vh.get();
             assertEquals((long)(0x0123456789ABCDEFL + 0xCAFEBABECAFEBABEL), x, "getAndAddRelease long value");
         }
@@ -1259,7 +1266,7 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
                 vh.set(array, i, 0x0123456789ABCDEFL);
 
                 long o = (long) vh.getAndAddRelease(array, i, 0xCAFEBABECAFEBABEL);
-                assertEquals(0x0123456789ABCDEFL, o, "getAndAddReleaselong");
+                assertEquals(0x0123456789ABCDEFL, o, "getAndAddRelease long");
                 long x = (long) vh.get(array, i);
                 assertEquals((long)(0x0123456789ABCDEFL + 0xCAFEBABECAFEBABEL), x, "getAndAddRelease long value");
             }
@@ -1493,6 +1500,5 @@ public class VarHandleTestAccessLong extends VarHandleBaseTest {
             });
         }
     }
-
 }
 

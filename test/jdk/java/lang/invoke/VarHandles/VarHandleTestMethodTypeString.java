@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,9 +51,9 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
 
     static String static_v = "foo";
 
-    final String final_v = "foo";
+    final String final_v;
 
-    String v = "foo";
+    String v;
 
     VarHandle vhFinalField;
 
@@ -64,6 +64,12 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
     VarHandle vhStaticFinalField;
 
     VarHandle vhArray;
+
+    public VarHandleTestMethodTypeString() {
+        final_v = "foo";
+        v = "foo";
+        super();
+    }
 
     @BeforeAll
     public void setup() throws Exception {
@@ -498,7 +504,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // actual reference class
             String x = (String) vh.compareAndExchange(recv, "foo", Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.compareAndExchange(0, "foo", "foo");
         });
         // Incorrect return type
@@ -531,7 +537,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // actual reference class
             String x = (String) vh.compareAndExchangeAcquire(recv, "foo", Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.compareAndExchangeAcquire(0, "foo", "foo");
         });
         // Incorrect return type
@@ -564,7 +570,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // actual reference class
             String x = (String) vh.compareAndExchangeRelease(recv, "foo", Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.compareAndExchangeRelease(0, "foo", "foo");
         });
         // Incorrect return type
@@ -594,7 +600,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSet(recv, Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.getAndSet(0, "foo");
         });
         // Incorrect return type
@@ -623,7 +629,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSetAcquire(recv, Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.getAndSetAcquire(0, "foo");
         });
         // Incorrect return type
@@ -652,7 +658,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSetRelease(recv, Void.class);
         });
-        checkWMTE(() -> { // reciever primitive class
+        checkWMTE(() -> { // receiver primitive class
             String x = (String) vh.getAndSetRelease(0, "foo");
         });
         // Incorrect return type
@@ -787,7 +793,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
                 String x = (String) hs.get(am, methodType(String.class, VarHandleTestMethodTypeString.class, String.class, Class.class)).
                     invokeExact(recv, "foo", Void.class);
             });
-            checkWMTE(() -> { // reciever primitive class
+            checkWMTE(() -> { // receiver primitive class
                 String x = (String) hs.get(am, methodType(String.class, int.class , String.class, String.class)).
                     invokeExact(0, "foo", "foo");
             });
@@ -824,7 +830,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
                 String x = (String) hs.get(am, methodType(String.class, VarHandleTestMethodTypeString.class, Class.class)).
                     invokeExact(recv, Void.class);
             });
-            checkWMTE(() -> { // reciever primitive class
+            checkWMTE(() -> { // receiver primitive class
                 String x = (String) hs.get(am, methodType(String.class, int.class, String.class)).
                     invokeExact(0, "foo");
             });
@@ -1834,7 +1840,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSet(array, 0, Void.class);
         });
-        checkWMTE(() -> { // reciarrayever primitive class
+        checkWMTE(() -> { // array primitive class
             String x = (String) vh.getAndSet(0, 0, "foo");
         });
         checkWMTE(() -> { // index reference class
@@ -1867,7 +1873,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSetAcquire(array, 0, Void.class);
         });
-        checkWMTE(() -> { // reciarrayever primitive class
+        checkWMTE(() -> { // array primitive class
             String x = (String) vh.getAndSetAcquire(0, 0, "foo");
         });
         checkWMTE(() -> { // index reference class
@@ -1900,7 +1906,7 @@ public class VarHandleTestMethodTypeString extends VarHandleBaseTest {
         checkCCE(() -> { // value reference class
             String x = (String) vh.getAndSetRelease(array, 0, Void.class);
         });
-        checkWMTE(() -> { // reciarrayever primitive class
+        checkWMTE(() -> { // array primitive class
             String x = (String) vh.getAndSetRelease(0, 0, "foo");
         });
         checkWMTE(() -> { // index reference class
