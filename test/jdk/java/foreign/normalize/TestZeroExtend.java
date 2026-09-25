@@ -42,11 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestZeroExtend extends NativeTestHelper {
 
-    static final ValueLayout.OfByte UCHAR = (ValueLayout.OfByte) LINKER.canonicalLayouts().get("unsigned char");
-    static final ValueLayout.OfShort USHORT = (ValueLayout.OfShort) LINKER.canonicalLayouts().get("unsigned short");
-    static final ValueLayout.OfByte UINT8 = (ValueLayout.OfByte) LINKER.canonicalLayouts().get("uint8_t");
-    static final ValueLayout.OfShort UINT16 = (ValueLayout.OfShort) LINKER.canonicalLayouts().get("uint16_t");
-
     static {
         System.loadLibrary("Normalize");
     }
