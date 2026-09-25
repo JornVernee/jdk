@@ -52,20 +52,22 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
     private final long byteSize;
     private final long byteAlignment;
     private final Optional<String> name;
+    private final Object linkerData;
 
-    AbstractLayout(long byteSize, long byteAlignment, Optional<String> name) {
+    AbstractLayout(long byteSize, long byteAlignment, Optional<String> name, Object linkerData) {
         this.byteSize = MemoryLayoutUtil.requireByteSizeValid(byteSize, true);
         this.byteAlignment = requirePowerOfTwoAndGreaterOrEqualToOne(byteAlignment);
         this.name = Objects.requireNonNull(name);
+        this.linkerData = linkerData;
     }
 
     public final L withName(String name) {
-        return dup(byteAlignment(), Optional.of(name));
+        return dup(byteAlignment(), Optional.of(name), linkerData);
     }
 
     @SuppressWarnings("unchecked")
     public final L withoutName() {
-        return name.isPresent() ? dup(byteAlignment(), Optional.empty()) : (L) this;
+        return name.isPresent() ? dup(byteAlignment(), Optional.empty(), linkerData) : (L) this;
     }
 
     public final Optional<String> name() {
@@ -73,7 +75,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
     }
 
     public L withByteAlignment(long byteAlignment) {
-        return dup(byteAlignment, name);
+        return dup(byteAlignment, name, linkerData);
     }
 
     public final long byteAlignment() {
@@ -86,6 +88,15 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
 
     public boolean hasNaturalAlignment() {
         return byteSize == byteAlignment;
+    }
+
+    public L withLinkerData(Object data) {
+        Objects.requireNonNull(data);
+        return dup(byteAlignment, name, data);
+    }
+
+    public Object linkerData() {
+        return linkerData;
     }
 
     // the following methods have to copy the same Javadoc as in MemoryLayout, or subclasses will just show
@@ -130,7 +141,7 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
     @Override
     public abstract String toString();
 
-    abstract L dup(long byteAlignment, Optional<String> name);
+    abstract L dup(long byteAlignment, Optional<String> name, Object linkerData);
 
     String decorateLayoutString(String s) {
         if (name().isPresent()) {

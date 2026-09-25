@@ -40,12 +40,13 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     private final long elemCount;
     private final MemoryLayout elementLayout;
 
-    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout) {
-        this(elemCount, elementLayout, elementLayout.byteAlignment(), Optional.empty());
+    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, Object linkerData) {
+        this(elemCount, elementLayout, elementLayout.byteAlignment(), Optional.empty(), linkerData);
     }
 
-    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, long byteAlignment, Optional<String> name) {
-        super(Math.multiplyExact(elemCount, elementLayout.byteSize()), byteAlignment, name);
+    private SequenceLayoutImpl(long elemCount, MemoryLayout elementLayout, long byteAlignment, Optional<String> name,
+                               Object linkerData) {
+        super(Math.multiplyExact(elemCount, elementLayout.byteSize()), byteAlignment, name, linkerData);
         this.elemCount = elemCount;
         this.elementLayout = elementLayout;
     }
@@ -74,7 +75,7 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
      */
     public SequenceLayout withElementCount(long elementCount) {
         return Utils.wrapOverflow(() ->
-                new SequenceLayoutImpl(elementCount, elementLayout, byteAlignment(), name()));
+                new SequenceLayoutImpl(elementCount, elementLayout, byteAlignment(), name(), linkerData()));
     }
 
     /**
@@ -219,8 +220,8 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     }
 
     @Override
-    SequenceLayoutImpl dup(long byteAlignment, Optional<String> name) {
-        return new SequenceLayoutImpl(elementCount(), elementLayout, byteAlignment, name);
+    SequenceLayoutImpl dup(long byteAlignment, Optional<String> name, Object linkerData) {
+        return new SequenceLayoutImpl(elementCount(), elementLayout, byteAlignment, name, linkerData);
     }
 
     @Override
@@ -237,7 +238,7 @@ public final class SequenceLayoutImpl extends AbstractLayout<SequenceLayoutImpl>
     }
 
     public static SequenceLayout of(long elementCount, MemoryLayout elementLayout) {
-        return new SequenceLayoutImpl(elementCount, elementLayout);
+        return new SequenceLayoutImpl(elementCount, elementLayout, null);
     }
 
     private static long multiplyExactOrIae(long a, long b, long[] elementCounts) {

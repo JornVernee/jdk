@@ -40,6 +40,7 @@ import jdk.internal.foreign.abi.riscv64.linux.LinuxRISCV64Linker;
 import jdk.internal.foreign.abi.s390.linux.LinuxS390Linker;
 import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
+import jdk.internal.foreign.layout.AbstractLayout;
 import jdk.internal.vm.annotation.ForceInline;
 
 import java.lang.foreign.AddressLayout;
@@ -516,5 +517,13 @@ public final class SharedUtils {
                 Map.entry("jfloat", ValueLayout.JAVA_FLOAT),
                 Map.entry("jdouble", ValueLayout.JAVA_DOUBLE)
         );
+    }
+
+    public static MemoryLayout withLinkerData(MemoryLayout layout, Object data) {
+        return ((AbstractLayout<?>) layout).withLinkerData(data);
+    }
+
+    public static Object linkerData(MemoryLayout layout) {
+        return ((AbstractLayout<?>) layout).linkerData();
     }
 }
