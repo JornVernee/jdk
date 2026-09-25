@@ -61,6 +61,7 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -488,35 +489,56 @@ public final class SharedUtils {
         }
     }
 
-    public static Map<String, MemoryLayout> canonicalLayouts(ValueLayout longLayout, ValueLayout sizetLayout, ValueLayout wchartLayout) {
+    public static Map<String, MemoryLayout> canonicalLayouts(ValueLayout longLayout, ValueLayout sizetLayout,
+                                                             ValueLayout wchartLayout) {
+        return canonicalLayouts(longLayout, sizetLayout, wchartLayout, (_, l) -> l);
+    }
+
+    public static Map<String, MemoryLayout> canonicalLayouts(ValueLayout longLayout, ValueLayout sizetLayout,
+                                                             ValueLayout wchartLayout,
+                                                             BiFunction<String, MemoryLayout, MemoryLayout> mod) {
         return Map.ofEntries(
                 // specified canonical layouts
-                Map.entry("bool", ValueLayout.JAVA_BOOLEAN),
-                Map.entry("char", ValueLayout.JAVA_BYTE),
-                Map.entry("short", ValueLayout.JAVA_SHORT),
-                Map.entry("int", ValueLayout.JAVA_INT),
-                Map.entry("float", ValueLayout.JAVA_FLOAT),
-                Map.entry("long", longLayout),
-                Map.entry("long long", ValueLayout.JAVA_LONG),
-                Map.entry("double", ValueLayout.JAVA_DOUBLE),
-                Map.entry("void*", ValueLayout.ADDRESS),
-                Map.entry("size_t", sizetLayout),
-                Map.entry("wchar_t", wchartLayout),
+                modifiedEntry("bool", ValueLayout.JAVA_BOOLEAN, mod),
+                modifiedEntry("char", ValueLayout.JAVA_BYTE, mod),
+                modifiedEntry("short", ValueLayout.JAVA_SHORT, mod),
+                modifiedEntry("int", ValueLayout.JAVA_INT, mod),
+                modifiedEntry("float", ValueLayout.JAVA_FLOAT, mod),
+                modifiedEntry("long", longLayout, mod),
+                modifiedEntry("long long", ValueLayout.JAVA_LONG, mod),
+                modifiedEntry("double", ValueLayout.JAVA_DOUBLE, mod),
+                modifiedEntry("void*", ValueLayout.ADDRESS, mod),
+                modifiedEntry("size_t", sizetLayout, mod),
+                modifiedEntry("wchar_t", wchartLayout, mod),
+                modifiedEntry("unsigned char", ValueLayout.JAVA_BYTE, mod),
+                modifiedEntry("unsigned short", ValueLayout.JAVA_SHORT, mod),
+                modifiedEntry("unsigned int", ValueLayout.JAVA_INT, mod),
+                modifiedEntry("unsigned long", longLayout, mod),
+                modifiedEntry("unsigned long long", ValueLayout.JAVA_LONG, mod),
                 // unspecified size-dependent layouts
-                Map.entry("int8_t", ValueLayout.JAVA_BYTE),
-                Map.entry("int16_t", ValueLayout.JAVA_SHORT),
-                Map.entry("int32_t", ValueLayout.JAVA_INT),
-                Map.entry("int64_t", ValueLayout.JAVA_LONG),
+                modifiedEntry("int8_t", ValueLayout.JAVA_BYTE, mod),
+                modifiedEntry("int16_t", ValueLayout.JAVA_SHORT, mod),
+                modifiedEntry("int32_t", ValueLayout.JAVA_INT, mod),
+                modifiedEntry("int64_t", ValueLayout.JAVA_LONG, mod),
+                modifiedEntry("uint8_t", ValueLayout.JAVA_BYTE, mod),
+                modifiedEntry("uint16_t", ValueLayout.JAVA_SHORT, mod),
+                modifiedEntry("uint32_t", ValueLayout.JAVA_INT, mod),
+                modifiedEntry("uint64_t", ValueLayout.JAVA_LONG, mod),
                 // unspecified JNI layouts
-                Map.entry("jboolean", ValueLayout.JAVA_BOOLEAN),
-                Map.entry("jchar", ValueLayout.JAVA_CHAR),
-                Map.entry("jbyte", ValueLayout.JAVA_BYTE),
-                Map.entry("jshort", ValueLayout.JAVA_SHORT),
-                Map.entry("jint", ValueLayout.JAVA_INT),
-                Map.entry("jlong", ValueLayout.JAVA_LONG),
-                Map.entry("jfloat", ValueLayout.JAVA_FLOAT),
-                Map.entry("jdouble", ValueLayout.JAVA_DOUBLE)
+                modifiedEntry("jboolean", ValueLayout.JAVA_BOOLEAN, mod),
+                modifiedEntry("jchar", ValueLayout.JAVA_CHAR, mod),
+                modifiedEntry("jbyte", ValueLayout.JAVA_BYTE, mod),
+                modifiedEntry("jshort", ValueLayout.JAVA_SHORT, mod),
+                modifiedEntry("jint", ValueLayout.JAVA_INT, mod),
+                modifiedEntry("jlong", ValueLayout.JAVA_LONG, mod),
+                modifiedEntry("jfloat", ValueLayout.JAVA_FLOAT, mod),
+                modifiedEntry("jdouble", ValueLayout.JAVA_DOUBLE, mod)
         );
+    }
+
+    private static Map.Entry<String, MemoryLayout> modifiedEntry(String name, MemoryLayout layout,
+                                                                 BiFunction<String, MemoryLayout, MemoryLayout> mod) {
+        return Map.entry(name, mod.apply(name, layout));
     }
 
     public static MemoryLayout withLinkerData(MemoryLayout layout, Object data) {

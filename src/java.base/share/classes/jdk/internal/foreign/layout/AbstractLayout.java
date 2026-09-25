@@ -132,7 +132,8 @@ public abstract sealed class AbstractLayout<L extends AbstractLayout<L> & Memory
         return other instanceof AbstractLayout<?> otherLayout &&
                 name.equals(otherLayout.name) &&
                 byteSize == otherLayout.byteSize &&
-                byteAlignment == otherLayout.byteAlignment;
+                byteAlignment == otherLayout.byteAlignment &&
+                Objects.equals(linkerData, otherLayout.linkerData);
     }
 
     /**

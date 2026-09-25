@@ -30,6 +30,7 @@ import jdk.internal.foreign.abi.AbstractLinker;
 import jdk.internal.foreign.abi.LinkerOptions;
 import jdk.internal.foreign.abi.SharedUtils;
 import jdk.internal.foreign.abi.aarch64.CallArranger;
+import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemoryLayout;
@@ -44,8 +45,17 @@ import java.util.Map;
  */
 public final class MacOsAArch64Linker extends AbstractLinker {
 
+    public enum LinkerFlag {
+        ZERO_EXTEND
+    }
+
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
-            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT,
+                    (name, layout) -> switch (name) {
+                        case "unsigned char", "unsigned short", "uint8_t", "uint16_t" ->
+                                SharedUtils.withLinkerData(layout, LinkerFlag.ZERO_EXTEND);
+                        default -> layout;
+                    });
 
     public static MacOsAArch64Linker getInstance() {
         final class Holder {

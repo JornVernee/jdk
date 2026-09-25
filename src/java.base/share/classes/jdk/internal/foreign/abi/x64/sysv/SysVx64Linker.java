@@ -41,8 +41,21 @@ import java.util.Map;
  */
 public final class SysVx64Linker extends AbstractLinker {
 
+    enum LinkerFlag {
+        ZERO_EXTEND
+    }
+
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
-            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT,
+                    (name, layout) -> switch (name) {
+                        // We specify zero extension for unsigned types.
+                        // This is only required by the ABI on Mac, but there's a bug in clang
+                        // where callees might assume the upper bits of a register are sign/zero-extended
+                        // on Linux as well.
+                        case "unsigned char", "unsigned short", "uint8_t", "uint16_t" ->
+                                SharedUtils.withLinkerData(layout, LinkerFlag.ZERO_EXTEND);
+                        default -> layout;
+                    });
 
     public static SysVx64Linker getInstance() {
         final class Holder {

@@ -53,6 +53,7 @@ import java.util.Optional;
 import static jdk.internal.foreign.abi.Binding.vmStore;
 import static jdk.internal.foreign.abi.x64.X86_64Architecture.Regs.*;
 import static jdk.internal.foreign.abi.x64.X86_64Architecture.StorageType;
+import static jdk.internal.foreign.abi.x64.sysv.SysVx64Linker.LinkerFlag.ZERO_EXTEND;
 
 /**
  * For the SysV x64 C ABI specifically, this class uses namely CallingSequenceBuilder
@@ -292,7 +293,11 @@ public class CallArranger {
                 }
                 case INTEGER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER);
-                    bindings.vmStore(storage, carrier);
+                    if (SharedUtils.linkerData(layout) == ZERO_EXTEND) {
+                        bindings.vmStoreZeroExtend(storage, carrier);
+                    } else {
+                        bindings.vmStore(storage, carrier);
+                    }
                 }
                 case FLOAT -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.VECTOR);

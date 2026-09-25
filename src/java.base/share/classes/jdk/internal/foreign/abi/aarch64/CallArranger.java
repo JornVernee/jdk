@@ -53,6 +53,7 @@ import java.util.Optional;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.Regs.*;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.StorageType;
 import static jdk.internal.foreign.abi.aarch64.AArch64Architecture.abiFor;
+import static jdk.internal.foreign.abi.aarch64.macos.MacOsAArch64Linker.LinkerFlag.ZERO_EXTEND;
 
 /**
  * For the AArch64 C ABI specifically, this class uses CallingSequenceBuilder
@@ -449,7 +450,11 @@ public abstract class CallArranger {
                 }
                 case INTEGER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, (ValueLayout) layout);
-                    bindings.vmStore(storage, carrier);
+                    if (SharedUtils.linkerData(layout) == ZERO_EXTEND) {
+                        bindings.vmStoreZeroExtend(storage, carrier);
+                    } else {
+                        bindings.vmStore(storage, carrier);
+                    }
                 }
                 case FLOAT -> {
                     boolean forVariadicFunctionArgs = forArguments && forVariadicFunction;
