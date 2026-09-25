@@ -26,21 +26,13 @@
 package jdk.internal.foreign.abi.fallback;
 
 import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.SharedUtils;
 
-import java.lang.foreign.Arena;
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.PaddingLayout;
-import java.lang.foreign.SequenceLayout;
-import java.lang.foreign.StructLayout;
-import java.lang.foreign.UnionLayout;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.lang.invoke.VarHandle;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 import static java.lang.foreign.ValueLayout.*;
@@ -56,8 +48,8 @@ import static java.lang.foreign.ValueLayout.*;
  */
 class FFIType {
 
-    static final ValueLayout SIZE_T = layoutFor((int)ADDRESS.byteSize());
-    private static final ValueLayout UNSIGNED_SHORT = JAVA_SHORT;
+    static final ValueLayout SIZE_T = asUnsigned(layoutFor((int)ADDRESS.byteSize()));
+    private static final ValueLayout UNSIGNED_SHORT = asUnsigned(JAVA_SHORT);
     private static final StructLayout LAYOUT = Utils.computePaddedStructLayout(
             SIZE_T, UNSIGNED_SHORT, UNSIGNED_SHORT.withName("type"), ADDRESS.withName("elements"));
 
@@ -83,17 +75,17 @@ class FFIType {
         return ffiType;
     }
 
-    private static final Map<Class<?>, MemorySegment> CARRIER_TO_TYPE = Map.of(
-        boolean.class, LibFallback.uint8Type(),
-        byte.class, LibFallback.sint8Type(),
-        short.class, LibFallback.sint16Type(),
-        char.class, LibFallback.uint16Type(),
-        int.class, LibFallback.sint32Type(),
-        long.class, LibFallback.sint64Type(),
-        float.class, LibFallback.floatType(),
-        double.class, LibFallback.doubleType(),
-        MemorySegment.class, LibFallback.pointerType()
-    );
+    private static final Map<Long, MemorySegment> UNSIGNED_INTEGRAL_TYPES = Map.of(
+            1L, LibFallback.uint8Type(),
+            2L, LibFallback.uint16Type(),
+            4L, LibFallback.uint32Type(),
+            8L, LibFallback.uint64Type());
+
+    private static final Map<Long, MemorySegment> SIGNED_INTEGRAL_TYPES = Map.of(
+            1L, LibFallback.sint8Type(),
+            2L, LibFallback.sint16Type(),
+            4L, LibFallback.sint32Type(),
+            8L, LibFallback.sint64Type());
 
     static MemorySegment toFFIType(MemoryLayout layout, FFIABI abi, Arena scope) {
         if (layout instanceof GroupLayout grpl) {
@@ -112,8 +104,26 @@ class FFIType {
         } else if (layout instanceof SequenceLayout sl) {
             List<MemoryLayout> elements = Collections.nCopies(Math.toIntExact(sl.elementCount()), sl.elementLayout());
             return make(elements, abi, scope);
+        } else if (layout instanceof ValueLayout.OfFloat) {
+            return LibFallback.floatType();
+        } else if (layout instanceof ValueLayout.OfDouble) {
+            return LibFallback.doubleType();
+        } else if (layout instanceof AddressLayout) {
+            return LibFallback.pointerType();
+        } else {
+            // infer based on size and sign
+            return isUnsigned((ValueLayout)layout) ?
+                    UNSIGNED_INTEGRAL_TYPES.get(layout.byteSize()) :
+                    SIGNED_INTEGRAL_TYPES.get(layout.byteSize());
         }
-        return Objects.requireNonNull(CARRIER_TO_TYPE.get(((ValueLayout) layout).carrier()));
+    }
+
+    static boolean isUnsigned(ValueLayout layout) {
+        return SharedUtils.linkerData(layout) == FallbackLinker.LinkerFlag.UNSIGNED;
+    }
+
+    static ValueLayout asUnsigned(ValueLayout layout) {
+        return (ValueLayout) SharedUtils.withLinkerData(layout, FallbackLinker.LinkerFlag.UNSIGNED);
     }
 
     // verify layout against what libffi sets
