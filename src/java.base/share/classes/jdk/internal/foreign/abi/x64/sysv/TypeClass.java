@@ -22,10 +22,10 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
 package jdk.internal.foreign.abi.x64.sysv;
 
 import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.SharedUtils;
 
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryLayout;
@@ -36,6 +36,7 @@ import java.lang.foreign.StructLayout;
 import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -75,6 +76,12 @@ class TypeClass {
         return classes.stream().anyMatch(c -> c == ArgumentClassImpl.MEMORY);
     }
 
+    boolean isX87() {
+        return classes.size() == 2
+                && classes.get(0) == ArgumentClassImpl.X87
+                && classes.get(1) == ArgumentClassImpl.X87UP;
+    }
+
     private long numClasses(ArgumentClassImpl clazz) {
         return classes.stream().filter(c -> c == clazz).count();
     }
@@ -85,6 +92,10 @@ class TypeClass {
 
     public long nVectorRegs() {
         return numClasses(ArgumentClassImpl.SSE);
+    }
+
+    public long nX87Registers() {
+        return numClasses(ArgumentClassImpl.X87) + numClasses(ArgumentClassImpl.X87UP);
     }
 
     public Kind kind() {
@@ -135,8 +146,10 @@ class TypeClass {
 
         for (int idx = 0; idx < nWords; idx++) {
             List<ArgumentClassImpl> subclasses = eightbytes[idx];
-            ArgumentClassImpl result = subclasses.stream()
-                    .reduce(ArgumentClassImpl.NO_CLASS, ArgumentClassImpl::merge);
+            ArgumentClassImpl result = subclasses == null
+                    ? ArgumentClassImpl.NO_CLASS // just padding
+                    : subclasses.stream()
+                                .reduce(ArgumentClassImpl.NO_CLASS, ArgumentClassImpl::merge);
             classes.add(result);
         }
 
@@ -190,7 +203,6 @@ class TypeClass {
     }
 
     private static List<ArgumentClassImpl>[] groupByEightBytes(GroupLayout group) {
-        long offset = 0L;
         int nEightbytes;
         try {
             // alignUp can overflow the value, but it's okay since toIntExact still catches it
@@ -200,20 +212,32 @@ class TypeClass {
         }
         @SuppressWarnings({"unchecked", "rawtypes"})
         List<ArgumentClassImpl>[] groups = new List[nEightbytes];
-        for (MemoryLayout l : group.memberLayouts()) {
-            groupByEightBytes(l, offset, groups);
-            if (group instanceof StructLayout) {
-                offset += l.byteSize();
+        LongFunction<List<ArgumentClassImpl>> getGroup = groupOffset -> {
+            List<ArgumentClassImpl> layouts = groups[(int)groupOffset / 8];
+            if (layouts == null) {
+                layouts = new ArrayList<>();
+                groups[(int)groupOffset / 8] = layouts;
             }
-        }
+            return layouts;
+        };
+        groupByEightBytes(group, 0L, getGroup);
         return groups;
     }
 
     private static void groupByEightBytes(MemoryLayout layout,
                                           long offset,
-                                          List<ArgumentClassImpl>[] groups) {
+                                          LongFunction<List<ArgumentClassImpl>> groups) {
         switch (layout) {
             case GroupLayout group -> {
+                // handle FP80
+                if (SharedUtils.linkerData(layout) == SysVx64Linker.LinkerFlag.LONG_DOUBLE) {
+                    // long double is 16 bytes, so populate the next group as well
+                    List<ArgumentClassImpl> layouts = groups.apply(offset);
+                    layouts.add(ArgumentClassImpl.X87);
+                    List<ArgumentClassImpl> nextLayouts = groups.apply(offset + 8);
+                    nextLayouts.add(ArgumentClassImpl.X87UP);
+                }
+                // regular handling of members
                 for (MemoryLayout m : group.memberLayouts()) {
                     groupByEightBytes(m, offset, groups);
                     if (group instanceof StructLayout) {
@@ -231,11 +255,7 @@ class TypeClass {
                 }
             }
             case ValueLayout vl -> {
-                List<ArgumentClassImpl> layouts = groups[(int) offset / 8];
-                if (layouts == null) {
-                    layouts = new ArrayList<>();
-                    groups[(int) offset / 8] = layouts;
-                }
+                List<ArgumentClassImpl> layouts = groups.apply(offset);
                 // if the aggregate contains unaligned fields, it has class MEMORY
                 ArgumentClassImpl argumentClass = (offset % vl.byteAlignment()) == 0 ?
                         argumentClassFor(vl) :

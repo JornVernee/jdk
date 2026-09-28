@@ -274,6 +274,10 @@ void DowncallLinker::StubGenerator::generate() {
       } else if (reg.type() == StorageType::VECTOR) {
         __ movdqu(Address(rscratch1, offset), as_XMMRegister(reg));
         offset += 16;
+      } else if (reg.type() == StorageType::X87_HALF) {
+        VMStorage next_reg = _output_registers.at(++i);
+        assert(is_x87_pair(reg, next_reg), "expected x87 pair");
+        __ fstp_x(Address(rscratch1, offset));
       } else {
         ShouldNotReachHere();
       }

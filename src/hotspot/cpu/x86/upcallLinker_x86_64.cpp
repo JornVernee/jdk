@@ -338,6 +338,10 @@ address UpcallLinker::make_upcall_stub(jobject receiver, Symbol* signature,
       } else if (reg.type() == StorageType::VECTOR) {
         __ movdqu(as_XMMRegister(reg), Address(rscratch1, offset));
         offset += 16;
+      } else if (reg.type() == StorageType::X87_HALF) {
+        VMStorage next_reg = call_regs._ret_regs.at(++i);
+        assert(is_x87_pair(reg, next_reg), "expected x87 pair");
+        __ fld_x(Address(rscratch1, offset));
       } else {
         ShouldNotReachHere();
       }

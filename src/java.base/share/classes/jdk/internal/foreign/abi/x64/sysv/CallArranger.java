@@ -163,6 +163,7 @@ public class CallArranger {
         private int nVectorReg = 0;
         private int nIntegerReg = 0;
         private long stackOffset = 0;
+        private int currentX87Index = 0;
 
         public StorageCalculator(boolean forArguments) {
             this.forArguments = forArguments;
@@ -193,29 +194,44 @@ public class CallArranger {
             }
         }
 
-        VMStorage[] structStorages(TypeClass typeClass) {
+        VMStorage[] stackAllocStruct(TypeClass typeClass, MemoryLayout layout) {
+            // pad for alignment > 8 byte structs (e.g. containing long double)
+            stackOffset = SharedUtils.alignUp(stackOffset, layout.byteAlignment());
+            return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+        }
+
+        VMStorage[] structStorages(TypeClass typeClass, MemoryLayout layout) {
             if (typeClass.inMemory()) {
-                return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+                return stackAllocStruct(typeClass, layout);
+            } else if (forArguments && typeClass.isX87()) {
+                return stackAllocStruct(typeClass, layout);
             }
             long nIntegerReg = typeClass.nIntegerRegs();
 
             if (this.nIntegerReg + nIntegerReg > MAX_INTEGER_ARGUMENT_REGISTERS) {
                 //not enough registers - pass on stack
-                return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+                return stackAllocStruct(typeClass, layout);
             }
 
             long nVectorReg = typeClass.nVectorRegs();
 
             if (this.nVectorReg + nVectorReg > MAX_VECTOR_ARGUMENT_REGISTERS) {
                 //not enough registers - pass on stack
-                return typeClass.classes.stream().map(c -> stackAlloc()).toArray(VMStorage[]::new);
+                return stackAllocStruct(typeClass, layout);
             }
 
             //ok, let's pass on registers
-            VMStorage[] storage = new VMStorage[(int)(nIntegerReg + nVectorReg)];
+            VMStorage[] storage = new VMStorage[(int)(nIntegerReg + nVectorReg + typeClass.nX87Registers())];
             for (int i = 0 ; i < typeClass.classes.size() ; i++) {
-                boolean sse = typeClass.classes.get(i) == ArgumentClassImpl.SSE;
-                storage[i] = nextStorage(sse ? StorageType.VECTOR : StorageType.INTEGER);
+                storage[i] = switch (typeClass.classes.get(i)) {
+                    case ArgumentClassImpl.SSE -> nextStorage(StorageType.VECTOR);
+                    case ArgumentClassImpl.X87 -> {
+                        assert typeClass.classes.get(i + 1) == ArgumentClassImpl.X87UP;
+                        yield X86_64Architecture.x87LoStorage(currentX87Index);
+                    }
+                    case ArgumentClassImpl.X87UP -> X86_64Architecture.x87HiStorage(currentX87Index++);
+                    default ->  nextStorage(StorageType.INTEGER);
+                };
             }
             return storage;
         }
@@ -262,7 +278,7 @@ public class CallArranger {
             switch (argumentClass.kind()) {
                 case STRUCT -> {
                     assert carrier == MemorySegment.class;
-                    VMStorage[] regs = storageCalculator.structStorages(argumentClass);
+                    VMStorage[] regs = storageCalculator.structStorages(argumentClass, layout);
                     int regIndex = 0;
                     long offset = 0;
                     while (offset < layout.byteSize()) {
@@ -323,7 +339,7 @@ public class CallArranger {
                 case STRUCT -> {
                     assert carrier == MemorySegment.class;
                     bindings.allocate(layout);
-                    VMStorage[] regs = storageCalculator.structStorages(argumentClass);
+                    VMStorage[] regs = storageCalculator.structStorages(argumentClass, layout);
                     int regIndex = 0;
                     long offset = 0;
                     while (offset < layout.byteSize()) {

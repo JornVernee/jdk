@@ -42,7 +42,7 @@ import java.util.Map;
 public final class Windowsx64Linker extends AbstractLinker {
 
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
-            SharedUtils.canonicalLayouts(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_CHAR);
+            SharedUtils.canonicalLayouts(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_CHAR, ValueLayout.JAVA_DOUBLE);
 
     public static Windowsx64Linker getInstance() {
         final class Holder {

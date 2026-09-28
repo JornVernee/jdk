@@ -40,7 +40,7 @@ import java.util.Map;
 public final class LinuxS390Linker extends AbstractLinker {
 
     private static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
-            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+            SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT, ValueLayout.JAVA_DOUBLE);
 
     public static LinuxS390Linker getInstance() {
         final class Holder {

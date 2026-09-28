@@ -13061,14 +13061,16 @@ void Assembler::vfpclasssd(KRegister kdst, XMMRegister src, uint8_t imm8) {
 
 void Assembler::fld_x(Address adr) {
   InstructionMark im(this);
+  prefix(adr);
   emit_int8((unsigned char)0xDB);
-  emit_operand32(rbp, adr, 0);
+  emit_operand(rbp, adr, 0);
 }
 
 void Assembler::fstp_x(Address adr) {
   InstructionMark im(this);
+  prefix(adr);
   emit_int8((unsigned char)0xDB);
-  emit_operand32(rdi, adr, 0);
+  emit_operand(rdi, adr, 0);
 }
 
 void Assembler::emit_operand32(Register reg, Address adr, int post_addr_length) {

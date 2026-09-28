@@ -193,8 +193,11 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
     }
 
     private void checkLayoutRecursive(MemoryLayout layout) {
-        if (layout instanceof ValueLayout vl) {
-            checkSupported(vl);
+        if (isCanonical(layout)) {
+            return; // canonical is always okay
+        } else if (layout instanceof ValueLayout) {
+            // only canonical value layouts allowed
+            throw new IllegalArgumentException("Unsupported layout: " + layout);
         } else if (layout instanceof StructLayout sl) {
             checkHasNaturalAlignment(layout);
             long offset = 0;
@@ -295,14 +298,12 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
                 "Member layout '" + member + "', of '" + parent + "' " + info);
     }
 
-    private void checkSupported(ValueLayout valueLayout) {
-        valueLayout = valueLayout.withoutName();
-        if (valueLayout instanceof AddressLayout addressLayout) {
-            valueLayout = addressLayout.withoutTargetLayout();
+    private boolean isCanonical(MemoryLayout layout) {
+        layout = layout.withoutName();
+        if (layout instanceof AddressLayout addressLayout) {
+            layout = addressLayout.withoutTargetLayout();
         }
-        if (!CANONICAL_LAYOUTS_CACHE.contains(valueLayout.withoutName())) {
-            throw new IllegalArgumentException("Unsupported layout: " + valueLayout);
-        }
+        return CANONICAL_LAYOUTS_CACHE.contains(layout);
     }
 
     private void checkHasNaturalAlignment(MemoryLayout layout) {
@@ -313,9 +314,9 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
 
     @SuppressWarnings("restricted")
     private static MemoryLayout stripNames(MemoryLayout ml) {
-        // we don't care about transferring alignment and byte order here
-        // since the linker already restricts those such that they will always be the same
-        return switch (ml) {
+        // we don't care about transferring byte order here
+        // since the linker already restricts that such that it will always be the same
+        MemoryLayout result = switch (ml) {
             case StructLayout sl -> MemoryLayout.structLayout(stripNames(sl.memberLayouts()));
             case UnionLayout ul -> MemoryLayout.unionLayout(stripNames(ul.memberLayouts()));
             case SequenceLayout sl -> MemoryLayout.sequenceLayout(sl.elementCount(), stripNames(sl.elementLayout()));
@@ -328,6 +329,17 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
             }
             default -> ml.withoutName(); // ValueLayout and PaddingLayout
         };
+        // re-attach linker data
+        Object linkerData = SharedUtils.linkerData(ml);
+        if (linkerData != null) {
+            result = SharedUtils.withLinkerData(result, linkerData);
+        }
+        // re-attach alignment
+        long oldAlign = ml.byteAlignment();
+        if (result.byteAlignment() != oldAlign) {
+            result = result.withByteAlignment(oldAlign);
+        }
+        return result;
     }
 
     private static MemoryLayout[] stripNames(List<MemoryLayout> layouts) {

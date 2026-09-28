@@ -51,6 +51,7 @@ public final class MacOsAArch64Linker extends AbstractLinker {
 
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
             SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_DOUBLE,
                     (name, layout) -> switch (name) {
                         case "unsigned char", "unsigned short", "uint8_t", "uint16_t" ->
                                 SharedUtils.withLinkerData(layout, LinkerFlag.ZERO_EXTEND);

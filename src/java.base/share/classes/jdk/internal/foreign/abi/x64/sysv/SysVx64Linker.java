@@ -31,6 +31,7 @@ import jdk.internal.foreign.abi.SharedUtils;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.PaddingLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -42,11 +43,18 @@ import java.util.Map;
 public final class SysVx64Linker extends AbstractLinker {
 
     enum LinkerFlag {
-        ZERO_EXTEND
+        ZERO_EXTEND,
+        LONG_DOUBLE
     }
+
+    // fake the layout
+    static final MemoryLayout LONG_DOUBLE_LAYOUT = MemoryLayout.structLayout(
+            MemoryLayout.paddingLayout(16)
+    ).withByteAlignment(16);
 
     static final Map<String, MemoryLayout> CANONICAL_LAYOUTS =
             SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT,
+                    LONG_DOUBLE_LAYOUT,
                     (name, layout) -> switch (name) {
                         // We specify zero extension for unsigned types.
                         // This is only required by the ABI on Mac, but there's a bug in clang
@@ -54,6 +62,8 @@ public final class SysVx64Linker extends AbstractLinker {
                         // on Linux as well.
                         case "unsigned char", "unsigned short", "uint8_t", "uint16_t" ->
                                 SharedUtils.withLinkerData(layout, LinkerFlag.ZERO_EXTEND);
+                        case "long double" ->
+                                SharedUtils.withLinkerData(layout, LinkerFlag.LONG_DOUBLE);
                         default -> layout;
                     });
 

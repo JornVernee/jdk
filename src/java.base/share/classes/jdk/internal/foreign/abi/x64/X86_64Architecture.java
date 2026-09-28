@@ -30,6 +30,7 @@ import jdk.internal.foreign.abi.StubLocations;
 import jdk.internal.foreign.abi.VMStorage;
 
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class X86_64Architecture implements Architecture {
     public static final Architecture INSTANCE = new X86_64Architecture();
@@ -42,11 +43,12 @@ public final class X86_64Architecture implements Architecture {
     private static final short XMM_MASK = 0b0000_0000_0000_0001;
     private static final short YMM_MASK = 0b0000_0000_0000_0011;
     private static final short ZMM_MASK = 0b0000_0000_0000_0111;
-    private static final short STP_MASK = 0b0000_0000_0000_0001;
+    private static final short STP_LO_MASK = 0b0000_0000_0000_0001;
+    private static final short STP_HI_MASK = 0b0000_0000_0000_0010;
 
     private static final int INTEGER_REG_SIZE = 8; // bytes
     private static final int VECTOR_REG_SIZE = 16; // size of XMM register
-    private static final int X87_REG_SIZE = 16;
+    private static final int X87_HALF_REG_SIZE = 8;
 
     // Suppresses default constructor, ensuring non-instantiability.
     private X86_64Architecture() {}
@@ -61,7 +63,7 @@ public final class X86_64Architecture implements Architecture {
         return switch (cls) {
             case StorageType.INTEGER -> INTEGER_REG_SIZE;
             case StorageType.VECTOR  -> VECTOR_REG_SIZE;
-            case StorageType.X87     -> X87_REG_SIZE;
+            case StorageType.X87_HALF -> X87_HALF_REG_SIZE;
             // STACK is deliberately omitted
             default -> throw new IllegalArgumentException("Invalid Storage Class: " +cls);
         };
@@ -71,7 +73,7 @@ public final class X86_64Architecture implements Architecture {
     public interface StorageType {
         byte INTEGER = 0;
         byte VECTOR = 1;
-        byte X87 = 2;
+        byte X87_HALF = 2;
         byte STACK = 3;
         byte PLACEHOLDER = 4;
     }
@@ -140,8 +142,12 @@ public final class X86_64Architecture implements Architecture {
         return new VMStorage(StorageType.STACK, size, byteOffset);
     }
 
-    public static VMStorage x87Storage(int index) {
-        return new VMStorage(StorageType.X87, STP_MASK, index, "X87(" + index + ")");
+    public static VMStorage x87LoStorage(int index) {
+        return new VMStorage(StorageType.X87_HALF, STP_LO_MASK, index, "X87Lo(" + index + ")");
+    }
+
+    public static VMStorage x87HiStorage(int index) {
+        return new VMStorage(StorageType.X87_HALF, STP_HI_MASK, index, "X87Hi(" + index + ")");
     }
 
     public static ABIDescriptor abiFor(VMStorage[] inputIntRegs, VMStorage[] inputVectorRegs, VMStorage[] outputIntRegs,
@@ -158,7 +164,8 @@ public final class X86_64Architecture implements Architecture {
                 outputIntRegs,
                 outputVectorRegs,
                 IntStream.range(0, numX87Outputs)
-                         .mapToObj(X86_64Architecture::x87Storage)
+                         .boxed()
+                         .flatMap(i -> Stream.of(x87LoStorage(i), x87HiStorage(i)))
                          .toArray(VMStorage[]::new)
             },
             new VMStorage[][] {
