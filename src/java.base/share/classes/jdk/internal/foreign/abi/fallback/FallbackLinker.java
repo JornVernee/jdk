@@ -50,9 +50,9 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.foreign.ValueLayout.*;
-import static java.lang.foreign.ValueLayout.IntegralExtension.ZERO_EXTEND;
+import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.ZERO_EXTEND;
 import static java.lang.invoke.MethodHandles.foldArguments;
-import static jdk.internal.foreign.layout.ValueLayouts.withIntegralExtension;
+import static jdk.internal.foreign.abi.SharedUtils.withIntegralExtension;
 
 public final class FallbackLinker extends AbstractLinker {
 
@@ -82,7 +82,7 @@ public final class FallbackLinker extends AbstractLinker {
     }
 
     @Override
-    protected ValueLayout maybeDropExtension(ValueLayout valueLayout) {
+    protected ValueLayout maybeEraseExtension(ValueLayout valueLayout) {
         // never drop, we don't know when the native ABI needs it
         return valueLayout;
     }
@@ -334,10 +334,10 @@ public final class FallbackLinker extends AbstractLinker {
                     Map.entry("int16_t", ValueLayout.JAVA_SHORT),
                     Map.entry("int32_t", ValueLayout.JAVA_INT),
                     Map.entry("int64_t", ValueLayout.JAVA_LONG),
-                    Map.entry("uint8_t", withIntegralExtension(ValueLayout.JAVA_BYTE, IntegralExtension.ZERO_EXTEND)),
-                    Map.entry("uint16_t", withIntegralExtension(ValueLayout.JAVA_SHORT, IntegralExtension.ZERO_EXTEND)),
-                    Map.entry("uint32_t", withIntegralExtension(ValueLayout.JAVA_INT, IntegralExtension.ZERO_EXTEND)),
-                    Map.entry("uint64_t", withIntegralExtension(ValueLayout.JAVA_LONG, IntegralExtension.ZERO_EXTEND)),
+                    Map.entry("uint8_t", withIntegralExtension(ValueLayout.JAVA_BYTE, ZERO_EXTEND)),
+                    Map.entry("uint16_t", withIntegralExtension(ValueLayout.JAVA_SHORT, ZERO_EXTEND)),
+                    Map.entry("uint32_t", withIntegralExtension(ValueLayout.JAVA_INT, ZERO_EXTEND)),
+                    Map.entry("uint64_t", withIntegralExtension(ValueLayout.JAVA_LONG, ZERO_EXTEND)),
                     // JNI types
                     Map.entry("jboolean", JAVA_BOOLEAN),
                     Map.entry("jchar", JAVA_CHAR),

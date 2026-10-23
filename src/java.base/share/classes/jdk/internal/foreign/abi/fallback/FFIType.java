@@ -35,13 +35,13 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import static java.lang.foreign.ValueLayout.ADDRESS;
-import static java.lang.foreign.ValueLayout.IntegralExtension.SIGN_EXTEND;
+import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.SIGN_EXTEND;
+import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.ZERO_EXTEND;
 import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static java.lang.foreign.ValueLayout.JAVA_SHORT;
-import static java.lang.foreign.ValueLayout.IntegralExtension.ZERO_EXTEND;
-import static jdk.internal.foreign.layout.ValueLayouts.withIntegralExtension;
+import static jdk.internal.foreign.abi.SharedUtils.withIntegralExtension;
 
 /**
  * typedef struct _ffi_type
@@ -121,7 +121,7 @@ class FFIType {
             return LibFallback.uint8Type();
         } else {
             // infer based on size and sign
-            return ((ValueLayout)layout).integralExtension().map(SIGN_EXTEND::equals).orElseThrow() ?
+            return ((ValueLayout.Integral)layout).integralExtension() == SIGN_EXTEND ?
                     SIGNED_INTEGRAL_TYPES.get(layout.byteSize()) :
                     UNSIGNED_INTEGRAL_TYPES.get(layout.byteSize());
         }

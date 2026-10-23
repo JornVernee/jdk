@@ -52,6 +52,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySegment.Scope;
 import java.lang.foreign.SegmentAllocator;
 import java.lang.foreign.ValueLayout;
+import java.lang.foreign.ValueLayout.Integral.IntegralExtension;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -66,7 +67,6 @@ import java.util.stream.IntStream;
 import static java.lang.foreign.ValueLayout.*;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
-import static jdk.internal.foreign.layout.ValueLayouts.withIntegralExtension;
 
 public final class SharedUtils {
 
@@ -391,6 +391,10 @@ public final class SharedUtils {
                 : chunkOffset;
     }
 
+    public static IntegralExtension integralExtension(MemoryLayout layout) {
+        return layout instanceof Integral integral ? integral.integralExtension() : null;
+    }
+
     @ForceInline
     static Arena newBoundedArena(long size) {
         return BoundedArena.of(size);
@@ -541,5 +545,10 @@ public final class SharedUtils {
                 Map.entry("jfloat", ValueLayout.JAVA_FLOAT),
                 Map.entry("jdouble", ValueLayout.JAVA_DOUBLE)
         );
+    }
+
+    public static ValueLayout withIntegralExtension(ValueLayout valueLayout,
+                                                    ValueLayout.Integral.IntegralExtension integralExtension) {
+        return ((ValueLayout.Integral) valueLayout).withIntegralExtension(integralExtension);
     }
 }
