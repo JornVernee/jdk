@@ -29,9 +29,6 @@ import jdk.internal.foreign.layout.ValueLayouts;
 
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
-import java.util.Optional;
-
-import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.SIGN_EXTEND;
 
 /**
  * A layout that models values of basic data types. Examples of values modeled by
@@ -59,7 +56,7 @@ import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.SIGN_EXTE
  * @since 22
  */
 public sealed interface ValueLayout extends MemoryLayout
-        permits ValueLayout.OfBoolean, ValueLayout.Integral, ValueLayout.OfChar,
+        permits ValueLayout.OfBoolean, ValueLayout.OfIntegral, ValueLayout.OfChar,
         ValueLayout.OfFloat, ValueLayout.OfDouble, AddressLayout {
 
     /**
@@ -100,71 +97,6 @@ public sealed interface ValueLayout extends MemoryLayout
     ValueLayout withByteAlignment(long byteAlignment);
 
     /**
-     * An integral value layout models an integral data type.
-     */
-    sealed interface Integral extends ValueLayout permits ValueLayout.OfByte,
-            ValueLayout.OfShort, ValueLayout.OfInt, ValueLayout.OfLong {
-        /**
-         * Indicates whether values represented by this layout should
-         * be {@linkplain #SIGN_EXTEND sign extended}, or
-         * {@linkplain #ZERO_EXTEND zero extended}, when being widened.
-         */
-        enum IntegralExtension {
-            /**
-             * Indicates that values represented by this layout
-             * should be sign extended when widened.
-             * <p>
-             * Widening of values with this extension policy
-             * follows the Java language rules for widening
-             * primitive conversions as defined in section {@jls 5.1.2} of
-             * <cite>The Java Language Specification</cite>.
-             */
-            SIGN_EXTEND,
-            /**
-             * Indicates that values represented by this layout
-             * should be zero extended when widened.
-             * <p>
-             * Widening of values with this extension policy
-             * from a source type {@code S} to a target type {@code T}
-             * follows the specification of the corresponding
-             * {@code toUnsingedT} method in the primitive wrapper
-             * class of {@code S}.
-             *
-             * @see Byte#toUnsignedInt(byte)
-             * @see Byte#toUnsignedLong(byte)
-             * @see Short#toUnsignedInt(short)
-             * @see Short#toUnsignedLong(short)
-             * @see Integer#toUnsignedLong(int)
-             */
-            ZERO_EXTEND
-        }
-
-        /**
-         * {@return the integral extension policy attached to this layout}
-         * <p>
-         * Values represented by {@linkplain ValueLayout.Integral integral} layouts
-         * can be used to represent either a signed or an unsigned integral value.
-         * For example, a value layout of type {@link ValueLayout.OfInt} may be used
-         * to represent the C type {@code int} or the C type {@code unsigned int}.
-         * The integral extension policy is used* as an additional information channel
-         * to disambiguate such cases.
-         * <p>
-         * The integral extension policy indicates whether a value described by this value
-         * layout should to be {@linkplain Integral.IntegralExtension#SIGN_EXTEND sign extended}
-         * or {@linkplain Integral.IntegralExtension#ZERO_EXTEND zero extended}.
-         */
-        IntegralExtension integralExtension();
-
-        /**
-         * {@return an integral value layout with the same characteristics as this layout, but with the given integral
-         * extension policy.}
-         *
-         * @param extension the desired integral extension policy.
-         */
-        Integral withIntegralExtension(IntegralExtension extension);
-    }
-
-    /**
      * {@return a var handle which can be used to access values described by this value
      *          layout, in a given memory segment}
      * <p>
@@ -189,6 +121,56 @@ public sealed interface ValueLayout extends MemoryLayout
      * @see MemoryLayout#varHandle(PathElement...)
      */
     VarHandle varHandle();
+
+    /**
+     * An integral value layout models an integral data type.
+     */
+    sealed interface OfIntegral extends ValueLayout permits ValueLayout.OfByte,
+            ValueLayout.OfShort, ValueLayout.OfInt, ValueLayout.OfLong {
+        /**
+         * {@return {@code true} if the value represented by this layout is signed}
+         * <p>
+         * Values represented by {@linkplain OfIntegral integral} layouts
+         * can be used to represent either a signed or an unsigned integral value.
+         * For example, a value layout of type {@link ValueLayout.OfInt} may be used
+         * to represent the C type {@code int} or the C type {@code unsigned int}.
+         */
+        boolean isSigned();
+
+        /**
+         * {@return an integral value layout with the same characteristics as this layout,
+         * but with the given sign}
+         *
+         * @param sign {@code true} for a signed layout, {@code false} for an unsigned layouts.
+         */
+        OfIntegral withSign(boolean sign);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfIntegral withName(String name);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfIntegral withoutName();
+
+        /**
+         * {@inheritDoc}
+         * @throws IllegalArgumentException {@inheritDoc}
+         */
+        @Override
+        OfIntegral withByteAlignment(long byteAlignment);
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        OfIntegral withOrder(ByteOrder order);
+
+    }
 
     /**
      * A value layout whose carrier is {@code boolean.class}.
@@ -231,7 +213,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * @see #JAVA_BYTE
      * @since 22
      */
-    sealed interface OfByte extends Integral permits ValueLayouts.OfByteImpl {
+    sealed interface OfByte extends OfIntegral permits ValueLayouts.OfByteImpl {
 
         /**
          * {@inheritDoc}
@@ -262,7 +244,7 @@ public sealed interface ValueLayout extends MemoryLayout
          * {@inheritDoc}
          */
         @Override
-        OfByte withIntegralExtension(IntegralExtension extension);
+        OfByte withSign(boolean sign);
 
     }
 
@@ -309,7 +291,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * @see #JAVA_SHORT_UNALIGNED
      * @since 22
      */
-    sealed interface OfShort extends Integral permits ValueLayouts.OfShortImpl {
+    sealed interface OfShort extends OfIntegral permits ValueLayouts.OfShortImpl {
 
         /**
          * {@inheritDoc}
@@ -340,7 +322,7 @@ public sealed interface ValueLayout extends MemoryLayout
          * {@inheritDoc}
          */
         @Override
-        OfShort withIntegralExtension(IntegralExtension extension);
+        OfShort withSign(boolean sign);
 
     }
 
@@ -351,7 +333,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * @see #JAVA_INT_UNALIGNED
      * @since 22
      */
-    sealed interface OfInt extends Integral permits ValueLayouts.OfIntImpl {
+    sealed interface OfInt extends OfIntegral permits ValueLayouts.OfIntImpl {
 
         /**
          * {@inheritDoc}
@@ -382,7 +364,7 @@ public sealed interface ValueLayout extends MemoryLayout
          * {@inheritDoc}
          */
         @Override
-        OfInt withIntegralExtension(IntegralExtension extension);
+        OfInt withSign(boolean sign);
 
     }
 
@@ -428,7 +410,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * @see #JAVA_LONG_UNALIGNED
      * @since 22
      */
-    sealed interface OfLong extends Integral permits ValueLayouts.OfLongImpl {
+    sealed interface OfLong extends OfIntegral permits ValueLayouts.OfLongImpl {
 
         /**
          * {@inheritDoc}
@@ -459,7 +441,7 @@ public sealed interface ValueLayout extends MemoryLayout
          * {@inheritDoc}
          */
         @Override
-        OfLong withIntegralExtension(IntegralExtension extension);
+        OfLong withSign(boolean sign);
 
     }
 
@@ -510,7 +492,7 @@ public sealed interface ValueLayout extends MemoryLayout
      * A value layout constant whose size is the same as that of a Java {@code byte},
      * byte alignment set to 1, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
-    OfByte JAVA_BYTE = ValueLayouts.OfByteImpl.of(ByteOrder.nativeOrder(), SIGN_EXTEND);
+    OfByte JAVA_BYTE = ValueLayouts.OfByteImpl.of(ByteOrder.nativeOrder());
 
     /**
      * A value layout constant whose size is the same as that of a Java {@code boolean},
@@ -528,19 +510,19 @@ public sealed interface ValueLayout extends MemoryLayout
      * A value layout constant whose size is the same as that of a Java {@code short},
      * byte alignment set to 2, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
-    OfShort JAVA_SHORT = ValueLayouts.OfShortImpl.of(ByteOrder.nativeOrder(), SIGN_EXTEND);
+    OfShort JAVA_SHORT = ValueLayouts.OfShortImpl.of(ByteOrder.nativeOrder());
 
     /**
      * A value layout constant whose size is the same as that of a Java {@code int},
      * byte alignment set to 4, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
-    OfInt JAVA_INT = ValueLayouts.OfIntImpl.of(ByteOrder.nativeOrder(), SIGN_EXTEND);
+    OfInt JAVA_INT = ValueLayouts.OfIntImpl.of(ByteOrder.nativeOrder());
 
     /**
      * A value layout constant whose size is the same as that of a Java {@code long},
      * byte alignment set to 8, and byte order set to {@link ByteOrder#nativeOrder()}.
      */
-    OfLong JAVA_LONG = ValueLayouts.OfLongImpl.of(ByteOrder.nativeOrder(), SIGN_EXTEND);
+    OfLong JAVA_LONG = ValueLayouts.OfLongImpl.of(ByteOrder.nativeOrder());
 
     /**
      * A value layout constant whose size is the same as that of a Java {@code float},

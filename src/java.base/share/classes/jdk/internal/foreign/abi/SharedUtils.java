@@ -52,7 +52,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySegment.Scope;
 import java.lang.foreign.SegmentAllocator;
 import java.lang.foreign.ValueLayout;
-import java.lang.foreign.ValueLayout.Integral.IntegralExtension;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -391,8 +390,8 @@ public final class SharedUtils {
                 : chunkOffset;
     }
 
-    public static IntegralExtension integralExtension(MemoryLayout layout) {
-        return layout instanceof Integral integral ? integral.integralExtension() : null;
+    public static boolean isSigned(MemoryLayout layout) {
+        return !(layout instanceof OfIntegral integral) || integral.isSigned();
     }
 
     @ForceInline
@@ -506,7 +505,7 @@ public final class SharedUtils {
         }
     }
 
-    public static Map<String, MemoryLayout> canonicalLayouts(ValueLayout longLayout, ValueLayout sizetLayout,
+    public static Map<String, MemoryLayout> canonicalLayouts(ValueLayout.OfIntegral longLayout, ValueLayout sizetLayout,
                                                              ValueLayout charLayout, ValueLayout wchartLayout) {
         return Map.ofEntries(
                 // specified canonical layouts
@@ -519,22 +518,22 @@ public final class SharedUtils {
                 Map.entry("long long", ValueLayout.JAVA_LONG),
                 Map.entry("double", ValueLayout.JAVA_DOUBLE),
                 Map.entry("void*", ValueLayout.ADDRESS),
-                Map.entry("size_t", withIntegralExtension(sizetLayout, IntegralExtension.ZERO_EXTEND)),
+                Map.entry("size_t", sizetLayout),
                 Map.entry("wchar_t", wchartLayout),
-                Map.entry("unsigned char", withIntegralExtension(ValueLayout.JAVA_BYTE, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("unsigned short", withIntegralExtension(ValueLayout.JAVA_SHORT, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("unsigned int", withIntegralExtension(ValueLayout.JAVA_INT, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("unsigned long", withIntegralExtension(longLayout, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("unsigned long long", withIntegralExtension(ValueLayout.JAVA_LONG, IntegralExtension.ZERO_EXTEND)),
+                Map.entry("unsigned char", ValueLayout.JAVA_BYTE.withSign(false)),
+                Map.entry("unsigned short", ValueLayout.JAVA_SHORT.withSign(false)),
+                Map.entry("unsigned int", ValueLayout.JAVA_INT.withSign(false)),
+                Map.entry("unsigned long", longLayout.withSign(false)),
+                Map.entry("unsigned long long", ValueLayout.JAVA_LONG.withSign(false)),
                 // size/sign-dependent layouts
                 Map.entry("int8_t", ValueLayout.JAVA_BYTE),
                 Map.entry("int16_t", ValueLayout.JAVA_SHORT),
                 Map.entry("int32_t", ValueLayout.JAVA_INT),
                 Map.entry("int64_t", ValueLayout.JAVA_LONG),
-                Map.entry("uint8_t", withIntegralExtension(ValueLayout.JAVA_BYTE, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("uint16_t", withIntegralExtension(ValueLayout.JAVA_SHORT, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("uint32_t", withIntegralExtension(ValueLayout.JAVA_INT, IntegralExtension.ZERO_EXTEND)),
-                Map.entry("uint64_t", withIntegralExtension(ValueLayout.JAVA_LONG, IntegralExtension.ZERO_EXTEND)),
+                Map.entry("uint8_t", ValueLayout.JAVA_BYTE.withSign(false)),
+                Map.entry("uint16_t", ValueLayout.JAVA_SHORT.withSign(false)),
+                Map.entry("uint32_t", ValueLayout.JAVA_INT.withSign(false)),
+                Map.entry("uint64_t", ValueLayout.JAVA_LONG.withSign(false)),
                 // unspecified JNI layouts
                 Map.entry("jboolean", ValueLayout.JAVA_BOOLEAN),
                 Map.entry("jchar", ValueLayout.JAVA_CHAR),
@@ -545,10 +544,5 @@ public final class SharedUtils {
                 Map.entry("jfloat", ValueLayout.JAVA_FLOAT),
                 Map.entry("jdouble", ValueLayout.JAVA_DOUBLE)
         );
-    }
-
-    public static ValueLayout withIntegralExtension(ValueLayout valueLayout,
-                                                    ValueLayout.Integral.IntegralExtension integralExtension) {
-        return ((ValueLayout.Integral) valueLayout).withIntegralExtension(integralExtension);
     }
 }

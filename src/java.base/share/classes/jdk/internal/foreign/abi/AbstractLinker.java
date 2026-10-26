@@ -38,7 +38,6 @@ import jdk.internal.foreign.abi.s390.linux.LinuxS390Linker;
 import jdk.internal.foreign.abi.x64.sysv.SysVx64Linker;
 import jdk.internal.foreign.abi.x64.windows.Windowsx64Linker;
 import jdk.internal.foreign.layout.AbstractLayout;
-import jdk.internal.foreign.layout.ValueLayouts;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 
@@ -58,8 +57,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.*;
 
-import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.ZERO_EXTEND;
-
 public abstract sealed class AbstractLinker implements Linker permits LinuxAArch64Linker, MacOsAArch64Linker,
                                                                       SysVx64Linker, WindowsAArch64Linker,
                                                                       Windowsx64Linker, AixPPC64Linker,
@@ -67,10 +64,10 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
                                                                       LinuxRISCV64Linker, LinuxS390Linker,
                                                                       FallbackLinker {
 
-    public static final ValueLayout.OfByte UBYTE = ValueLayout.JAVA_BYTE.withIntegralExtension(ZERO_EXTEND);
-    public static final ValueLayout.OfShort USHORT = ValueLayout.JAVA_SHORT.withIntegralExtension(ZERO_EXTEND);
-    public static final ValueLayout.OfInt UINT = ValueLayout.JAVA_INT.withIntegralExtension(ZERO_EXTEND);
-    public static final ValueLayout.OfLong ULONG = ValueLayout.JAVA_LONG.withIntegralExtension(ZERO_EXTEND);
+    public static final ValueLayout.OfByte UBYTE = ValueLayout.JAVA_BYTE.withSign(false);
+    public static final ValueLayout.OfShort USHORT = ValueLayout.JAVA_SHORT.withSign(false);
+    public static final ValueLayout.OfInt UINT = ValueLayout.JAVA_INT.withSign(false);
+    public static final ValueLayout.OfLong ULONG = ValueLayout.JAVA_LONG.withSign(false);
 
     public interface UpcallStubFactory {
         MemorySegment makeStub(MethodHandle target, Arena arena);
@@ -317,9 +314,9 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
     }
 
     // overridden by sub classes
-    protected ValueLayout maybeEraseExtension(ValueLayout valueLayout) {
-        return valueLayout instanceof ValueLayout.Integral integral
-                ? integral.withIntegralExtension(ValueLayout.Integral.IntegralExtension.SIGN_EXTEND)
+    protected ValueLayout maybeEraseSign(ValueLayout valueLayout) {
+        return valueLayout instanceof ValueLayout.OfIntegral integral
+                ? integral.withSign(true)
                 : valueLayout;
     }
 
@@ -340,7 +337,7 @@ public abstract sealed class AbstractLinker implements Linker permits LinuxAArch
                     stripped = stripped.withTargetLayout(stripLayout(target.get()));
                 yield stripped;
             }
-            case ValueLayout vl -> maybeEraseExtension(vl.withoutName());
+            case ValueLayout vl -> maybeEraseSign(vl.withoutName());
             default -> ml.withoutName(); // PaddingLayout
         };
     }

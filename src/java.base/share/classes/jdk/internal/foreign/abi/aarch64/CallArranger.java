@@ -450,7 +450,7 @@ public abstract class CallArranger {
                 case INTEGER -> {
                     VMStorage storage = storageCalculator.nextStorage(StorageType.INTEGER, (ValueLayout) layout);
                     // pass integral extension policy here in case it's present (on Mac)
-                    bindings.vmStore(storage, carrier, SharedUtils.integralExtension(layout));
+                    bindings.vmStore(storage, carrier, SharedUtils.isSigned(layout));
                 }
                 case FLOAT -> {
                     boolean forVariadicFunctionArgs = forArguments && forVariadicFunction;

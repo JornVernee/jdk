@@ -57,7 +57,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.SIGN_EXTEND;
 import static java.lang.foreign.ValueLayout.JAVA_INT;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
 
@@ -153,8 +152,7 @@ public class TestNulls {
         addDefaultMapping(MethodType.class, MethodType.methodType(void.class));
         addDefaultMapping(MemoryLayout.class, ValueLayout.JAVA_INT);
         addDefaultMapping(ValueLayout.class, ValueLayout.JAVA_INT);
-        addDefaultMapping(ValueLayout.Integral.class, ValueLayout.JAVA_INT);
-        addDefaultMapping(ValueLayout.Integral.IntegralExtension.class, SIGN_EXTEND);
+        addDefaultMapping(ValueLayout.OfIntegral.class, ValueLayout.JAVA_INT);
         addDefaultMapping(AddressLayout.class, ValueLayout.ADDRESS);
         addDefaultMapping(ValueLayout.OfByte.class, ValueLayout.JAVA_BYTE);
         addDefaultMapping(ValueLayout.OfBoolean.class, ValueLayout.JAVA_BOOLEAN);

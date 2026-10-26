@@ -49,7 +49,6 @@ import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Optional;
 
-import static java.lang.foreign.ValueLayout.Integral.IntegralExtension.ZERO_EXTEND;
 import static jdk.internal.foreign.abi.s390.S390Architecture.*;
 import static jdk.internal.foreign.abi.s390.S390Architecture.Regs.*;
 
@@ -255,9 +254,9 @@ public class LinuxS390CallArranger {
                     // But we only do it for unsigned values here since this saves
                     // on argument slots for the downcall stub. Signed values will be
                     // sign-extended when being moved into the destination register.
-                    if (layout instanceof  ValueLayout.Integral integral && integral.integralExtension() == ZERO_EXTEND
-                            && carrier != long.class) {
-                        bindings.cast(carrier, long.class, ZERO_EXTEND)
+                    if (layout instanceof  ValueLayout.OfIntegral integral
+                            && !integral.isSigned() && carrier != long.class) {
+                        bindings.cast(carrier, long.class, false)
                                 .vmStore(storage, long.class);
                     } else {
                         bindings.vmStore(storage, carrier);

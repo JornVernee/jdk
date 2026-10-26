@@ -38,7 +38,6 @@ import java.lang.foreign.AddressLayout;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.lang.foreign.ValueLayout.Integral.IntegralExtension;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
 import java.util.Objects;
@@ -175,32 +174,32 @@ public final class ValueLayouts {
 
     abstract static sealed class AbstractIntegralLayout<V extends AbstractValueLayout<V> & ValueLayout> extends AbstractValueLayout<V> {
 
-        private final IntegralExtension integralExtension;
+        private final boolean sign;
 
-        AbstractIntegralLayout(Class<?> carrier, ByteOrder order, IntegralExtension integralExtension,
+        AbstractIntegralLayout(Class<?> carrier, ByteOrder order, boolean sign,
                                long byteSize, long byteAlignment, Optional<String> name) {
             super(carrier, order, byteSize, byteAlignment, name);
-            this.integralExtension = Objects.requireNonNull(integralExtension);
+            this.sign = sign;
         }
 
         @Override
         final V dup(ByteOrder order, long byteAlignment, Optional<String> name) {
-            return dup(order, integralExtension(), byteAlignment, name);
+            return dup(order, isSigned(), byteAlignment, name);
         }
 
-        abstract V dup(ByteOrder order, IntegralExtension integralExtension, long byteAlignment, Optional<String> name);
+        abstract V dup(ByteOrder order, boolean sign, long byteAlignment, Optional<String> name);
 
-        public final IntegralExtension integralExtension() {
-            return integralExtension;
+        public final boolean isSigned() {
+            return sign;
         }
 
-        public final V withIntegralExtension(IntegralExtension extension) {
-            return dup(order(), extension, byteAlignment(), name());
+        public final V withSign(boolean sign) {
+            return dup(order(), sign, byteAlignment(), name());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(super.hashCode(), integralExtension);
+            return Objects.hash(super.hashCode(), sign);
         }
 
         @Override
@@ -208,7 +207,7 @@ public final class ValueLayouts {
             return this == other ||
                     other instanceof AbstractIntegralLayout<?> otherValue &&
                             super.equals(other) &&
-                            integralExtension.equals(otherValue.integralExtension);
+                            sign == otherValue.sign;
         }
     }
 
@@ -232,19 +231,19 @@ public final class ValueLayouts {
     @ValueBased
     public static final class OfByteImpl extends AbstractIntegralLayout<OfByteImpl> implements ValueLayout.OfByte {
 
-        private OfByteImpl(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        private OfByteImpl(ByteOrder order, boolean sign, long byteAlignment,
                            Optional<String> name) {
-            super(byte.class, order, integralExtension, Byte.BYTES, byteAlignment, name);
+            super(byte.class, order, sign, Byte.BYTES, byteAlignment, name);
         }
 
         @Override
-        OfByteImpl dup(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        OfByteImpl dup(ByteOrder order, boolean sign, long byteAlignment,
                        Optional<String> name) {
-            return new OfByteImpl(order, integralExtension, byteAlignment, name);
+            return new OfByteImpl(order, sign, byteAlignment, name);
         }
 
-        public static OfByte of(ByteOrder order, IntegralExtension integralExtension) {
-            return new OfByteImpl(order, integralExtension, Byte.BYTES, Optional.empty());
+        public static OfByte of(ByteOrder order) {
+            return new OfByteImpl(order, true, Byte.BYTES, Optional.empty());
         }
     }
 
@@ -269,38 +268,38 @@ public final class ValueLayouts {
     @ValueBased
     public static final class OfShortImpl extends AbstractIntegralLayout<OfShortImpl> implements ValueLayout.OfShort {
 
-        private OfShortImpl(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        private OfShortImpl(ByteOrder order, boolean sign, long byteAlignment,
                             Optional<String> name) {
-            super(short.class, order, integralExtension, Short.BYTES, byteAlignment, name);
+            super(short.class, order, sign, Short.BYTES, byteAlignment, name);
         }
 
         @Override
-        OfShortImpl dup(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        OfShortImpl dup(ByteOrder order, boolean sign, long byteAlignment,
                         Optional<String> name) {
-            return new OfShortImpl(order, integralExtension, byteAlignment, name);
+            return new OfShortImpl(order, sign, byteAlignment, name);
         }
 
-        public static OfShort of(ByteOrder order, IntegralExtension integralExtension) {
-            return new OfShortImpl(order, integralExtension, Short.BYTES, Optional.empty());
+        public static OfShort of(ByteOrder order) {
+            return new OfShortImpl(order, true, Short.BYTES, Optional.empty());
         }
     }
 
     @ValueBased
     public static final class OfIntImpl extends AbstractIntegralLayout<OfIntImpl> implements ValueLayout.OfInt {
 
-        private OfIntImpl(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        private OfIntImpl(ByteOrder order, boolean sign, long byteAlignment,
                           Optional<String> name) {
-            super(int.class, order, integralExtension, Integer.BYTES, byteAlignment, name);
+            super(int.class, order, sign, Integer.BYTES, byteAlignment, name);
         }
 
         @Override
-        OfIntImpl dup(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        OfIntImpl dup(ByteOrder order, boolean sign, long byteAlignment,
                       Optional<String> name) {
-            return new OfIntImpl(order, integralExtension, byteAlignment, name);
+            return new OfIntImpl(order, sign, byteAlignment, name);
         }
 
-        public static OfInt of(ByteOrder order, IntegralExtension integralExtension) {
-            return new OfIntImpl(order, integralExtension, Integer.BYTES, Optional.empty());
+        public static OfInt of(ByteOrder order) {
+            return new OfIntImpl(order, true, Integer.BYTES, Optional.empty());
         }
     }
 
@@ -324,19 +323,19 @@ public final class ValueLayouts {
     @ValueBased
     public static final class OfLongImpl extends AbstractIntegralLayout<OfLongImpl> implements ValueLayout.OfLong {
 
-        private OfLongImpl(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        private OfLongImpl(ByteOrder order, boolean sign, long byteAlignment,
                            Optional<String> name) {
-            super(long.class, order, integralExtension, Long.BYTES, byteAlignment, name);
+            super(long.class, order, sign, Long.BYTES, byteAlignment, name);
         }
 
         @Override
-        OfLongImpl dup(ByteOrder order, IntegralExtension integralExtension, long byteAlignment,
+        OfLongImpl dup(ByteOrder order, boolean sign, long byteAlignment,
                        Optional<String> name) {
-            return new OfLongImpl(order, integralExtension, byteAlignment, name);
+            return new OfLongImpl(order, sign, byteAlignment, name);
         }
 
-        public static OfLong of(ByteOrder order, IntegralExtension integralExtension) {
-            return new OfLongImpl(order, integralExtension, Long.BYTES, Optional.empty());
+        public static OfLong of(ByteOrder order) {
+            return new OfLongImpl(order, true, Long.BYTES, Optional.empty());
         }
     }
 
@@ -440,32 +439,26 @@ public final class ValueLayouts {
      * @return a value layout with the given Java carrier and byte-order.
      * @throws IllegalArgumentException if the carrier type is not supported.
      */
-    public static ValueLayout valueLayout(Class<?> carrier, ByteOrder order,
-                                          IntegralExtension integralExtension) {
+    public static ValueLayout valueLayout(Class<?> carrier, ByteOrder order) {
         Objects.requireNonNull(carrier);
         Objects.requireNonNull(order);
         if (carrier == boolean.class) {
-            assert integralExtension == null;
             return ValueLayouts.OfBooleanImpl.of(order);
         } else if (carrier == char.class) {
-            assert integralExtension == null;
             return ValueLayouts.OfCharImpl.of(order);
         } else if (carrier == byte.class) {
-            return ValueLayouts.OfByteImpl.of(order, integralExtension);
+            return ValueLayouts.OfByteImpl.of(order);
         } else if (carrier == short.class) {
-            return ValueLayouts.OfShortImpl.of(order, integralExtension);
+            return ValueLayouts.OfShortImpl.of(order);
         } else if (carrier == int.class) {
-            return ValueLayouts.OfIntImpl.of(order, integralExtension);
+            return ValueLayouts.OfIntImpl.of(order);
         } else if (carrier == float.class) {
-            assert integralExtension == null;
             return ValueLayouts.OfFloatImpl.of(order);
         } else if (carrier == long.class) {
-            return ValueLayouts.OfLongImpl.of(order, integralExtension);
+            return ValueLayouts.OfLongImpl.of(order);
         } else if (carrier == double.class) {
-            assert integralExtension == null;
             return ValueLayouts.OfDoubleImpl.of(order);
         } else if (carrier == MemorySegment.class) {
-            assert integralExtension == null;
             return ValueLayouts.OfAddressImpl.of(order);
         } else {
             throw new IllegalArgumentException("Unsupported carrier: " + carrier.getName());

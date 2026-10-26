@@ -57,10 +57,10 @@ public final class LinuxPPC64leLinker extends AbstractLinker {
     }
 
     @Override
-    protected ValueLayout maybeEraseExtension(ValueLayout valueLayout) {
+    protected ValueLayout maybeEraseSign(ValueLayout valueLayout) {
         return valueLayout.byteSize() < 8 // smaller than long
                 ? valueLayout // keep, if any
-                : super.maybeEraseExtension(valueLayout);
+                : super.maybeEraseSign(valueLayout);
     }
 
     @Override

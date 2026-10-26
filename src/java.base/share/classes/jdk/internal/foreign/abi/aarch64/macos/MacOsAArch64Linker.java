@@ -61,10 +61,10 @@ public final class MacOsAArch64Linker extends AbstractLinker {
     }
 
     @Override
-    protected ValueLayout maybeEraseExtension(ValueLayout valueLayout) {
+    protected ValueLayout maybeEraseSign(ValueLayout valueLayout) {
         return valueLayout.byteSize() < 4 // smaller than int
                 ? valueLayout // keep, if any
-                : super.maybeEraseExtension(valueLayout);
+                : super.maybeEraseSign(valueLayout);
     }
 
     @Override
