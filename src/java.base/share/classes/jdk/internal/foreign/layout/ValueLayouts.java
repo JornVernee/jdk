@@ -104,7 +104,6 @@ public final class ValueLayouts {
             if (order == ByteOrder.LITTLE_ENDIAN) {
                 descriptor = Character.toLowerCase(descriptor);
             }
-            // @@@ should we change string here based on sign?
             return decorateLayoutString(String.format("%s%d", descriptor, byteSize()));
         }
 
@@ -208,6 +207,14 @@ public final class ValueLayouts {
                     other instanceof AbstractIntegralLayout<?> otherValue &&
                             super.equals(other) &&
                             sign == otherValue.sign;
+        }
+
+        @Override
+        String decorateLayoutString(String s) {
+            if (!sign) {
+                s = "u" + s;
+            }
+            return super.decorateLayoutString(s);
         }
     }
 
