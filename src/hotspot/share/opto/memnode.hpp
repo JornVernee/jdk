@@ -76,7 +76,7 @@ protected:
       _barrier_data(0),
       _stable_access(false) {
     init_class_id(Class_Mem);
-    DEBUG_ONLY(_adr_type=at; adr_type();)
+    DEBUG_ONLY(_adr_type=at; in_adr_type();)
   }
   MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3 ) :
       Node(c0,c1,c2,c3),
@@ -86,7 +86,7 @@ protected:
       _barrier_data(0),
       _stable_access(false) {
     init_class_id(Class_Mem);
-    DEBUG_ONLY(_adr_type=at; adr_type();)
+    DEBUG_ONLY(_adr_type=at; in_adr_type();)
   }
   MemNode( Node *c0, Node *c1, Node *c2, const TypePtr* at, Node *c3, Node *c4) :
       Node(c0,c1,c2,c3,c4),
@@ -96,7 +96,7 @@ protected:
       _barrier_data(0),
       _stable_access(false) {
     init_class_id(Class_Mem);
-    DEBUG_ONLY(_adr_type=at; adr_type();)
+    DEBUG_ONLY(_adr_type=at; in_adr_type();)
   }
 
   virtual Node* find_previous_arraycopy(PhaseValues* phase, Node* ld_alloc, Node*& mem, bool can_see_stored_value) const { return nullptr; }
@@ -108,7 +108,6 @@ public:
   static bool detect_ptr_independence(Node* p1, AllocateNode* a1,
                                       Node* p2, AllocateNode* a2,
                                       PhaseGVN* phase);
-  static bool adr_phi_is_loop_invariant(Node* adr_phi, Node* cast);
 
   static Node *optimize_simple_memory_chain(Node *mchain, const TypeOopPtr *t_oop, Node *load, PhaseGVN *phase);
   static Node *optimize_memory_chain(Node *mchain, const TypePtr *t_adr, Node *load, PhaseGVN *phase);
@@ -118,8 +117,6 @@ public:
     DomResult dom_result = maybe_all_controls_dominate(dom, sub, phase);
     return dom_result == DomResult::Dominate;
   }
-
-  virtual const class TypePtr *adr_type() const;  // returns bottom_type of address
 
   // Shared code for Ideal methods:
   Node *Ideal_common(PhaseGVN *phase, bool can_reshape);  // Return -1 for short-circuit null.
@@ -191,6 +188,14 @@ public:
 #endif
     return new_node;
   }
+
+  // Support for reinterpret variants used by StoreNode and LoadNode
+  static BasicType get_reinterpret_variant(BasicType bt);
+  bool has_reinterpret_variant(const Type* vt) const;
+
+private:
+  const TypePtr* out_adr_type_impl() const final { return is_Load() ? nullptr : in_adr_type_impl(); }
+  const TypePtr* in_adr_type_impl() const final;
 };
 
 // Analyze a MemNode to try to prove that it is independent from other memory accesses
@@ -355,7 +360,6 @@ public:
   Node* convert_to_unsigned_load(PhaseGVN& gvn);
   Node* convert_to_signed_load(PhaseGVN& gvn);
 
-  bool  has_reinterpret_variant(const Type* rt);
   Node* convert_to_reinterpret_load(PhaseGVN& gvn, const Type* rt);
 
   ControlDependency control_dependency() const { return _control_dependency; }
@@ -386,7 +390,7 @@ private:
   // manner of other optimizations).  Basically, it's ugly but so is the alternative.
   // See comment in macro.cpp, around line 125 expand_allocate_common().
   virtual bool depends_only_on_test_impl() const {
-    return adr_type() != TypeRawPtr::BOTTOM && _control_dependency == DependsOnlyOnTest;
+    return in_adr_type() != TypeRawPtr::BOTTOM && _control_dependency == DependsOnlyOnTest;
   }
 
   LoadNode* clone_pinned() const;
@@ -714,10 +718,6 @@ public:
   // Map a store opcode to its corresponding own opcode, trivially.
   virtual int store_Opcode() const { return Opcode(); }
 
-  // have all possible loads of the value stored been optimized away?
-  bool value_never_loaded(PhaseValues* phase) const;
-
-  bool  has_reinterpret_variant(const Type* vt);
   Node* convert_to_reinterpret_store(PhaseGVN& gvn, Node* val, const Type* vt);
 
   MemBarNode* trailing_membar() const;
@@ -903,7 +903,6 @@ public:
 
   virtual const Type *bottom_type() const { return _type; }
   virtual uint ideal_reg() const;
-  virtual const TypePtr* adr_type() const;
   virtual const Type* Value(PhaseGVN* phase) const;
 
   bool result_not_used() const;
@@ -918,6 +917,7 @@ public:
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final;
 };
 
 class LoadStoreConditionalNode : public LoadStoreNode {
@@ -1176,7 +1176,6 @@ public:
   virtual const Type *bottom_type() const { return Type::MEMORY; }
   // ClearArray modifies array elements, and so affects only the
   // array memory addressed by the bottom_type of its base address.
-  virtual const class TypePtr *adr_type() const;
   virtual Node* Identity(PhaseGVN* phase);
   virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
   virtual uint match_edge(uint idx) const;
@@ -1219,12 +1218,13 @@ public:
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final;
 };
 
 //------------------------------MemBar-----------------------------------------
 // There are different flavors of Memory Barriers to match the Java Memory
 // Model.  Monitor-enter and volatile-load act as Acquires: no following ref
-// can be moved to before them.  We insert a MemBar-Acquire after a FastLock or
+// can be moved to before them.  We insert a MemBar-Acquire after a lock or
 // volatile-load.  Monitor-exit and volatile-store act as Release: no
 // preceding ref can be moved to after them.  We insert a MemBar-Release
 // before a FastUnlock or volatile-store.  All volatiles need to be
@@ -1236,7 +1236,8 @@ class MemBarNode: public MultiNode {
 
   virtual uint size_of() const { return sizeof(*this); }
   // Memory type this node is serializing.  Usually either rawptr or bottom.
-  const TypePtr* _adr_type;
+  const TypePtr* _out_adr_type;
+  const TypePtr* _in_adr_type;
 
   // How is this membar related to a nearby memory access?
   enum {
@@ -1257,9 +1258,8 @@ public:
   enum {
     Precedent = TypeFunc::Parms  // optional edge to force precedence
   };
-  MemBarNode(Compile* C, int alias_idx, Node* precedent);
+  MemBarNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent);
   virtual int Opcode() const = 0;
-  virtual const class TypePtr *adr_type() const { return _adr_type; }
   virtual const Type* Value(PhaseGVN* phase) const;
   virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
   virtual uint match_edge(uint idx) const { return 0; }
@@ -1294,6 +1294,10 @@ public:
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif
+
+private:
+  const TypePtr* out_adr_type_impl() const final { return _out_adr_type; }
+  const TypePtr* in_adr_type_impl() const final { return _in_adr_type; }
 };
 
 // "Acquire" - no following ref can move before (but earlier refs can
@@ -1301,8 +1305,8 @@ public:
 // visibility.  Inserted after a volatile load.
 class MemBarAcquireNode: public MemBarNode {
 public:
-  MemBarAcquireNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarAcquireNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1312,8 +1316,8 @@ public:
 // for intrinsic Unsafe.loadFence().
 class LoadFenceNode: public MemBarNode {
 public:
-  LoadFenceNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  LoadFenceNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1322,8 +1326,8 @@ public:
 // multi-cpu visibility.  Inserted before a volatile store.
 class MemBarReleaseNode: public MemBarNode {
 public:
-  MemBarReleaseNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarReleaseNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1333,18 +1337,18 @@ public:
 // for intrinsic Unsafe.storeFence().
 class StoreFenceNode: public MemBarNode {
 public:
-  StoreFenceNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  StoreFenceNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
 // "Acquire" - no following ref can move before (but earlier refs can
 // follow, like an early Load stalled in cache).  Requires multi-cpu
-// visibility.  Inserted after a FastLock.
+// visibility.  Inserted after a Lock.
 class MemBarAcquireLockNode: public MemBarNode {
 public:
-  MemBarAcquireLockNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarAcquireLockNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1353,15 +1357,15 @@ public:
 // multi-cpu visibility.  Inserted before a FastUnLock.
 class MemBarReleaseLockNode: public MemBarNode {
 public:
-  MemBarReleaseLockNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarReleaseLockNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
 class MemBarStoreStoreNode: public MemBarNode {
 public:
-  MemBarStoreStoreNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {
+  MemBarStoreStoreNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {
     init_class_id(Class_MemBarStoreStore);
   }
   virtual int Opcode() const;
@@ -1369,15 +1373,15 @@ public:
 
 class StoreStoreFenceNode: public MemBarNode {
 public:
-  StoreStoreFenceNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  StoreStoreFenceNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
 class MemBarStoreLoadNode : public MemBarNode {
 public:
-  MemBarStoreLoadNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarStoreLoadNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1385,16 +1389,16 @@ public:
 // Requires multi-CPU visibility?
 class MemBarVolatileNode: public MemBarNode {
 public:
-  MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarVolatileNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
 // A full barrier blocks all loads and stores from moving across it
 class MemBarFullNode : public MemBarNode {
 public:
-  MemBarFullNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarFullNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1403,16 +1407,16 @@ public:
 // compiler because the CPU does all the ordering for us.
 class MemBarCPUOrderNode: public MemBarNode {
 public:
-  MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  MemBarCPUOrderNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
 };
 
 class OnSpinWaitNode: public MemBarNode {
 public:
-  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)
-    : MemBarNode(C, alias_idx, precedent) {}
+  OnSpinWaitNode(Compile* C, const TypePtr* out_adr_type, const TypePtr* in_adr_type, Node* precedent)
+    : MemBarNode(C, out_adr_type, in_adr_type, precedent) {}
   virtual int Opcode() const;
 };
 
@@ -1438,7 +1442,7 @@ public:
     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
   };
 
-  InitializeNode(Compile* C, int adr_type, Node* rawoop);
+  InitializeNode(Compile* C, Node* rawoop);
   virtual int Opcode() const;
   virtual uint size_of() const { return sizeof(*this); }
   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
@@ -1575,7 +1579,6 @@ public:
   virtual uint match_edge(uint idx) const { return 0; }
   virtual const RegMask &out_RegMask() const;
   virtual const Type *bottom_type() const { return Type::MEMORY; }
-  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
   // sparse accessors
   // Fetch the previously stored "set_memory_at", or else the base memory.
   // (Caller should clone it if it is a phi-nest.)
@@ -1598,6 +1601,9 @@ public:
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif
+
+private:
+  const TypePtr* out_adr_type_impl() const final { return TypePtr::BOTTOM; }
 };
 
 class MergeMemStream : public StackObj {
@@ -1798,11 +1804,11 @@ public:
   virtual int Opcode() const;
   virtual uint ideal_reg() const { return NotAMachineReg; }
   virtual uint match_edge(uint idx) const { return (idx == 2); }
-  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
   virtual const Type *bottom_type() const { return Type::MEMORY; }
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final { return TypeRawPtr::BOTTOM; }
 };
 
 // cachewb pre sync node for ensuring that writebacks are serialised
@@ -1813,11 +1819,11 @@ public:
   virtual int Opcode() const;
   virtual uint ideal_reg() const { return NotAMachineReg; }
   virtual uint match_edge(uint idx) const { return false; }
-  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
   virtual const Type *bottom_type() const { return Type::MEMORY; }
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final { return TypeRawPtr::BOTTOM; }
 };
 
 // cachewb pre sync node for ensuring that writebacks are serialised
@@ -1828,11 +1834,11 @@ public:
   virtual int Opcode() const;
   virtual uint ideal_reg() const { return NotAMachineReg; }
   virtual uint match_edge(uint idx) const { return false; }
-  virtual const TypePtr *adr_type() const { return TypePtr::BOTTOM; }
   virtual const Type *bottom_type() const { return Type::MEMORY; }
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final { return TypeRawPtr::BOTTOM; }
 };
 
 //------------------------------Prefetch---------------------------------------
@@ -1848,6 +1854,7 @@ public:
 
 private:
   virtual bool depends_only_on_test_impl() const { return false; }
+  const TypePtr* out_adr_type_impl() const final { return bottom_type() == Type::MEMORY ? TypeRawPtr::BOTTOM : nullptr; }
 };
 
 #endif // SHARE_OPTO_MEMNODE_HPP
