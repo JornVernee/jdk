@@ -354,6 +354,16 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_putFloat:                 return inline_unsafe_access( is_store, T_FLOAT,    Relaxed, false);
   case vmIntrinsics::_putDouble:                return inline_unsafe_access( is_store, T_DOUBLE,   Relaxed, false);
 
+  case vmIntrinsics::_getReferenceStable:       return inline_unsafe_access(!is_store, T_OBJECT,   Stable, false);
+  case vmIntrinsics::_getBooleanStable:         return inline_unsafe_access(!is_store, T_BOOLEAN,  Stable, false);
+  case vmIntrinsics::_getByteStable:            return inline_unsafe_access(!is_store, T_BYTE,     Stable, false);
+  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Stable, false);
+  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Stable, false);
+  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Stable, false);
+  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Stable, false);
+  case vmIntrinsics::_getFloatStable:           return inline_unsafe_access(!is_store, T_FLOAT,    Stable, false);
+  case vmIntrinsics::_getDoubleStable:          return inline_unsafe_access(!is_store, T_DOUBLE,   Stable, false);
+
   case vmIntrinsics::_getReferenceVolatile:     return inline_unsafe_access(!is_store, T_OBJECT,   Volatile, false);
   case vmIntrinsics::_getBooleanVolatile:       return inline_unsafe_access(!is_store, T_BOOLEAN,  Volatile, false);
   case vmIntrinsics::_getByteVolatile:          return inline_unsafe_access(!is_store, T_BYTE,     Volatile, false);
@@ -373,16 +383,6 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_putLongVolatile:          return inline_unsafe_access( is_store, T_LONG,     Volatile, false);
   case vmIntrinsics::_putFloatVolatile:         return inline_unsafe_access( is_store, T_FLOAT,    Volatile, false);
   case vmIntrinsics::_putDoubleVolatile:        return inline_unsafe_access( is_store, T_DOUBLE,   Volatile, false);
-
-  case vmIntrinsics::_getReferenceStable:       return inline_unsafe_access(!is_store, T_OBJECT,   Stable, false);
-  case vmIntrinsics::_getBooleanStable:         return inline_unsafe_access(!is_store, T_BOOLEAN,  Stable, false);
-  case vmIntrinsics::_getByteStable:            return inline_unsafe_access(!is_store, T_BYTE,     Stable, false);
-  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Stable, false);
-  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Stable, false);
-  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Stable, false);
-  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Stable, false);
-  case vmIntrinsics::_getFloatStable:           return inline_unsafe_access(!is_store, T_FLOAT,    Stable, false);
-  case vmIntrinsics::_getDoubleStable:          return inline_unsafe_access(!is_store, T_DOUBLE,   Stable, false);
 
   case vmIntrinsics::_getShortUnaligned:        return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, true);
   case vmIntrinsics::_getCharUnaligned:         return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, true);
@@ -2409,6 +2409,7 @@ const TypeOopPtr* LibraryCallKit::sharpen_unsafe_type(Compile::AliasType* alias_
 DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
   switch (kind) {
       case Relaxed:
+      case Stable:
         return MO_UNORDERED;
       case Opaque:
         return MO_RELAXED;
@@ -2417,7 +2418,6 @@ DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
       case Release:
         return MO_RELEASE;
       case Volatile:
-      case Stable:
         return MO_SEQ_CST;
       default:
         ShouldNotReachHere();

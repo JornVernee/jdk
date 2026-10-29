@@ -4173,37 +4173,37 @@ public final class Unsafe {
      */
     @IntrinsicCandidate
     public Object getReferenceStable(Object o, long offset) {
-        return getReferenceVolatile(o, offset);
+        return getReference(o, offset);
     }
 
     /** @see #getReferenceStable(Object, long) @since 99 */
     @SuppressWarnings("unchecked")
     public <V> V getFlatValueStable(Object o, long offset, int layoutKind, Class<?> valueType) {
-        return (V) getFlatValueVolatile(o, offset, layoutKind, valueType);
+        return getFlatValue(o, offset, layoutKind, valueType);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public boolean getBooleanStable(Object o, long offset) {
-        return getBooleanVolatile(o, offset);
+        return getBoolean(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public byte getByteStable(Object o, long offset) {
-        return getByteVolatile(o, offset);
+        return getByte(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public short getShortStable(Object o, long offset) {
-        return getShortVolatile(o, offset);
+        return getShort(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public char getCharStable(Object o, long offset) {
-        return getCharVolatile(o, offset);
+        return getChar(o, offset);
     }
 
     /**
@@ -4223,7 +4223,6 @@ public final class Unsafe {
      * @param offset indication of where the variable resides in a Java heap
      *        object, if any, else a memory address locating the variable
      *        statically
-     * @param fence the speculation fence used to invalidate optimization on this load. May be {@code null}
      * @return the value fetched from the indicated Java variable using plain
      *         stable semantics
      * @throws RuntimeException No defined exceptions are thrown, not even
@@ -4234,25 +4233,25 @@ public final class Unsafe {
      */
     @IntrinsicCandidate
     public int getIntStable(Object o, long offset) {
-        return getIntVolatile(o, offset);
+        return getInt(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public long getLongStable(Object o, long offset){
-        return getLongVolatile(o, offset);
+        return getLong(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public float getFloatStable(Object o, long offset) {
-        return getFloatVolatile(o, offset);
+        return getFloat(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public double getDoubleStable(Object o, long offset) {
-        return getDoubleVolatile(o, offset);
+        return getDouble(o, offset);
     }
 
     /**
