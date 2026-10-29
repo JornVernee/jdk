@@ -185,6 +185,7 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_EXCHANGE));
@@ -348,6 +349,18 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
             NullRestrictedValue x = (NullRestrictedValue) vh.getOpaque(recv);
             assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getOpaque NullRestrictedValue value");
         }
+
+        // Stable
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(recv);
+            assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getStable NullRestrictedValue value");
+        }
+
+        // StableAcquire
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(recv);
+            assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getStableAcquire NullRestrictedValue value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessNullRestrictedValue recv, VarHandle vh) {
@@ -442,6 +455,18 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
         {
             NullRestrictedValue x = (NullRestrictedValue) vh.getOpaque();
             assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getOpaque NullRestrictedValue value");
+        }
+
+        // Stable
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable();
+            assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getStable NullRestrictedValue value");
+        }
+
+        // StableAcquire
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire();
+            assertEquals(NullRestrictedValue.of((byte)20,(short)1854), x, "getStableAcquire NullRestrictedValue value");
         }
     }
 
@@ -541,6 +566,16 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
             vh.setOpaque(recv, NullRestrictedValue.of((byte)-42,(short)1854));
             NullRestrictedValue x = (NullRestrictedValue) vh.getOpaque(recv);
             assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
+        }
+
+        // Stable
+        {
+            //NullRestrictedValue x = (NullRestrictedValue) vh.getStable(recv);
+        }
+
+        // StableAcquire
+        {
+            //NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, NullRestrictedValue.of((byte)20,(short)1854));
@@ -785,6 +820,16 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
             vh.setOpaque(NullRestrictedValue.of((byte)-42,(short)1854));
             NullRestrictedValue x = (NullRestrictedValue) vh.getOpaque();
             assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
+        }
+
+        // Stable
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire();
         }
 
         vh.set(NullRestrictedValue.of((byte)20,(short)1854));
@@ -1032,6 +1077,16 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
                 vh.setOpaque(array, i, NullRestrictedValue.of((byte)-42,(short)1854));
                 NullRestrictedValue x = (NullRestrictedValue) vh.getOpaque(array, i);
                 assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
+            }
+
+            // Stable
+            {
+                NullRestrictedValue x = (NullRestrictedValue) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, NullRestrictedValue.of((byte)20,(short)1854));
@@ -1287,6 +1342,14 @@ public class VarHandleTestAccessNullRestrictedValue extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 vh.setOpaque(array, ci, NullRestrictedValue.of((byte)20,(short)1854));
+            });
+
+            checkAIOOBE(() -> {
+                NullRestrictedValue x = (NullRestrictedValue) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

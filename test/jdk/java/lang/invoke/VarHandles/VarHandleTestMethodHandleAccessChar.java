@@ -159,10 +159,12 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact(recv, '\u4567');
-            //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
-            //assertEquals('\u4567', x, "getStable char value");
+            char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+        }
+
+        // StableAcquire
+        {
+            char x = (char) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(recv);
         }
 
         hs.get(TestAccessMode.SET).invokeExact(recv, '\u0123');
@@ -479,10 +481,12 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact('\u4567');
-            //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact();
-            //assertEquals('\u4567', x, "getStable char value");
+            char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+        }
+
+        // StableAcquire
+        {
+            char x = (char) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact();
         }
 
         hs.get(TestAccessMode.SET).invokeExact('\u0123');
@@ -803,10 +807,12 @@ public class VarHandleTestMethodHandleAccessChar extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //hs.get(TestAccessMode.SET).invokeExact(array, i, '\u4567');
-                //char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
-                //assertEquals('\u4567', x, "getStable char value");
+                char x = (char) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+            }
+
+            // StableAcquire
+            {
+                char x = (char) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(array, i);
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, '\u0123');

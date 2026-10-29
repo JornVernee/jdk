@@ -114,6 +114,7 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         if (vhs.supportsAtomicAccess) {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
@@ -122,7 +123,7 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         } else {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_VOLATILE));
@@ -130,7 +131,7 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         }
 
         if (vhs.supportsAtomicAccess) {
@@ -315,6 +316,10 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
 
         checkNPE(() -> {
             int x = (int) vh.getStable(array, ci);
+        });
+
+        checkNPE(() -> {
+            int x = (int) vh.getStableAcquire(array, ci);
         });
 
         checkNPE(() -> {
@@ -798,6 +803,10 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
                     int x = (int) vh.getStable(array, ci);
                 });
 
+                checkIOOBE(() -> {
+                    int x = (int) vh.getStableAcquire(array, ci);
+                });
+
                 if (!readOnly) {
                     checkIOOBE(() -> {
                         vh.setVolatile(array, ci, VALUE_1);
@@ -933,7 +942,7 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
                 });
 
                 checkISE(() -> {
-                    int x = (int) vh.getStable(array, ci);
+                    int x = (int) vh.getStableAcquire(array, ci);
                 });
 
                 if (!readOnly) {
@@ -1099,10 +1108,12 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
 
                 // Stable
                 {
-                    // TODO separate storage
-                    //vh.set(array, i, VALUE_2);
-                    //int x = (int) vh.getStable(array, i);
-                    //assertEquals(VALUE_2, x, "getStable int value");
+                    int x = (int) vh.getStable(array, i);
+                }
+
+                // StableAcquire
+                {
+                    int x = (int) vh.getStableAcquire(array, i);
                 }
 
                 vh.set(array, i, VALUE_1);
@@ -1400,6 +1411,12 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
                 assertEquals(v, x, "get int value");
             }
 
+            // Stable
+            {
+                int x = (int) vh.getStable(array, i);
+                assertEquals(v, x, "getStable int value");
+            }
+
             if (iAligned) {
                 // Volatile
                 {
@@ -1419,10 +1436,10 @@ public class VarHandleTestByteArrayAsInt extends VarHandleBaseByteArrayTest {
                     assertEquals(v, x, "getOpaque int value");
                 }
 
-                // Stable
+                // StableAcquire
                 {
-                    int x = (int) vh.getStable(array, i);
-                    assertEquals(v, x, "getStable int value");
+                    int x = (int) vh.getStableAcquire(array, i);
+                    assertEquals(v, x, "getStableAcquire int value");
                 }
             }
         }

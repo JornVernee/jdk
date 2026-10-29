@@ -113,6 +113,35 @@ import static java.lang.invoke.SegmentVarHandle.*;
 #end[ByteOrBoolean]
 #end[floatingPoint]
     }
+
+    @ForceInline
+    static $type$ getStable(VarHandle ob, Object obb, long base) {
+        return getStable(ob, obb, base, ((SegmentVarHandle) ob).offset);
+    }
+
+    @ForceInline
+    static $type$ getStable(VarHandle ob, Object obb, long base, long offset) {
+        SegmentVarHandle handle = (SegmentVarHandle)ob;
+        AbstractMemorySegmentImpl bb = handle.checkSegment(obb, base, true);
+#if[floatingPoint]
+        $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$Stable(bb.sessionImpl(),
+                bb.unsafeGetBase(),
+                offset(bb, base, offset),
+                handle.be);
+        return $Type$.$rawType$BitsTo$Type$(rawValue);
+#else[floatingPoint]
+#if[ByteOrBoolean]
+        return SCOPED_MEMORY_ACCESS.get$RawType$Stable(bb.sessionImpl(),
+                bb.unsafeGetBase(),
+                offset(bb, base, offset)){#if[boolean]? != 0};
+#else[ByteOrBoolean]
+        return SCOPED_MEMORY_ACCESS.get$Type$Stable(bb.sessionImpl(),
+                bb.unsafeGetBase(),
+                offset(bb, base, offset),
+                handle.be);
+#end[ByteOrBoolean]
+#end[floatingPoint]
+    }
 #if[!ByteOrBoolean]
 }
 
@@ -254,16 +283,16 @@ final class VarHandleSegmentAs$Type$sAligned extends VarHandleSegmentAs$Type$s {
     }
 
     @ForceInline
-    static $type$ getStable(VarHandle ob, Object obb, long base) {
-        return getStable(ob, obb, base, ((SegmentVarHandle) ob).offset);
+    static $type$ getStableAcquire(VarHandle ob, Object obb, long base) {
+        return getStableAcquire(ob, obb, base, ((SegmentVarHandle) ob).offset);
     }
 
     @ForceInline
-    static $type$ getStable(VarHandle ob, Object obb, long base, long offset) {
+    static $type$ getStableAcquire(VarHandle ob, Object obb, long base, long offset) {
         SegmentVarHandle handle = (SegmentVarHandle)ob;
         AbstractMemorySegmentImpl bb = handle.checkSegment(obb, base, true);
         return convEndian(handle.be,
-                          SCOPED_MEMORY_ACCESS.get$RawType$Stable(bb.sessionImpl(),
+                          SCOPED_MEMORY_ACCESS.get$RawType$StableAcquire(bb.sessionImpl(),
                                   bb.unsafeGetBase(),
                                   offset(bb, base, offset)));
     }

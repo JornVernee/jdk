@@ -332,6 +332,12 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
             short x = (short) vh.getStable(recv);
             assertEquals((short)0x0123, x, "getStable short value");
         }
+
+        // StableAcquire
+        {
+            short x = (short) vh.getStableAcquire(recv);
+            assertEquals((short)0x0123, x, "getStableAcquire short value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessShort recv, VarHandle vh) {
@@ -386,6 +392,12 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
         {
             short x = (short) vh.getStable();
             assertEquals((short)0x0123, x, "getStable short value");
+        }
+
+        // StableAcquire
+        {
+            short x = (short) vh.getStableAcquire();
+            assertEquals((short)0x0123, x, "getStableAcquire short value");
         }
     }
 
@@ -443,10 +455,12 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, (short)0x0123);
             //short x = (short) vh.getStable(recv);
-            //assertEquals((short)0x0123, x, "getStable short value");
+        }
+
+        // StableAcquire
+        {
+            //short x = (short) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, (short)0x0123);
@@ -759,10 +773,12 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set((short)0x0123);
-            //short x = (short) vh.getStable();
-            //assertEquals((short)0x0123, x, "getStable short value");
+            short x = (short) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            short x = (short) vh.getStableAcquire();
         }
 
         vh.set((short)0x0123);
@@ -1078,10 +1094,12 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, (short)0x0123);
-                //short x = (short) vh.getStable(array, i);
-                //assertEquals((short)0x0123, x, "getStable short value");
+                short x = (short) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                short x = (short) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, (short)0x0123);
@@ -1405,6 +1423,10 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 short x = (short) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                short x = (short) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

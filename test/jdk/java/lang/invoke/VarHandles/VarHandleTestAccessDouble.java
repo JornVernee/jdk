@@ -332,6 +332,12 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
             double x = (double) vh.getStable(recv);
             assertEquals(1.0d, x, "getStable double value");
         }
+
+        // StableAcquire
+        {
+            double x = (double) vh.getStableAcquire(recv);
+            assertEquals(1.0d, x, "getStableAcquire double value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessDouble recv, VarHandle vh) {
@@ -421,6 +427,12 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
         {
             double x = (double) vh.getStable();
             assertEquals(1.0d, x, "getStable double value");
+        }
+
+        // StableAcquire
+        {
+            double x = (double) vh.getStableAcquire();
+            assertEquals(1.0d, x, "getStableAcquire double value");
         }
     }
 
@@ -513,10 +525,12 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, 1.0d);
             //double x = (double) vh.getStable(recv);
-            //assertEquals(1.0d, x, "getStable double value");
+        }
+
+        // StableAcquire
+        {
+            //double x = (double) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, 1.0d);
@@ -781,10 +795,12 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(1.0d);
-            //double x = (double) vh.getStable();
-            //assertEquals(1.0d, x, "getStable double value");
+            double x = (double) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            double x = (double) vh.getStableAcquire();
         }
 
         vh.set(1.0d);
@@ -1052,10 +1068,12 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, 1.0d);
-                //double x = (double) vh.getStable(array, i);
-                //assertEquals(1.0d, x, "getStable double value");
+                double x = (double) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                double x = (double) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, 1.0d);
@@ -1331,6 +1349,10 @@ public class VarHandleTestAccessDouble extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 double x = (double) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                double x = (double) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

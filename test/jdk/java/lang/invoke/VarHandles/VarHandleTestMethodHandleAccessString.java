@@ -159,10 +159,12 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact(recv, "bar");
-            //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
-            //assertEquals("bar", x, "getStable String value");
+            String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+        }
+
+        // StableAcquire
+        {
+            String x = (String) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(recv);
         }
 
         hs.get(TestAccessMode.SET).invokeExact(recv, "foo");
@@ -379,10 +381,12 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact("bar");
-            //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact();
-            //assertEquals("bar", x, "getStable String value");
+            String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+        }
+
+        // StableAcquire
+        {
+            String x = (String) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact();
         }
 
         hs.get(TestAccessMode.SET).invokeExact("foo");
@@ -603,10 +607,12 @@ public class VarHandleTestMethodHandleAccessString extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //hs.get(TestAccessMode.SET).invokeExact(array, i, "bar");
-                //String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
-                //assertEquals("bar", x, "getStable String value");
+                String x = (String) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+            }
+
+            // StableAcquire
+            {
+                String x = (String) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(array, i);
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, "foo");

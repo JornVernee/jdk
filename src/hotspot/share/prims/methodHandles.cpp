@@ -1377,6 +1377,7 @@ static JNINativeMethod VH_methods[] = {
   {CC "getOpaque",                  CC "([" OBJ ")" OBJ,    FN_PTR(VH_UOE)},
   {CC "setOpaque",                  CC "([" OBJ ")V",       FN_PTR(VH_UOE)},
   {CC "getStable",                  CC "([" OBJ ")" OBJ,    FN_PTR(VH_UOE)},
+  {CC "getStableAcquire",           CC "([" OBJ ")" OBJ,    FN_PTR(VH_UOE)},
   {CC "compareAndSet",              CC "([" OBJ ")Z",       FN_PTR(VH_UOE)},
   {CC "compareAndExchange",         CC "([" OBJ ")" OBJ,    FN_PTR(VH_UOE)},
   {CC "compareAndExchangeAcquire",  CC "([" OBJ ")" OBJ,    FN_PTR(VH_UOE)},

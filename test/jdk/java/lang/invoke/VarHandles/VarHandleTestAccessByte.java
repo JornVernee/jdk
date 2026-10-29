@@ -332,6 +332,12 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
             byte x = (byte) vh.getStable(recv);
             assertEquals((byte)0x01, x, "getStable byte value");
         }
+
+        // StableAcquire
+        {
+            byte x = (byte) vh.getStableAcquire(recv);
+            assertEquals((byte)0x01, x, "getStableAcquire byte value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessByte recv, VarHandle vh) {
@@ -386,6 +392,12 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
         {
             byte x = (byte) vh.getStable();
             assertEquals((byte)0x01, x, "getStable byte value");
+        }
+
+        // StableAcquire
+        {
+            byte x = (byte) vh.getStableAcquire();
+            assertEquals((byte)0x01, x, "getStableAcquire byte value");
         }
     }
 
@@ -443,10 +455,12 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, (byte)0x01);
             //byte x = (byte) vh.getStable(recv);
-            //assertEquals((byte)0x01, x, "getStable byte value");
+        }
+
+        // StableAcquire
+        {
+            //byte x = (byte) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, (byte)0x01);
@@ -759,10 +773,12 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set((byte)0x01);
-            //byte x = (byte) vh.getStable();
-            //assertEquals((byte)0x01, x, "getStable byte value");
+            byte x = (byte) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            byte x = (byte) vh.getStableAcquire();
         }
 
         vh.set((byte)0x01);
@@ -1078,10 +1094,12 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, (byte)0x01);
-                //byte x = (byte) vh.getStable(array, i);
-                //assertEquals((byte)0x01, x, "getStable byte value");
+                byte x = (byte) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                byte x = (byte) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, (byte)0x01);
@@ -1405,6 +1423,10 @@ public class VarHandleTestAccessByte extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 byte x = (byte) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                byte x = (byte) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

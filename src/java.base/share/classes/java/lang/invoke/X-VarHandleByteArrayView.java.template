@@ -152,6 +152,16 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 #end[floatingPoint]
         }
 
+        @ForceInline
+        static $type$ getStable(VarHandle ob, Object oba, int index) {
+            ArrayHandle handle = (ArrayHandle)ob;
+            byte[] ba = (byte[]) oba;
+            return UNSAFE.get$Type$Stable(
+                    ba,
+                    ((long) index(ba, index)) + Unsafe.ARRAY_BYTE_BASE_OFFSET,
+                    handle.be);
+        }
+
         static final VarForm FORM = new VarForm(ArrayHandle.class, byte[].class, $type$.class, int.class);
     }
 
@@ -259,6 +269,24 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         }
 
         @ForceInline
+        static $type$ getStable(VarHandle ob, Object obb, int index) {
+            ByteBufferHandle handle = (ByteBufferHandle)ob;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
+#if[floatingPoint]
+            $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$Stable(session(bb),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
+                    ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
+                    handle.be);
+            return $Type$.$rawType$BitsTo$Type$(rawValue);
+#else[floatingPoint]
+            return SCOPED_MEMORY_ACCESS.get$Type$Stable(session(bb),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
+                    ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
+                    handle.be);
+#end[floatingPoint]
+        }
+
+        @ForceInline
         static $type$ getVolatile(VarHandle ob, Object obb, int index) {
             ByteBufferHandle handle = (ByteBufferHandle)ob;
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
@@ -319,11 +347,11 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         }
 
         @ForceInline
-        static $type$ getStable(VarHandle ob, Object obb, int index) {
+        static $type$ getStableAcquire(VarHandle ob, Object obb, int index) {
             ByteBufferHandle handle = (ByteBufferHandle)ob;
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
-                              SCOPED_MEMORY_ACCESS.get$RawType$Stable(session(bb),
+                              SCOPED_MEMORY_ACCESS.get$RawType$StableAcquire(session(bb),
                                       checkNullHeapBase(UNSAFE.getReference(bb, BYTE_BUFFER_HB)),
                                       address(bb, index(bb, index))));
         }

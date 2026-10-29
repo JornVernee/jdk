@@ -332,6 +332,12 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
             int x = (int) vh.getStable(recv);
             assertEquals(0x01234567, x, "getStable int value");
         }
+
+        // StableAcquire
+        {
+            int x = (int) vh.getStableAcquire(recv);
+            assertEquals(0x01234567, x, "getStableAcquire int value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessInt recv, VarHandle vh) {
@@ -386,6 +392,12 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
         {
             int x = (int) vh.getStable();
             assertEquals(0x01234567, x, "getStable int value");
+        }
+
+        // StableAcquire
+        {
+            int x = (int) vh.getStableAcquire();
+            assertEquals(0x01234567, x, "getStableAcquire int value");
         }
     }
 
@@ -443,10 +455,12 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, 0x01234567);
             //int x = (int) vh.getStable(recv);
-            //assertEquals(0x01234567, x, "getStable int value");
+        }
+
+        // StableAcquire
+        {
+            //int x = (int) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, 0x01234567);
@@ -759,10 +773,12 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(0x01234567);
-            //int x = (int) vh.getStable();
-            //assertEquals(0x01234567, x, "getStable int value");
+            int x = (int) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            int x = (int) vh.getStableAcquire();
         }
 
         vh.set(0x01234567);
@@ -1078,10 +1094,12 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, 0x01234567);
-                //int x = (int) vh.getStable(array, i);
-                //assertEquals(0x01234567, x, "getStable int value");
+                int x = (int) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                int x = (int) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, 0x01234567);
@@ -1405,6 +1423,10 @@ public class VarHandleTestAccessInt extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 int x = (int) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                int x = (int) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

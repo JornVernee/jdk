@@ -339,6 +339,59 @@ public class VarHandleTestMethodTypeNullRestrictedValue extends VarHandleBaseTes
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null receiver
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(null);
+        });
+        checkCCE(() -> { // receiver reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(Void.class);
+        });
+        checkWMTE(() -> { // receiver primitive class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(0);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable(recv);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(recv);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(recv, Void.class);
+        });
+
+        // GetStableAcquire
+        // Incorrect argument types
+        checkNPE(() -> { // null receiver
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(null);
+        });
+        checkCCE(() -> { // receiver reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(Void.class);
+        });
+        checkWMTE(() -> { // receiver primitive class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(0);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire(recv);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStableAcquire(recv);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(recv, Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkNPE(() -> { // null receiver
@@ -947,6 +1000,32 @@ public class VarHandleTestMethodTypeNullRestrictedValue extends VarHandleBaseTes
         });
 
 
+        // GetStable
+        // Incorrect argument types
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable();
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(Void.class);
+        });
+
+
+        // GetStableAcquire
+        // Incorrect argument types
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkCCE(() -> { // expected reference class
@@ -1512,6 +1591,64 @@ public class VarHandleTestMethodTypeNullRestrictedValue extends VarHandleBaseTes
             vh.setRelease(array, 0, NullRestrictedValue.of((byte)20,(short)1854), Void.class);
         });
 
+
+        // GetStable
+        // Incorrect argument types
+        checkNPE(() -> { // null array
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(null, 0);
+        });
+        checkCCE(() -> { // array reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(Void.class, 0);
+        });
+        checkWMTE(() -> { // array primitive class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(0, 0);
+        });
+        checkWMTE(() -> { // index reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(array, Void.class);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStable(array, 0);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStable(array, 0);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStable(array, 0, Void.class);
+        });
+
+        // GetStableAcquire
+        // Incorrect argument types
+        checkNPE(() -> { // null array
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(null, 0);
+        });
+        checkCCE(() -> { // array reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(Void.class, 0);
+        });
+        checkWMTE(() -> { // array primitive class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(0, 0);
+        });
+        checkWMTE(() -> { // index reference class
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(array, Void.class);
+        });
+        // Incorrect return type
+        checkCCE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire(array, 0);
+        });
+        checkWMTE(() -> { // primitive class
+            boolean x = (boolean) vh.getStableAcquire(array, 0);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            NullRestrictedValue x = (NullRestrictedValue) vh.getStableAcquire(array, 0, Void.class);
+        });
 
         // CompareAndSet
         // Incorrect argument types

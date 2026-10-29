@@ -359,6 +359,32 @@ public class VarHandleTestMethodTypeBoolean extends VarHandleBaseTest {
             boolean x = (boolean) vh.getStable(recv, Void.class);
         });
 
+        // GetStableAcquire
+        // Incorrect argument types
+        checkNPE(() -> { // null receiver
+            boolean x = (boolean) vh.getStableAcquire(null);
+        });
+        checkCCE(() -> { // receiver reference class
+            boolean x = (boolean) vh.getStableAcquire(Void.class);
+        });
+        checkWMTE(() -> { // receiver primitive class
+            boolean x = (boolean) vh.getStableAcquire(0);
+        });
+        // Incorrect return type
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire(recv);
+        });
+        checkWMTE(() -> { // primitive class
+            int x = (int) vh.getStableAcquire(recv);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            boolean x = (boolean) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            boolean x = (boolean) vh.getStableAcquire(recv, Void.class);
+        });
+
 
         // CompareAndSet
         // Incorrect argument types
@@ -1285,6 +1311,19 @@ public class VarHandleTestMethodTypeBoolean extends VarHandleBaseTest {
         });
 
 
+        // GetStableAcquire
+        // Incorrect argument types
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // primitive class
+            int x = (int) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            boolean x = (boolean) vh.getStableAcquire(Void.class);
+        });
+
+
         // CompareAndSet
         // Incorrect argument types
         checkWMTE(() -> { // expected reference class
@@ -2090,6 +2129,35 @@ public class VarHandleTestMethodTypeBoolean extends VarHandleBaseTest {
         });
         checkWMTE(() -> { // >
             boolean x = (boolean) vh.getStable(array, 0, Void.class);
+        });
+
+        // GetStableAcquire
+        // Incorrect argument types
+        checkNPE(() -> { // null array
+            boolean x = (boolean) vh.getStableAcquire(null, 0);
+        });
+        checkCCE(() -> { // array reference class
+            boolean x = (boolean) vh.getStableAcquire(Void.class, 0);
+        });
+        checkWMTE(() -> { // array primitive class
+            boolean x = (boolean) vh.getStableAcquire(0, 0);
+        });
+        checkWMTE(() -> { // index reference class
+            boolean x = (boolean) vh.getStableAcquire(array, Void.class);
+        });
+        // Incorrect return type
+        checkWMTE(() -> { // reference class
+            Void x = (Void) vh.getStableAcquire(array, 0);
+        });
+        checkWMTE(() -> { // primitive class
+            int x = (int) vh.getStableAcquire(array, 0);
+        });
+        // Incorrect arity
+        checkWMTE(() -> { // 0
+            boolean x = (boolean) vh.getStableAcquire();
+        });
+        checkWMTE(() -> { // >
+            boolean x = (boolean) vh.getStableAcquire(array, 0, Void.class);
         });
 
         // CompareAndSet

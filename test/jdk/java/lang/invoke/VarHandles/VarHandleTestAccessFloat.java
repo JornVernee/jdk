@@ -332,6 +332,12 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
             float x = (float) vh.getStable(recv);
             assertEquals(1.0f, x, "getStable float value");
         }
+
+        // StableAcquire
+        {
+            float x = (float) vh.getStableAcquire(recv);
+            assertEquals(1.0f, x, "getStableAcquire float value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessFloat recv, VarHandle vh) {
@@ -421,6 +427,12 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
         {
             float x = (float) vh.getStable();
             assertEquals(1.0f, x, "getStable float value");
+        }
+
+        // StableAcquire
+        {
+            float x = (float) vh.getStableAcquire();
+            assertEquals(1.0f, x, "getStableAcquire float value");
         }
     }
 
@@ -513,10 +525,12 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, 1.0f);
             //float x = (float) vh.getStable(recv);
-            //assertEquals(1.0f, x, "getStable float value");
+        }
+
+        // StableAcquire
+        {
+            //float x = (float) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, 1.0f);
@@ -781,10 +795,12 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(1.0f);
-            //float x = (float) vh.getStable();
-            //assertEquals(1.0f, x, "getStable float value");
+            float x = (float) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            float x = (float) vh.getStableAcquire();
         }
 
         vh.set(1.0f);
@@ -1052,10 +1068,12 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, 1.0f);
-                //float x = (float) vh.getStable(array, i);
-                //assertEquals(1.0f, x, "getStable float value");
+                float x = (float) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                float x = (float) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, 1.0f);
@@ -1331,6 +1349,10 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 float x = (float) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                float x = (float) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

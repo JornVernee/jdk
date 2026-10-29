@@ -118,6 +118,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         if (vhs.supportsAtomicAccess) {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
@@ -126,7 +127,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         } else {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_VOLATILE));
@@ -134,7 +135,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         }
 
 #if[CAS]
@@ -331,6 +332,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
 
         checkNPE(() -> {
             $type$ x = ($type$) vh.getStable(array, ci);
+        });
+
+        checkNPE(() -> {
+            $type$ x = ($type$) vh.getStableAcquire(array, ci);
         });
 
         checkNPE(() -> {
@@ -1019,6 +1024,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                     $type$ x = ($type$) vh.getStable(array, ci);
                 });
 
+                checkIOOBE(() -> {
+                    $type$ x = ($type$) vh.getStableAcquire(array, ci);
+                });
+
                 if (!readOnly) {
                     checkIOOBE(() -> {
                         vh.setVolatile(array, ci, VALUE_1);
@@ -1160,7 +1169,7 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                 });
 
                 checkISE(() -> {
-                    $type$ x = ($type$) vh.getStable(array, ci);
+                    $type$ x = ($type$) vh.getStableAcquire(array, ci);
                 });
 
                 if (!readOnly) {
@@ -1332,10 +1341,12 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
 
                 // Stable
                 {
-                    // TODO separate storage
-                    //vh.set(array, i, VALUE_2);
-                    //$type$ x = ($type$) vh.getStable(array, i);
-                    //assertEquals(VALUE_2, x, "getStable $type$ value");
+                    $type$ x = ($type$) vh.getStable(array, i);
+                }
+
+                // StableAcquire
+                {
+                    $type$ x = ($type$) vh.getStableAcquire(array, i);
                 }
 #if[CAS]
 
@@ -1639,6 +1650,12 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                 assertEquals(v, x, "get $type$ value");
             }
 
+            // Stable
+            {
+                $type$ x = ($type$) vh.getStable(array, i);
+                assertEquals(v, x, "getStable $type$ value");
+            }
+
             if (iAligned) {
                 // Volatile
                 {
@@ -1658,10 +1675,10 @@ public class VarHandleTestByteArrayAs$Type$ extends VarHandleBaseByteArrayTest {
                     assertEquals(v, x, "getOpaque $type$ value");
                 }
 
-                // Stable
+                // StableAcquire
                 {
-                    $type$ x = ($type$) vh.getStable(array, i);
-                    assertEquals(v, x, "getStable $type$ value");
+                    $type$ x = ($type$) vh.getStableAcquire(array, i);
+                    assertEquals(v, x, "getStableAcquire $type$ value");
                 }
             }
         }

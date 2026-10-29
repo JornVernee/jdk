@@ -332,6 +332,12 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
             char x = (char) vh.getStable(recv);
             assertEquals('\u0123', x, "getStable char value");
         }
+
+        // StableAcquire
+        {
+            char x = (char) vh.getStableAcquire(recv);
+            assertEquals('\u0123', x, "getStableAcquire char value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessChar recv, VarHandle vh) {
@@ -386,6 +392,12 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
         {
             char x = (char) vh.getStable();
             assertEquals('\u0123', x, "getStable char value");
+        }
+
+        // StableAcquire
+        {
+            char x = (char) vh.getStableAcquire();
+            assertEquals('\u0123', x, "getStableAcquire char value");
         }
     }
 
@@ -443,10 +455,12 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, '\u0123');
             //char x = (char) vh.getStable(recv);
-            //assertEquals('\u0123', x, "getStable char value");
+        }
+
+        // StableAcquire
+        {
+            //char x = (char) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, '\u0123');
@@ -759,10 +773,12 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set('\u0123');
-            //char x = (char) vh.getStable();
-            //assertEquals('\u0123', x, "getStable char value");
+            char x = (char) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            char x = (char) vh.getStableAcquire();
         }
 
         vh.set('\u0123');
@@ -1078,10 +1094,12 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, '\u0123');
-                //char x = (char) vh.getStable(array, i);
-                //assertEquals('\u0123', x, "getStable char value");
+                char x = (char) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                char x = (char) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, '\u0123');
@@ -1405,6 +1423,10 @@ public class VarHandleTestAccessChar extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 char x = (char) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                char x = (char) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

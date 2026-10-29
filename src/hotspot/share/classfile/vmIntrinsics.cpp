@@ -456,12 +456,15 @@ bool vmIntrinsics::disabled_by_jvm_flags(vmIntrinsics::ID id) {
   case vmIntrinsics::_getReferenceStable:
   case vmIntrinsics::_getBooleanStable:
   case vmIntrinsics::_getByteStable:
-  case vmIntrinsics::_getShortStable:
-  case vmIntrinsics::_getCharStable:
-  case vmIntrinsics::_getIntStable:
-  case vmIntrinsics::_getLongStable:
-  case vmIntrinsics::_getFloatStable:
-  case vmIntrinsics::_getDoubleStable:
+  case vmIntrinsics::_getReferenceStableAcquire:
+  case vmIntrinsics::_getBooleanStableAcquire:
+  case vmIntrinsics::_getByteStableAcquire:
+  case vmIntrinsics::_getShortStableAcquire:
+  case vmIntrinsics::_getCharStableAcquire:
+  case vmIntrinsics::_getIntStableAcquire:
+  case vmIntrinsics::_getLongStableAcquire:
+  case vmIntrinsics::_getFloatStableAcquire:
+  case vmIntrinsics::_getDoubleStableAcquire:
     if (!InlineUnsafeOps) return true;
     break;
   case vmIntrinsics::_getShortUnaligned:
@@ -472,6 +475,10 @@ bool vmIntrinsics::disabled_by_jvm_flags(vmIntrinsics::ID id) {
   case vmIntrinsics::_putCharUnaligned:
   case vmIntrinsics::_putIntUnaligned:
   case vmIntrinsics::_putLongUnaligned:
+  case vmIntrinsics::_getShortStable:
+  case vmIntrinsics::_getCharStable:
+  case vmIntrinsics::_getIntStable:
+  case vmIntrinsics::_getLongStable:
     if (!InlineUnsafeOps || !UseUnalignedAccesses) return true;
     break;
   case vmIntrinsics::_hashCode:

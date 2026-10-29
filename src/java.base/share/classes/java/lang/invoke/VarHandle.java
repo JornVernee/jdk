@@ -825,6 +825,37 @@ public abstract sealed class VarHandle implements Constable
     @IntrinsicCandidate
     Object getStable(Object... args);
 
+    /**
+     * Returns the value of a variable, or any previous <em>initialized value</em> of the variable,
+     * and ensures that subsequent loads are not reordered before this access.
+     *<p>
+     * In this context, an <em>initialized value</em> of a variable is any non-default value of its type {@code T}.
+     *<p>
+     * The method signature is of the form {@code (CT1 ct1, ..., CTn ctn)T}.
+     *<p>
+     * The symbolic type descriptor at the call site of {@code getStable}
+     * must match the access mode type that is the result of calling
+     * {@code accessModeType(VarHandle.AccessMode.GET_STABLE)} on this VarHandle.
+     *
+     * @param args the signature-polymorphic parameter list of the form
+     *             {@code (CT1 ct1, ..., CTn)} , statically represented using varargs.
+     *         variable, statically represented using {@code Object}.
+     * @return the signature-polymorphic result that is the value of the
+     *         variable, statically represented using {@code Object}.
+     * @throws UnsupportedOperationException if the access mode is unsupported
+     *         for this VarHandle.
+     * @throws WrongMethodTypeException if the access mode type does not
+     *         match the caller's symbolic type descriptor.
+     * @throws ClassCastException if the access mode type matches the caller's
+     *         symbolic type descriptor, but a reference cast fails.
+     *
+     * @since 99
+     */
+    public final native
+    @MethodHandle.PolymorphicSignature
+    @IntrinsicCandidate
+    Object getStableAcquire(Object... args);
+
     // Compare and set accessors
 
     /**
@@ -1816,6 +1847,12 @@ public abstract sealed class VarHandle implements Constable
         /**
          * The access mode whose access is specified by the corresponding
          * method
+         * {@link VarHandle#getStableAcquire VarHandle.getStableAcquire}
+         */
+        GET_STABLE_ACQUIRE("getStableAcquire", AccessType.GET),
+        /**
+         * The access mode whose access is specified by the corresponding
+         * method
          * {@link VarHandle#getOpaque VarHandle.getOpaque}
          */
         GET_OPAQUE("getOpaque", AccessType.GET),
@@ -2009,6 +2046,7 @@ public abstract sealed class VarHandle implements Constable
                 case "getAcquire" -> GET_ACQUIRE;
                 case "setRelease" -> SET_RELEASE;
                 case "getStable" -> GET_STABLE;
+                case "getStableAcquire" -> GET_STABLE_ACQUIRE;
                 case "getOpaque" -> GET_OPAQUE;
                 case "setOpaque" -> SET_OPAQUE;
                 case "compareAndSet" -> COMPARE_AND_SET;

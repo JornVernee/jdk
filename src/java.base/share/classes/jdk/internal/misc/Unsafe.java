@@ -4161,9 +4161,9 @@ public final class Unsafe {
 
     /**
      * Fetches a reference value from a given Java variable using <em>stable</em>
-     * semantics initially using plain reads.
+     * semantics using plain reads.
      * <p>
-     * Stable semantics means, if the VM observes a non-default value,
+     * Stable semantics mean, if the VM observes a non-default value,
      * (i.e, a non-{@code null} value), the VM is free to reuse said value indefinitely
      * and elide subsequent reads using this method. This is only true if there is a
      * trusted path from a VM constant to the targeted reference value.
@@ -4197,13 +4197,21 @@ public final class Unsafe {
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public short getShortStable(Object o, long offset) {
-        return getShort(o, offset);
+        return getShortUnaligned(o, offset);
+    }
+
+    public short getShortStable(Object o, long offset, boolean be) {
+        return convEndian(be, getShortStable(o, offset));
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public char getCharStable(Object o, long offset) {
-        return getChar(o, offset);
+        return getCharUnaligned(o, offset);
+    }
+
+    public char getCharStable(Object o, long offset, boolean be) {
+        return convEndian(be, getCharStable(o, offset));
     }
 
     /**
@@ -4233,25 +4241,134 @@ public final class Unsafe {
      */
     @IntrinsicCandidate
     public int getIntStable(Object o, long offset) {
-        return getInt(o, offset);
+        return getIntUnaligned(o, offset);
+    }
+
+    public int getIntStable(Object o, long offset, boolean be) {
+        return convEndian(be, getIntStable(o, offset));
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public long getLongStable(Object o, long offset){
-        return getLong(o, offset);
+        return getLongUnaligned(o, offset);
+    }
+
+    public long getLongStable(Object o, long offset, boolean be){
+        return convEndian(be, getLongStable(o, offset));
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
-    @IntrinsicCandidate
-    public float getFloatStable(Object o, long offset) {
-        return getFloat(o, offset);
+    public float getFloatStable(Object o, long offset){
+        return Float.intBitsToFloat(getIntStable(o, offset));
+    }
+
+    public float getFloatStable(Object o, long offset, boolean be){
+        return Float.intBitsToFloat(getIntStable(o, offset, be));
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
+    public double getDoubleStable(Object o, long offset){
+        return Double.longBitsToDouble(getLongStable(o, offset));
+    }
+
+    public double getDoubleStable(Object o, long offset, boolean be){
+        return Double.longBitsToDouble(getLongStable(o, offset, be));
+    }
+
+    /**
+     * Fetches a reference value from a given Java variable using <em>stable</em>
+     * and <em>acquire</em> semantics.
+     * <p>
+     * Stable semantics means, if the VM observes a non-default value,
+     * (i.e, a non-{@code null} value), the VM is free to reuse said value indefinitely
+     * and elide subsequent reads using this method. This is only true if there is a
+     * trusted path from a VM constant to the targeted reference value.
+     *
+     * @see #getReference(Object, long)
+     * @since 99
+     */
     @IntrinsicCandidate
-    public double getDoubleStable(Object o, long offset) {
-        return getDouble(o, offset);
+    public Object getReferenceStableAcquire(Object o, long offset) {
+        return getReferenceAcquire(o, offset);
+    }
+
+    /** @see #getReferenceStableAcquire(Object, long) @since 99 */
+    @SuppressWarnings("unchecked")
+    public <V> V getFlatValueStableAcquire(Object o, long offset, int layoutKind, Class<?> valueType) {
+        return (V) getFlatValueAcquire(o, offset, layoutKind, valueType);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public boolean getBooleanStableAcquire(Object o, long offset) {
+        return getBooleanAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public byte getByteStableAcquire(Object o, long offset) {
+        return getByteAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public short getShortStableAcquire(Object o, long offset) {
+        return getShortAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public char getCharStableAcquire(Object o, long offset) {
+        return getCharAcquire(o, offset);
+    }
+
+    /**
+     * Fetches a value from a given Java variable using <em>stable</em>
+     * semantics initially using plain reads.
+     * <p>
+     * Stable semantics means, if the VM observes a non-default value,
+     * (i.e, a non-zero value), the VM is free to reuse said value indefinitely
+     * and elide subsequent reads using this method. This is only true if there is a
+     * trusted path from a VM constant to the targeted reference value.
+     * <p>
+     * By adding various memory fences after a plain stable access, other memory semantics
+     * can be emulated.
+     *
+     * @param o Java heap object in which the variable resides, if any, else
+     *        null
+     * @param offset indication of where the variable resides in a Java heap
+     *        object, if any, else a memory address locating the variable
+     *        statically
+     * @return the value fetched from the indicated Java variable using plain
+     *         stable semantics
+     * @throws RuntimeException No defined exceptions are thrown, not even
+     *         {@link NullPointerException}
+     *
+     * @see #getInt(Object, long)
+     * @since 99
+     */
+    @IntrinsicCandidate
+    public int getIntStableAcquire(Object o, long offset) {
+        return getIntAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public long getLongStableAcquire(Object o, long offset){
+        return getLongAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public float getFloatStableAcquire(Object o, long offset) {
+        return getFloatAcquire(o, offset);
+    }
+
+    /** @see #getIntStableAcquire(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public double getDoubleStableAcquire(Object o, long offset) {
+        return getDoubleAcquire(o, offset);
     }
 
     /**

@@ -89,4 +89,22 @@ public class StableVarHandleTest {
     static int testFoldArrayElement() {
         return (int) VH_ARRAY_ELEMENT.getStable(ARR, 0);
     }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static int testFoldInstanceFieldAcquire() {
+        return (int) VH_INSTANCE_FIELD.getStableAcquire(CARRIER);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static int testFoldStaticFieldAcquire() {
+        return (int) VH_STATIC_FIELD.getStableAcquire();
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static int testFoldArrayElementAcquire() {
+        return (int) VH_ARRAY_ELEMENT.getStableAcquire(ARR, 0);
+    }
 }

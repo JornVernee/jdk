@@ -409,6 +409,12 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
             $type$ x = ($type$) vh.getStable(recv);
             assertEquals($value1$, x, "getStable $type$ value");
         }
+
+        // StableAcquire
+        {
+            $type$ x = ($type$) vh.getStableAcquire(recv);
+            assertEquals($value1$, x, "getStableAcquire $type$ value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccess$Type$ recv, VarHandle vh) {
@@ -558,6 +564,12 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
         {
             $type$ x = ($type$) vh.getStable();
             assertEquals($value1$, x, "getStable $type$ value");
+        }
+
+        // StableAcquire
+        {
+            $type$ x = ($type$) vh.getStableAcquire();
+            assertEquals($value1$, x, "getStableAcquire $type$ value");
         }
     }
 
@@ -710,10 +722,12 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, $value1$);
             //$type$ x = ($type$) vh.getStable(recv);
-            //assertEquals($value1$, x, "getStable $type$ value");
+        }
+
+        // StableAcquire
+        {
+            //$type$ x = ($type$) vh.getStableAcquire(recv);
         }
 
 #if[CAS]
@@ -1127,10 +1141,12 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set($value1$);
-            //$type$ x = ($type$) vh.getStable();
-            //assertEquals($value1$, x, "getStable $type$ value");
+            $type$ x = ($type$) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            $type$ x = ($type$) vh.getStableAcquire();
         }
 
 #if[CAS]
@@ -1547,10 +1563,12 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, $value1$);
-                //$type$ x = ($type$) vh.getStable(array, i);
-                //assertEquals($value1$, x, "getStable $type$ value");
+                $type$ x = ($type$) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                $type$ x = ($type$) vh.getStableAcquire(array, i);
             }
 
 #if[CAS]
@@ -1975,6 +1993,10 @@ public class VarHandleTestAccess$Type$ extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 $type$ x = ($type$) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                $type$ x = ($type$) vh.getStableAcquire(array, ci);
             });
 
 #if[CAS]

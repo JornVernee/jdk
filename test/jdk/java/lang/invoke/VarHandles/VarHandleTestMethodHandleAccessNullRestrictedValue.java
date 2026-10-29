@@ -172,6 +172,16 @@ public class VarHandleTestMethodHandleAccessNullRestrictedValue extends VarHandl
             assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
         }
 
+        // Stable
+        {
+            NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+        }
+
+        // StableAcquire
+        {
+            NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(recv);
+        }
+
         hs.get(TestAccessMode.SET).invokeExact(recv, NullRestrictedValue.of((byte)20,(short)1854));
 
         // Compare
@@ -382,6 +392,16 @@ public class VarHandleTestMethodHandleAccessNullRestrictedValue extends VarHandl
             hs.get(TestAccessMode.SET_OPAQUE).invokeExact(NullRestrictedValue.of((byte)-42,(short)1854));
             NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_OPAQUE).invokeExact();
             assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
+        }
+
+        // Stable
+        {
+            NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+        }
+
+        // StableAcquire
+        {
+            NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact();
         }
 
         hs.get(TestAccessMode.SET).invokeExact(NullRestrictedValue.of((byte)20,(short)1854));
@@ -598,6 +618,16 @@ public class VarHandleTestMethodHandleAccessNullRestrictedValue extends VarHandl
                 hs.get(TestAccessMode.SET_OPAQUE).invokeExact(array, i, NullRestrictedValue.of((byte)-42,(short)1854));
                 NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_OPAQUE).invokeExact(array, i);
                 assertEquals(NullRestrictedValue.of((byte)-42,(short)1854), x, "setOpaque NullRestrictedValue value");
+            }
+
+            // Stable
+            {
+                NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+            }
+
+            // StableAcquire
+            {
+                NullRestrictedValue x = (NullRestrictedValue) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(array, i);
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, NullRestrictedValue.of((byte)20,(short)1854));

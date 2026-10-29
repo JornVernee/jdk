@@ -354,15 +354,23 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_putFloat:                 return inline_unsafe_access( is_store, T_FLOAT,    Relaxed, false);
   case vmIntrinsics::_putDouble:                return inline_unsafe_access( is_store, T_DOUBLE,   Relaxed, false);
 
-  case vmIntrinsics::_getReferenceStable:       return inline_unsafe_access(!is_store, T_OBJECT,   Stable, false);
-  case vmIntrinsics::_getBooleanStable:         return inline_unsafe_access(!is_store, T_BOOLEAN,  Stable, false);
-  case vmIntrinsics::_getByteStable:            return inline_unsafe_access(!is_store, T_BYTE,     Stable, false);
-  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Stable, false);
-  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Stable, false);
-  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Stable, false);
-  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Stable, false);
-  case vmIntrinsics::_getFloatStable:           return inline_unsafe_access(!is_store, T_FLOAT,    Stable, false);
-  case vmIntrinsics::_getDoubleStable:          return inline_unsafe_access(!is_store, T_DOUBLE,   Stable, false);
+  case vmIntrinsics::_getReferenceStable:       return inline_unsafe_access(!is_store, T_OBJECT,   Relaxed, false, true);
+  case vmIntrinsics::_getBooleanStable:         return inline_unsafe_access(!is_store, T_BOOLEAN,  Relaxed, false, true);
+  case vmIntrinsics::_getByteStable:            return inline_unsafe_access(!is_store, T_BYTE,     Relaxed, false, true);
+  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, true, true);
+  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, true, true);
+  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Relaxed, true, true);
+  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Relaxed, true, true);
+
+  case vmIntrinsics::_getReferenceStableAcquire: return inline_unsafe_access(!is_store, T_OBJECT,   Acquire, false, true);
+  case vmIntrinsics::_getBooleanStableAcquire:   return inline_unsafe_access(!is_store, T_BOOLEAN,  Acquire, false, true);
+  case vmIntrinsics::_getByteStableAcquire:      return inline_unsafe_access(!is_store, T_BYTE,     Acquire, false, true);
+  case vmIntrinsics::_getShortStableAcquire:     return inline_unsafe_access(!is_store, T_SHORT,    Acquire, false, true);
+  case vmIntrinsics::_getCharStableAcquire:      return inline_unsafe_access(!is_store, T_CHAR,     Acquire, false, true);
+  case vmIntrinsics::_getIntStableAcquire:       return inline_unsafe_access(!is_store, T_INT,      Acquire, false, true);
+  case vmIntrinsics::_getLongStableAcquire:      return inline_unsafe_access(!is_store, T_LONG,     Acquire, false, true);
+  case vmIntrinsics::_getFloatStableAcquire:     return inline_unsafe_access(!is_store, T_FLOAT,    Acquire, false, true);
+  case vmIntrinsics::_getDoubleStableAcquire:    return inline_unsafe_access(!is_store, T_DOUBLE,   Acquire, false, true);
 
   case vmIntrinsics::_getReferenceVolatile:     return inline_unsafe_access(!is_store, T_OBJECT,   Volatile, false);
   case vmIntrinsics::_getBooleanVolatile:       return inline_unsafe_access(!is_store, T_BOOLEAN,  Volatile, false);
@@ -2409,7 +2417,6 @@ const TypeOopPtr* LibraryCallKit::sharpen_unsafe_type(Compile::AliasType* alias_
 DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
   switch (kind) {
       case Relaxed:
-      case Stable:
         return MO_UNORDERED;
       case Opaque:
         return MO_RELAXED;
@@ -2425,14 +2432,12 @@ DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
   }
 }
 
-bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, const AccessKind kind, const bool unaligned) {
+bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, const AccessKind kind, const bool unaligned, const bool is_stable) {
   if (callee()->is_static())  return false;  // caller must have the capability!
   DecoratorSet decorators = C2_UNSAFE_ACCESS;
   guarantee(!is_store || kind != Acquire, "Acquire accesses can be produced only for loads");
   guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
   assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
-
-  bool is_stable = kind == Stable;
 
   if (is_reference_type(type)) {
     decorators |= ON_UNKNOWN_OOP_REF;

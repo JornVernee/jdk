@@ -114,6 +114,7 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         if (vhs.supportsAtomicAccess) {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
@@ -122,7 +123,7 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         } else {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_VOLATILE));
@@ -130,7 +131,7 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         }
 
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
@@ -283,6 +284,10 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
 
         checkNPE(() -> {
             char x = (char) vh.getStable(array, ci);
+        });
+
+        checkNPE(() -> {
+            char x = (char) vh.getStableAcquire(array, ci);
         });
 
         checkNPE(() -> {
@@ -677,6 +682,10 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
                     char x = (char) vh.getStable(array, ci);
                 });
 
+                checkIOOBE(() -> {
+                    char x = (char) vh.getStableAcquire(array, ci);
+                });
+
                 if (!readOnly) {
                     checkIOOBE(() -> {
                         vh.setVolatile(array, ci, VALUE_1);
@@ -723,7 +732,7 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
                 });
 
                 checkISE(() -> {
-                    char x = (char) vh.getStable(array, ci);
+                    char x = (char) vh.getStableAcquire(array, ci);
                 });
 
                 if (!readOnly) {
@@ -800,10 +809,12 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
 
                 // Stable
                 {
-                    // TODO separate storage
-                    //vh.set(array, i, VALUE_2);
-                    //char x = (char) vh.getStable(array, i);
-                    //assertEquals(VALUE_2, x, "getStable char value");
+                    char x = (char) vh.getStable(array, i);
+                }
+
+                // StableAcquire
+                {
+                    char x = (char) vh.getStableAcquire(array, i);
                 }
 
 
@@ -832,6 +843,12 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
                 assertEquals(v, x, "get char value");
             }
 
+            // Stable
+            {
+                char x = (char) vh.getStable(array, i);
+                assertEquals(v, x, "getStable char value");
+            }
+
             if (iAligned) {
                 // Volatile
                 {
@@ -851,10 +868,10 @@ public class VarHandleTestByteArrayAsChar extends VarHandleBaseByteArrayTest {
                     assertEquals(v, x, "getOpaque char value");
                 }
 
-                // Stable
+                // StableAcquire
                 {
-                    char x = (char) vh.getStable(array, i);
-                    assertEquals(v, x, "getStable char value");
+                    char x = (char) vh.getStableAcquire(array, i);
+                    assertEquals(v, x, "getStableAcquire char value");
                 }
             }
         }

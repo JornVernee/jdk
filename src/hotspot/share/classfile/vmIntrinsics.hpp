@@ -906,8 +906,26 @@ class methodHandle;
   do_intrinsic(_getCharStable,       jdk_internal_misc_Unsafe,    getCharStable_name, getChar_signature,           F_R) \
   do_intrinsic(_getIntStable,        jdk_internal_misc_Unsafe,    getIntStable_name, getInt_signature,             F_R) \
   do_intrinsic(_getLongStable,       jdk_internal_misc_Unsafe,    getLongStable_name, getLong_signature,           F_R) \
-  do_intrinsic(_getFloatStable,      jdk_internal_misc_Unsafe,    getFloatStable_name, getFloat_signature,         F_R) \
-  do_intrinsic(_getDoubleStable,     jdk_internal_misc_Unsafe,    getDoubleStable_name, getDouble_signature,       F_R) \
+                                                                                                                        \
+  do_name(getReferenceStableAcquire_name,"getReferenceStableAcquire")                                                   \
+  do_name(getBooleanStableAcquire_name,"getBooleanStableAcquire")                                                       \
+  do_name(getByteStableAcquire_name,"getByteStableAcquire")                                                             \
+  do_name(getShortStableAcquire_name,"getShortStableAcquire")                                                           \
+  do_name(getCharStableAcquire_name,"getCharStableAcquire")                                                             \
+  do_name(getIntStableAcquire_name,"getIntStableAcquire")                                                               \
+  do_name(getLongStableAcquire_name,"getLongStableAcquire")                                                             \
+  do_name(getFloatStableAcquire_name,"getFloatStableAcquire")                                                           \
+  do_name(getDoubleStableAcquire_name,"getDoubleStableAcquire")                                                         \
+                                                                                                                        \
+  do_intrinsic(_getReferenceStableAcquire,  jdk_internal_misc_Unsafe,  getReferenceStableAcquire_name, getReference_signature, F_R) \
+  do_intrinsic(_getBooleanStableAcquire,    jdk_internal_misc_Unsafe,  getBooleanStableAcquire_name, getBoolean_signature,     F_R) \
+  do_intrinsic(_getByteStableAcquire,       jdk_internal_misc_Unsafe,  getByteStableAcquire_name, getByte_signature,           F_R) \
+  do_intrinsic(_getShortStableAcquire,      jdk_internal_misc_Unsafe,  getShortStableAcquire_name, getShort_signature,         F_R) \
+  do_intrinsic(_getCharStableAcquire,       jdk_internal_misc_Unsafe,  getCharStableAcquire_name, getChar_signature,           F_R) \
+  do_intrinsic(_getIntStableAcquire,        jdk_internal_misc_Unsafe,  getIntStableAcquire_name, getInt_signature,             F_R) \
+  do_intrinsic(_getLongStableAcquire,       jdk_internal_misc_Unsafe,  getLongStableAcquire_name, getLong_signature,           F_R) \
+  do_intrinsic(_getFloatStableAcquire,      jdk_internal_misc_Unsafe,  getFloatStableAcquire_name, getFloat_signature,         F_R) \
+  do_intrinsic(_getDoubleStableAcquire,     jdk_internal_misc_Unsafe,  getDoubleStableAcquire_name, getDouble_signature,       F_R) \
                                                                                                                         \
   do_name(getShortUnaligned_name,"getShortUnaligned")     do_name(putShortUnaligned_name,"putShortUnaligned")           \
   do_name(getCharUnaligned_name,"getCharUnaligned")       do_name(putCharUnaligned_name,"putCharUnaligned")             \

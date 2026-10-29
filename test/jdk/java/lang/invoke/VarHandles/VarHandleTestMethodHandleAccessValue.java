@@ -162,10 +162,12 @@ public class VarHandleTestMethodHandleAccessValue extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact(recv, Value.getInstance(20));
-            //Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
-            //assertEquals(Value.getInstance(20), x, "getStable Value value");
+            Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+        }
+
+        // StableAcquire
+        {
+            Value x = (Value) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(recv);
         }
 
         hs.get(TestAccessMode.SET).invokeExact(recv, Value.getInstance(10));
@@ -382,10 +384,12 @@ public class VarHandleTestMethodHandleAccessValue extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact(Value.getInstance(20));
-            //Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact();
-            //assertEquals(Value.getInstance(20), x, "getStable Value value");
+            Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+        }
+
+        // StableAcquire
+        {
+            Value x = (Value) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact();
         }
 
         hs.get(TestAccessMode.SET).invokeExact(Value.getInstance(10));
@@ -606,10 +610,12 @@ public class VarHandleTestMethodHandleAccessValue extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //hs.get(TestAccessMode.SET).invokeExact(array, i, Value.getInstance(20));
-                //Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
-                //assertEquals(Value.getInstance(20), x, "getStable Value value");
+                Value x = (Value) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+            }
+
+            // StableAcquire
+            {
+                Value x = (Value) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(array, i);
             }
 
             hs.get(TestAccessMode.SET).invokeExact(array, i, Value.getInstance(10));

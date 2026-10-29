@@ -184,10 +184,12 @@ public class VarHandleTestMethodHandleAccess$Type$ extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact(recv, $value2$);
-            //$type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
-            //assertEquals($value2$, x, "getStable $type$ value");
+            $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact(recv);
+        }
+
+        // StableAcquire
+        {
+            $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(recv);
         }
 
 #if[CAS]
@@ -543,10 +545,12 @@ public class VarHandleTestMethodHandleAccess$Type$ extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //hs.get(TestAccessMode.SET).invokeExact($value2$);
-            //$type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact();
-            //assertEquals($value2$, x, "getStable $type$ value");
+            $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact();
+        }
+
+        // StableAcquire
+        {
+            $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact();
         }
 
 #if[CAS]
@@ -906,10 +910,12 @@ public class VarHandleTestMethodHandleAccess$Type$ extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //hs.get(TestAccessMode.SET).invokeExact(array, i, $value2$);
-                //$type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
-                //assertEquals($value2$, x, "getStable $type$ value");
+                $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE).invokeExact(array, i);
+            }
+
+            // StableAcquire
+            {
+                $type$ x = ($type$) hs.get(TestAccessMode.GET_STABLE_ACQUIRE).invokeExact(array, i);
             }
 
 #if[CAS]

@@ -332,6 +332,12 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
             boolean x = (boolean) vh.getStable(recv);
             assertEquals(true, x, "getStable boolean value");
         }
+
+        // StableAcquire
+        {
+            boolean x = (boolean) vh.getStableAcquire(recv);
+            assertEquals(true, x, "getStableAcquire boolean value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessBoolean recv, VarHandle vh) {
@@ -397,6 +403,12 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
         {
             boolean x = (boolean) vh.getStable();
             assertEquals(true, x, "getStable boolean value");
+        }
+
+        // StableAcquire
+        {
+            boolean x = (boolean) vh.getStableAcquire();
+            assertEquals(true, x, "getStableAcquire boolean value");
         }
     }
 
@@ -465,10 +477,12 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, true);
             //boolean x = (boolean) vh.getStable(recv);
-            //assertEquals(true, x, "getStable boolean value");
+        }
+
+        // StableAcquire
+        {
+            //boolean x = (boolean) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, true);
@@ -765,10 +779,12 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(true);
-            //boolean x = (boolean) vh.getStable();
-            //assertEquals(true, x, "getStable boolean value");
+            boolean x = (boolean) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            boolean x = (boolean) vh.getStableAcquire();
         }
 
         vh.set(true);
@@ -1068,10 +1084,12 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, true);
-                //boolean x = (boolean) vh.getStable(array, i);
-                //assertEquals(true, x, "getStable boolean value");
+                boolean x = (boolean) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                boolean x = (boolean) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, true);
@@ -1379,6 +1397,10 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 boolean x = (boolean) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                boolean x = (boolean) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

@@ -114,6 +114,7 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
 
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET));
         assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET));
+        assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
 
         if (vhs.supportsAtomicAccess) {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
@@ -122,7 +123,7 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertTrue(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         } else {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_VOLATILE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_VOLATILE));
@@ -130,7 +131,7 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_RELEASE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_OPAQUE));
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.SET_OPAQUE));
-            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE));
+            assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.GET_STABLE_ACQUIRE));
         }
 
             assertFalse(vh.isAccessModeSupported(VarHandle.AccessMode.COMPARE_AND_SET));
@@ -283,6 +284,10 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
 
         checkNPE(() -> {
             short x = (short) vh.getStable(array, ci);
+        });
+
+        checkNPE(() -> {
+            short x = (short) vh.getStableAcquire(array, ci);
         });
 
         checkNPE(() -> {
@@ -677,6 +682,10 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
                     short x = (short) vh.getStable(array, ci);
                 });
 
+                checkIOOBE(() -> {
+                    short x = (short) vh.getStableAcquire(array, ci);
+                });
+
                 if (!readOnly) {
                     checkIOOBE(() -> {
                         vh.setVolatile(array, ci, VALUE_1);
@@ -723,7 +732,7 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
                 });
 
                 checkISE(() -> {
-                    short x = (short) vh.getStable(array, ci);
+                    short x = (short) vh.getStableAcquire(array, ci);
                 });
 
                 if (!readOnly) {
@@ -800,10 +809,12 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
 
                 // Stable
                 {
-                    // TODO separate storage
-                    //vh.set(array, i, VALUE_2);
-                    //short x = (short) vh.getStable(array, i);
-                    //assertEquals(VALUE_2, x, "getStable short value");
+                    short x = (short) vh.getStable(array, i);
+                }
+
+                // StableAcquire
+                {
+                    short x = (short) vh.getStableAcquire(array, i);
                 }
 
 
@@ -832,6 +843,12 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
                 assertEquals(v, x, "get short value");
             }
 
+            // Stable
+            {
+                short x = (short) vh.getStable(array, i);
+                assertEquals(v, x, "getStable short value");
+            }
+
             if (iAligned) {
                 // Volatile
                 {
@@ -851,10 +868,10 @@ public class VarHandleTestByteArrayAsShort extends VarHandleBaseByteArrayTest {
                     assertEquals(v, x, "getOpaque short value");
                 }
 
-                // Stable
+                // StableAcquire
                 {
-                    short x = (short) vh.getStable(array, i);
-                    assertEquals(v, x, "getStable short value");
+                    short x = (short) vh.getStableAcquire(array, i);
+                    assertEquals(v, x, "getStableAcquire short value");
                 }
             }
         }

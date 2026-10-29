@@ -343,6 +343,12 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
             Value x = (Value) vh.getStable(recv);
             assertEquals(Value.getInstance(10), x, "getStable Value value");
         }
+
+        // StableAcquire
+        {
+            Value x = (Value) vh.getStableAcquire(recv);
+            assertEquals(Value.getInstance(10), x, "getStableAcquire Value value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessValue recv, VarHandle vh) {
@@ -443,6 +449,12 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
         {
             Value x = (Value) vh.getStable();
             assertEquals(Value.getInstance(10), x, "getStable Value value");
+        }
+
+        // StableAcquire
+        {
+            Value x = (Value) vh.getStableAcquire();
+            assertEquals(Value.getInstance(10), x, "getStableAcquire Value value");
         }
     }
 
@@ -546,10 +558,12 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, Value.getInstance(10));
             //Value x = (Value) vh.getStable(recv);
-            //assertEquals(Value.getInstance(10), x, "getStable Value value");
+        }
+
+        // StableAcquire
+        {
+            //Value x = (Value) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, Value.getInstance(10));
@@ -798,10 +812,12 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(Value.getInstance(10));
-            //Value x = (Value) vh.getStable();
-            //assertEquals(Value.getInstance(10), x, "getStable Value value");
+            Value x = (Value) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            Value x = (Value) vh.getStableAcquire();
         }
 
         vh.set(Value.getInstance(10));
@@ -1053,10 +1069,12 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, Value.getInstance(10));
-                //Value x = (Value) vh.getStable(array, i);
-                //assertEquals(Value.getInstance(10), x, "getStable Value value");
+                Value x = (Value) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                Value x = (Value) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, Value.getInstance(10));
@@ -1316,6 +1334,10 @@ public class VarHandleTestAccessValue extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 Value x = (Value) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                Value x = (Value) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {

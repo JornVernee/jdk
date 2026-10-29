@@ -340,6 +340,12 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
             String x = (String) vh.getStable(recv);
             assertEquals("foo", x, "getStable String value");
         }
+
+        // StableAcquire
+        {
+            String x = (String) vh.getStableAcquire(recv);
+            assertEquals("foo", x, "getStableAcquire String value");
+        }
     }
 
     static void testInstanceFinalFieldUnsupported(VarHandleTestAccessString recv, VarHandle vh) {
@@ -440,6 +446,12 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
         {
             String x = (String) vh.getStable();
             assertEquals("foo", x, "getStable String value");
+        }
+
+        // StableAcquire
+        {
+            String x = (String) vh.getStableAcquire();
+            assertEquals("foo", x, "getStableAcquire String value");
         }
     }
 
@@ -543,10 +555,12 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set(recv, "foo");
             //String x = (String) vh.getStable(recv);
-            //assertEquals("foo", x, "getStable String value");
+        }
+
+        // StableAcquire
+        {
+            //String x = (String) vh.getStableAcquire(recv);
         }
 
         vh.set(recv, "foo");
@@ -795,10 +809,12 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
 
         // Stable
         {
-            // TODO separate storage
-            //vh.set("foo");
-            //String x = (String) vh.getStable();
-            //assertEquals("foo", x, "getStable String value");
+            String x = (String) vh.getStable();
+        }
+
+        // StableAcquire
+        {
+            String x = (String) vh.getStableAcquire();
         }
 
         vh.set("foo");
@@ -1050,10 +1066,12 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
 
             // Stable
             {
-                // TODO separate storage
-                //vh.set(array, i, "foo");
-                //String x = (String) vh.getStable(array, i);
-                //assertEquals("foo", x, "getStable String value");
+                String x = (String) vh.getStable(array, i);
+            }
+
+            // Stable
+            {
+                String x = (String) vh.getStableAcquire(array, i);
             }
 
             vh.set(array, i, "foo");
@@ -1313,6 +1331,10 @@ public class VarHandleTestAccessString extends VarHandleBaseTest {
 
             checkAIOOBE(() -> {
                 String x = (String) vh.getStable(array, ci);
+            });
+
+            checkAIOOBE(() -> {
+                String x = (String) vh.getStableAcquire(array, ci);
             });
 
             checkAIOOBE(() -> {
