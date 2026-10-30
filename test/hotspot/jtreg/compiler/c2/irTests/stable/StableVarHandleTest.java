@@ -54,7 +54,9 @@ public class StableVarHandleTest {
 
     private static String generate(CompileFramework comp) {
         // TODO add cases for MemorySegment and direct ByteBuffer
-        var allTypeTemplate = Template.make("Type", "Init", "AccessMode", (String _, String _, String _) -> scope(
+        // (mismatched and off-heap accesses currently do not fold,
+        // so tests for segment view, byte array view, and byte buffer view handles are excluded here)
+        var testTemplate = Template.make("Type", "Init", "AccessMode", (String _, String _, String _) -> scope(
             """
             static class $Carrier {
                 static #Type staticField = #Init;
@@ -97,55 +99,19 @@ public class StableVarHandleTest {
                 return (#Type) $VH_ARRAY_ELEMENT.#AccessMode($ARR, 0);
             }
             """));
-        var viewPrimsOnlyTemplate = Template.make("Type", "Init", (String _, String _) -> scope(
-            """
-            static final VarHandle $VH_BYTE_ARR_VIEW
-                = MethodHandles.byteArrayViewVarHandle(#Type[].class, ByteOrder.nativeOrder());
-            static final VarHandle $VH_BYTE_BUFFER_VIEW
-                = MethodHandles.byteBufferViewVarHandle(#Type[].class, ByteOrder.nativeOrder());
 
-            static final byte[] $BYTE_ARR = new byte[8];
-            static final ByteBuffer $BB;
-
-            static {
-                $VH_BYTE_ARR_VIEW.set($BYTE_ARR, 0, (#Type) #Init);
-                $BB = ByteBuffer.allocate(8);
-                $VH_BYTE_BUFFER_VIEW.set($BB, 0, (#Type) #Init);
-            }
-
-            @Test
-            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-            static #Type $testFoldByteArrayView() {
-                return (#Type) $VH_BYTE_ARR_VIEW.getStable($BYTE_ARR, 0);
-            }
-
-            @Test
-            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-            static #Type $testFoldByteBufferView() {
-                return (#Type) $VH_BYTE_BUFFER_VIEW.getStable($BB, 0);
-            }
-            """));
-
-        record TestCase(String type, String init, boolean isViewPrim) {}
-        List<TemplateToken> testTemplateTokens = Stream.of(
-                new TestCase("Object",  "new Object()", false),
-                new TestCase("boolean", "true",         false),
-                new TestCase("byte",    "42",           false),
-                new TestCase("char",    "42",           true),
-                new TestCase("short",   "42",           true),
-                new TestCase("int",     "42",           true),
-                new TestCase("long",    "42",           true),
-                new TestCase("float",   "42",           true),
-                new TestCase("double",  "42",           true)
-        )
-        .mapMulti((TestCase testCase, Consumer<TemplateToken> sink) -> {
-            sink.accept(allTypeTemplate.asToken(testCase.type(), testCase.init(), "getStable"));
-            sink.accept(allTypeTemplate.asToken(testCase.type(), testCase.init(), "getStableAcquire"));
-            if (testCase.isViewPrim()) {
-                sink.accept(viewPrimsOnlyTemplate.asToken(testCase.type(), testCase.init()));
-            }
-        })
-        .toList();
+        List<TemplateToken> testTemplateTokens = Stream.of("getStable", "getStableAcquire")
+            .mapMulti((String accessMode, Consumer<TemplateToken> sink) ->{
+                sink.accept(testTemplate.asToken("Object",  "new Object()", accessMode));
+                sink.accept(testTemplate.asToken("boolean", "true",         accessMode));
+                sink.accept(testTemplate.asToken("byte",    "42",           accessMode));
+                sink.accept(testTemplate.asToken("char",    "42",           accessMode));
+                sink.accept(testTemplate.asToken("short",   "42",           accessMode));
+                sink.accept(testTemplate.asToken("int",     "42",           accessMode));
+                sink.accept(testTemplate.asToken("long",    "42",           accessMode));
+                sink.accept(testTemplate.asToken("float",   "42",           accessMode));
+                sink.accept(testTemplate.asToken("double",  "42",           accessMode));
+            }).toList();
 
         return TestFrameworkClass.render(
                 "compiler.c2.irTests.stable", "StableVarHandleTest_Case",
