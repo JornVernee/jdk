@@ -40,6 +40,27 @@
         }
     }
 
+    @ForceInline
+    public $type$ get$Type$Stable(MemorySessionImpl session, Object base, long offset) {
+        try {
+            return get$Type$StableInternal(session, base, offset);
+        } catch (ScopedAccessError ex) {
+            throw ex.newRuntimeException();
+        }
+    }
+
+    @ForceInline @Scoped
+    private $type$ get$Type$StableInternal(MemorySessionImpl session, Object base, long offset) {
+        try {
+            if (session != null) {
+                session.checkValidStateRaw();
+            }
+            return UNSAFE.get$Type$Stable(base, offset);
+        } finally {
+            Reference.reachabilityFence(session);
+        }
+    }
+
 #if[Unaligned]
     @ForceInline
     public $type$ get$Type$Unaligned(MemorySessionImpl session, Object base, long offset, boolean be) {
@@ -84,21 +105,21 @@
     }
 
     @ForceInline
-    public $type$ get$Type$Stable(MemorySessionImpl session, Object base, long offset, boolean be) {
+    public $type$ get$Type$StableUnaligned(MemorySessionImpl session, Object base, long offset, boolean be) {
         try {
-            return get$Type$StableInternal(session, base, offset, be);
+            return get$Type$StableUnalignedInternal(session, base, offset, be);
         } catch (ScopedAccessError ex) {
             throw ex.newRuntimeException();
         }
     }
 
     @ForceInline @Scoped
-    private $type$ get$Type$StableInternal(MemorySessionImpl session, Object base, long offset, boolean be) {
+    private $type$ get$Type$StableUnalignedInternal(MemorySessionImpl session, Object base, long offset, boolean be) {
         try {
             if (session != null) {
                 session.checkValidStateRaw();
             }
-            return UNSAFE.get$Type$Stable(base, offset, be);
+            return UNSAFE.get$Type$StableUnaligned(base, offset, be);
         } finally {
             Reference.reachabilityFence(session);
         }
@@ -225,27 +246,6 @@
                 session.checkValidStateRaw();
             }
             UNSAFE.put$Type$Opaque(base, offset, value);
-        } finally {
-            Reference.reachabilityFence(session);
-        }
-    }
-
-    @ForceInline
-    public $type$ get$Type$Stable(MemorySessionImpl session, Object base, long offset) {
-        try {
-            return get$Type$StableInternal(session, base, offset);
-        } catch (ScopedAccessError ex) {
-            throw ex.newRuntimeException();
-        }
-    }
-
-    @ForceInline @Scoped
-    private $type$ get$Type$StableInternal(MemorySessionImpl session, Object base, long offset) {
-        try {
-            if (session != null) {
-                session.checkValidStateRaw();
-            }
-            return UNSAFE.get$Type$Stable(base, offset);
         } finally {
             Reference.reachabilityFence(session);
         }

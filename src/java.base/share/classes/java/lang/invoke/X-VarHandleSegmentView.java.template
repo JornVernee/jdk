@@ -124,7 +124,7 @@ import static java.lang.invoke.SegmentVarHandle.*;
         SegmentVarHandle handle = (SegmentVarHandle)ob;
         AbstractMemorySegmentImpl bb = handle.checkSegment(obb, base, true);
 #if[floatingPoint]
-        $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$Stable(bb.sessionImpl(),
+        $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$StableUnaligned(bb.sessionImpl(),
                 bb.unsafeGetBase(),
                 offset(bb, base, offset),
                 handle.be);
@@ -135,7 +135,7 @@ import static java.lang.invoke.SegmentVarHandle.*;
                 bb.unsafeGetBase(),
                 offset(bb, base, offset)){#if[boolean]? != 0};
 #else[ByteOrBoolean]
-        return SCOPED_MEMORY_ACCESS.get$Type$Stable(bb.sessionImpl(),
+        return SCOPED_MEMORY_ACCESS.get$Type$StableUnaligned(bb.sessionImpl(),
                 bb.unsafeGetBase(),
                 offset(bb, base, offset),
                 handle.be);

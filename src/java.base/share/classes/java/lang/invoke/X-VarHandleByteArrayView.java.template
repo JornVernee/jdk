@@ -156,10 +156,18 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static $type$ getStable(VarHandle ob, Object oba, int index) {
             ArrayHandle handle = (ArrayHandle)ob;
             byte[] ba = (byte[]) oba;
-            return UNSAFE.get$Type$Stable(
+#if[floatingPoint]
+            $rawType$ rawValue = UNSAFE.get$RawType$StableUnaligned(
                     ba,
                     ((long) index(ba, index)) + Unsafe.ARRAY_BYTE_BASE_OFFSET,
                     handle.be);
+            return $Type$.$rawType$BitsTo$Type$(rawValue);
+#else[floatingPoint]
+            return UNSAFE.get$Type$StableUnaligned(
+                    ba,
+                    ((long) index(ba, index)) + Unsafe.ARRAY_BYTE_BASE_OFFSET,
+                    handle.be);
+#end[floatingPoint]
         }
 
         static final VarForm FORM = new VarForm(ArrayHandle.class, byte[].class, $type$.class, int.class);
@@ -273,13 +281,13 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBufferHandle handle = (ByteBufferHandle)ob;
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
 #if[floatingPoint]
-            $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$Stable(session(bb),
+            $rawType$ rawValue = SCOPED_MEMORY_ACCESS.get$RawType$StableUnaligned(session(bb),
                     UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     handle.be);
             return $Type$.$rawType$BitsTo$Type$(rawValue);
 #else[floatingPoint]
-            return SCOPED_MEMORY_ACCESS.get$Type$Stable(session(bb),
+            return SCOPED_MEMORY_ACCESS.get$Type$StableUnaligned(session(bb),
                     UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     handle.be);

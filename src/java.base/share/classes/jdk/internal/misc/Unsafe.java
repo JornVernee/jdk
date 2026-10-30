@@ -4197,21 +4197,13 @@ public final class Unsafe {
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public short getShortStable(Object o, long offset) {
-        return getShortUnaligned(o, offset);
-    }
-
-    public short getShortStable(Object o, long offset, boolean be) {
-        return convEndian(be, getShortStable(o, offset));
+        return getShort(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
     public char getCharStable(Object o, long offset) {
-        return getCharUnaligned(o, offset);
-    }
-
-    public char getCharStable(Object o, long offset, boolean be) {
-        return convEndian(be, getCharStable(o, offset));
+        return getChar(o, offset);
     }
 
     /**
@@ -4244,36 +4236,62 @@ public final class Unsafe {
         return getIntUnaligned(o, offset);
     }
 
-    public int getIntStable(Object o, long offset, boolean be) {
-        return convEndian(be, getIntStable(o, offset));
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public long getLongStable(Object o, long offset){
+        return getLong(o, offset);
     }
 
     /** @see #getIntStable(Object, long) @since 99 */
     @IntrinsicCandidate
-    public long getLongStable(Object o, long offset){
+    public float getFloatStable(Object o, long offset){
+        return getFloat(o, offset);
+    }
+
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public double getDoubleStable(Object o, long offset){
+        return getDouble(o, offset);
+    }
+
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public short getShortStableUnaligned(Object o, long offset) {
+        return getShortUnaligned(o, offset);
+    }
+
+    public short getShortStableUnaligned(Object o, long offset, boolean be) {
+        return convEndian(be, getShortStableUnaligned(o, offset));
+    }
+
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public char getCharStableUnaligned(Object o, long offset) {
+        return getCharUnaligned(o, offset);
+    }
+
+    public char getCharStableUnaligned(Object o, long offset, boolean be) {
+        return convEndian(be, getCharStableUnaligned(o, offset));
+    }
+
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public int getIntStableUnaligned(Object o, long offset) {
+        return getIntUnaligned(o, offset);
+    }
+
+    public int getIntStableUnaligned(Object o, long offset, boolean be) {
+        return convEndian(be, getIntStableUnaligned(o, offset));
+    }
+
+    /** @see #getIntStable(Object, long) @since 99 */
+    @IntrinsicCandidate
+    public long getLongStableUnaligned(Object o, long offset){
         return getLongUnaligned(o, offset);
     }
 
-    public long getLongStable(Object o, long offset, boolean be){
-        return convEndian(be, getLongStable(o, offset));
-    }
-
-    /** @see #getIntStable(Object, long) @since 99 */
-    public float getFloatStable(Object o, long offset){
-        return Float.intBitsToFloat(getIntStable(o, offset));
-    }
-
-    public float getFloatStable(Object o, long offset, boolean be){
-        return Float.intBitsToFloat(getIntStable(o, offset, be));
-    }
-
-    /** @see #getIntStable(Object, long) @since 99 */
-    public double getDoubleStable(Object o, long offset){
-        return Double.longBitsToDouble(getLongStable(o, offset));
-    }
-
-    public double getDoubleStable(Object o, long offset, boolean be){
-        return Double.longBitsToDouble(getLongStable(o, offset, be));
+    public long getLongStableUnaligned(Object o, long offset, boolean be){
+        return convEndian(be, getLongStableUnaligned(o, offset));
     }
 
     /**

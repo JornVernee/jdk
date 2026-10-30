@@ -392,24 +392,23 @@ public class StableVarHandleTest {
         return (long) VH_LONG_ARRAY_ELEMENT.getStableAcquire(LONG_ARR, 0);
     }
 
-    // FIXME No folding due to mismatched access (see impl in Unsafe)
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static float testFoldInstanceField_float() {
-//        return (float) VH_FLOAT_INSTANCE_FIELD.getStable(CARRIER);
-//    }
-//
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static float testFoldStaticField_float() {
-//        return (float) VH_FLOAT_STATIC_FIELD.getStable();
-//    }
-//
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static float testFoldArrayElement_float() {
-//        return (float) VH_FLOAT_ARRAY_ELEMENT.getStable(FLOAT_ARR, 0);
-//    }
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static float testFoldInstanceField_float() {
+        return (float) VH_FLOAT_INSTANCE_FIELD.getStable(CARRIER);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static float testFoldStaticField_float() {
+        return (float) VH_FLOAT_STATIC_FIELD.getStable();
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static float testFoldArrayElement_float() {
+        return (float) VH_FLOAT_ARRAY_ELEMENT.getStable(FLOAT_ARR, 0);
+    }
 
     @Test
     @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
@@ -429,24 +428,23 @@ public class StableVarHandleTest {
         return (float) VH_FLOAT_ARRAY_ELEMENT.getStableAcquire(FLOAT_ARR, 0);
     }
 
-    // FIXME No folding due to mismatched access (see impl in Unsafe)
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static double testFoldInstanceField_double() {
-//        return (double) VH_DOUBLE_INSTANCE_FIELD.getStable(CARRIER);
-//    }
-//
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static double testFoldStaticField_double() {
-//        return (double) VH_DOUBLE_STATIC_FIELD.getStable();
-//    }
-//
-//    @Test
-//    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-//    static double testFoldArrayElement_double() {
-//        return (double) VH_DOUBLE_ARRAY_ELEMENT.getStable(DOUBLE_ARR, 0);
-//    }
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static double testFoldInstanceField_double() {
+        return (double) VH_DOUBLE_INSTANCE_FIELD.getStable(CARRIER);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static double testFoldStaticField_double() {
+        return (double) VH_DOUBLE_STATIC_FIELD.getStable();
+    }
+
+    @Test
+    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+    static double testFoldArrayElement_double() {
+        return (double) VH_DOUBLE_ARRAY_ELEMENT.getStable(DOUBLE_ARR, 0);
+    }
 
     @Test
     @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })

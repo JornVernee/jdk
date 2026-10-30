@@ -357,10 +357,17 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_getReferenceStable:       return inline_unsafe_access(!is_store, T_OBJECT,   Relaxed, false, true);
   case vmIntrinsics::_getBooleanStable:         return inline_unsafe_access(!is_store, T_BOOLEAN,  Relaxed, false, true);
   case vmIntrinsics::_getByteStable:            return inline_unsafe_access(!is_store, T_BYTE,     Relaxed, false, true);
-  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, true, true);
-  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, true, true);
-  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Relaxed, true, true);
-  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Relaxed, true, true);
+  case vmIntrinsics::_getShortStable:           return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, false, true);
+  case vmIntrinsics::_getCharStable:            return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, false, true);
+  case vmIntrinsics::_getIntStable:             return inline_unsafe_access(!is_store, T_INT,      Relaxed, false, true);
+  case vmIntrinsics::_getLongStable:            return inline_unsafe_access(!is_store, T_LONG,     Relaxed, false, true);
+  case vmIntrinsics::_getFloatStable:           return inline_unsafe_access(!is_store, T_FLOAT,    Relaxed, false, true);
+  case vmIntrinsics::_getDoubleStable:          return inline_unsafe_access(!is_store, T_DOUBLE,   Relaxed, false, true);
+
+  case vmIntrinsics::_getShortStableUnaligned:  return inline_unsafe_access(!is_store, T_SHORT,    Relaxed, true, true);
+  case vmIntrinsics::_getCharStableUnaligned:   return inline_unsafe_access(!is_store, T_CHAR,     Relaxed, true, true);
+  case vmIntrinsics::_getIntStableUnaligned:    return inline_unsafe_access(!is_store, T_INT,      Relaxed, true, true);
+  case vmIntrinsics::_getLongStableUnaligned:   return inline_unsafe_access(!is_store, T_LONG,     Relaxed, true, true);
 
   case vmIntrinsics::_getReferenceStableAcquire: return inline_unsafe_access(!is_store, T_OBJECT,   Acquire, false, true);
   case vmIntrinsics::_getBooleanStableAcquire:   return inline_unsafe_access(!is_store, T_BOOLEAN,  Acquire, false, true);
