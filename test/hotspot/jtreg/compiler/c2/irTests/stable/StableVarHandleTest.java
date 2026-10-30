@@ -26,441 +26,132 @@
  * @requires vm.compiler2.enabled
  * @summary Check getStable folding for var handles
  * @library /test/lib /
- * @run driver compiler.c2.irTests.stable.StableVarHandleTest
+ * @run driver ${test.main.class}
  */
 
 package compiler.c2.irTests.stable;
 
-import compiler.lib.ir_framework.IR;
-import compiler.lib.ir_framework.IRNode;
-import compiler.lib.ir_framework.Test;
-import compiler.lib.ir_framework.TestFramework;
+import compiler.lib.compile_framework.CompileFramework;
+import compiler.lib.template_framework.Template;
+import compiler.lib.template_framework.TemplateToken;
+import compiler.lib.template_framework.library.TestFrameworkClass;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static compiler.lib.template_framework.Template.scope;
 
 public class StableVarHandleTest {
 
     public static void main(String[] args) {
-        TestFramework.run();
+        CompileFramework comp = new CompileFramework();
+        comp.addJavaSourceCode("compiler.c2.irTests.stable.StableVarHandleTest_Case", generate(comp));
+        comp.compile();
+        comp.invoke("compiler.c2.irTests.stable.StableVarHandleTest_Case", "main", new Object[] {new String[] {}});
     }
 
-    static class Carrier {
-        static Object refStaticField = new Object();
-        Object refField = new Object();
-        static boolean booleanStaticField = true;
-        boolean booleanField = true;
-        static byte byteStaticField = 42;
-        byte byteField = 42;
-        static char charStaticField = 42;
-        char charField = 42;
-        static short shortStaticField = 42;
-        short shortField = 42;
-        static int intStaticField = 42;
-        int intField = 42;
-        static long longStaticField = 42;
-        long longField = 42;
-        static float floatStaticField = 42;
-        float floatField = 42;
-        static double doubleStaticField = 42;
-        double doubleField = 42;
-    }
+    private static String generate(CompileFramework comp) {
+        // TODO add cases for MemorySegment and direct ByteBuffer
+        var allTypeTemplate = Template.make("Type", "Init", "AccessMode", (String _, String _, String _) -> scope(
+            """
+            static class $Carrier {
+                static #Type staticField = #Init;
+                #Type field = #Init;
+            }
 
-    static final VarHandle VH_REF_INSTANCE_FIELD;
-    static final VarHandle VH_REF_STATIC_FIELD;
-    static final VarHandle VH_REF_ARRAY_ELEMENT;
-    static final VarHandle VH_BOOLEAN_INSTANCE_FIELD;
-    static final VarHandle VH_BOOLEAN_STATIC_FIELD;
-    static final VarHandle VH_BOOLEAN_ARRAY_ELEMENT;
-    static final VarHandle VH_BYTE_INSTANCE_FIELD;
-    static final VarHandle VH_BYTE_STATIC_FIELD;
-    static final VarHandle VH_BYTE_ARRAY_ELEMENT;
-    static final VarHandle VH_CHAR_INSTANCE_FIELD;
-    static final VarHandle VH_CHAR_STATIC_FIELD;
-    static final VarHandle VH_CHAR_ARRAY_ELEMENT;
-    static final VarHandle VH_SHORT_INSTANCE_FIELD;
-    static final VarHandle VH_SHORT_STATIC_FIELD;
-    static final VarHandle VH_SHORT_ARRAY_ELEMENT;
-    static final VarHandle VH_INT_INSTANCE_FIELD;
-    static final VarHandle VH_INT_STATIC_FIELD;
-    static final VarHandle VH_INT_ARRAY_ELEMENT;
-    static final VarHandle VH_LONG_INSTANCE_FIELD;
-    static final VarHandle VH_LONG_STATIC_FIELD;
-    static final VarHandle VH_LONG_ARRAY_ELEMENT;
-    static final VarHandle VH_FLOAT_INSTANCE_FIELD;
-    static final VarHandle VH_FLOAT_STATIC_FIELD;
-    static final VarHandle VH_FLOAT_ARRAY_ELEMENT;
-    static final VarHandle VH_DOUBLE_INSTANCE_FIELD;
-    static final VarHandle VH_DOUBLE_STATIC_FIELD;
-    static final VarHandle VH_DOUBLE_ARRAY_ELEMENT;
+            static final VarHandle $VH_INSTANCE_FIELD;
+            static final VarHandle $VH_STATIC_FIELD;
+            static final VarHandle $VH_ARRAY_ELEMENT;
 
-    static final Carrier CARRIER = new Carrier();
-    static final Object[] REF_ARR = { new Object() };
-    static final boolean[] BOOLEAN_ARR = { true };
-    static final byte[] BYTE_ARR = { 42 };
-    static final char[] CHAR_ARR = { 42 };
-    static final short[] SHORT_ARR = { 42 };
-    static final int[] INT_ARR = { 42 };
-    static final long[] LONG_ARR = { 42 };
-    static final float[] FLOAT_ARR = { 42 };
-    static final double[] DOUBLE_ARR = { 42 };
+            static {
+                try {
+                    MethodHandles.Lookup lookup = MethodHandles.lookup();
+                    $VH_INSTANCE_FIELD = lookup.findVarHandle($Carrier.class, "field", #Type.class);
+                    $VH_STATIC_FIELD = lookup.findStaticVarHandle($Carrier.class, "staticField", #Type.class);
+                    $VH_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(#Type[].class);
+                } catch (ReflectiveOperationException e) {
+                    throw new ExceptionInInitializerError(e);
+                }
+            }
 
-    static {
-        try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            VH_REF_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "refField", Object.class);
-            VH_REF_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "refStaticField", Object.class);
-            VH_REF_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(Object[].class);
-            VH_BOOLEAN_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "booleanField", boolean.class);
-            VH_BOOLEAN_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "booleanStaticField", boolean.class);
-            VH_BOOLEAN_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(boolean[].class);
-            VH_BYTE_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "byteField", byte.class);
-            VH_BYTE_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "byteStaticField", byte.class);
-            VH_BYTE_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(byte[].class);
-            VH_CHAR_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "charField", char.class);
-            VH_CHAR_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "charStaticField", char.class);
-            VH_CHAR_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(char[].class);
-            VH_SHORT_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "shortField", short.class);
-            VH_SHORT_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "shortStaticField", short.class);
-            VH_SHORT_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(short[].class);
-            VH_INT_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "intField", int.class);
-            VH_INT_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "intStaticField", int.class);
-            VH_INT_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(int[].class);
-            VH_LONG_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "longField", long.class);
-            VH_LONG_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "longStaticField", long.class);
-            VH_LONG_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(long[].class);
-            VH_FLOAT_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "floatField", float.class);
-            VH_FLOAT_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "floatStaticField", float.class);
-            VH_FLOAT_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(float[].class);
-            VH_DOUBLE_INSTANCE_FIELD = lookup.findVarHandle(Carrier.class, "doubleField", double.class);
-            VH_DOUBLE_STATIC_FIELD = lookup.findStaticVarHandle(Carrier.class, "doubleStaticField", double.class);
-            VH_DOUBLE_ARRAY_ELEMENT = MethodHandles.arrayElementVarHandle(double[].class);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+            static final $Carrier $CARRIER = new $Carrier();
+            static final #Type[] $ARR = { #Init };
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldInstanceField_ref() {
-        return VH_REF_INSTANCE_FIELD.getStable(CARRIER);
-    }
+            @Test
+            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+            static #Type $testFoldInstanceField() {
+                return (#Type) $VH_INSTANCE_FIELD.#AccessMode($CARRIER);
+            }
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldStaticField_ref() {
-        return VH_REF_STATIC_FIELD.getStable();
-    }
+            @Test
+            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+            static #Type $testFoldStaticField() {
+                return (#Type) $VH_STATIC_FIELD.#AccessMode();
+            }
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldArrayElement_ref() {
-        return VH_REF_ARRAY_ELEMENT.getStable(REF_ARR, 0);
-    }
+            @Test
+            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+            static #Type $testFoldArrayElement() {
+                return (#Type) $VH_ARRAY_ELEMENT.#AccessMode($ARR, 0);
+            }
+            """));
+        var viewPrimsOnlyTemplate = Template.make("Type", "Init", (String _, String _) -> scope(
+            """
+            static final VarHandle $VH_BYTE_ARR_VIEW
+                = MethodHandles.byteArrayViewVarHandle(#Type[].class, ByteOrder.nativeOrder());
+            static final VarHandle $VH_BYTE_BUFFER_VIEW
+                = MethodHandles.byteBufferViewVarHandle(#Type[].class, ByteOrder.nativeOrder());
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldInstanceFieldAcquire_ref() {
-        return VH_REF_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
+            static final byte[] $BYTE_ARR = new byte[8];
+            static final ByteBuffer $BB;
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldStaticFieldAcquire_ref() {
-        return VH_REF_STATIC_FIELD.getStableAcquire();
-    }
+            static {
+                $VH_BYTE_ARR_VIEW.set($BYTE_ARR, 0, (#Type) #Init);
+                $BB = ByteBuffer.allocate(8);
+                $VH_BYTE_BUFFER_VIEW.set($BB, 0, (#Type) #Init);
+            }
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static Object testFoldArrayElementAcquire_ref() {
-        return VH_REF_ARRAY_ELEMENT.getStableAcquire(REF_ARR, 0);
-    }
+            @Test
+            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+            static #Type $testFoldByteArrayView() {
+                return (#Type) $VH_BYTE_ARR_VIEW.getStable($BYTE_ARR, 0);
+            }
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldInstanceField_boolean() {
-        return (boolean) VH_BOOLEAN_INSTANCE_FIELD.getStable(CARRIER);
-    }
+            @Test
+            @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
+            static #Type $testFoldByteBufferView() {
+                return (#Type) $VH_BYTE_BUFFER_VIEW.getStable($BB, 0);
+            }
+            """));
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldStaticField_boolean() {
-        return (boolean) VH_BOOLEAN_STATIC_FIELD.getStable();
-    }
+        record TestCase(String type, String init, boolean isViewPrim) {}
+        List<TemplateToken> testTemplateTokens = Stream.of(
+                new TestCase("Object",  "new Object()", false),
+                new TestCase("boolean", "true",         false),
+                new TestCase("byte",    "42",           false),
+                new TestCase("char",    "42",           true),
+                new TestCase("short",   "42",           true),
+                new TestCase("int",     "42",           true),
+                new TestCase("long",    "42",           true),
+                new TestCase("float",   "42",           true),
+                new TestCase("double",  "42",           true)
+        )
+        .mapMulti((TestCase testCase, Consumer<TemplateToken> sink) -> {
+            sink.accept(allTypeTemplate.asToken(testCase.type(), testCase.init(), "getStable"));
+            sink.accept(allTypeTemplate.asToken(testCase.type(), testCase.init(), "getStableAcquire"));
+            if (testCase.isViewPrim()) {
+                sink.accept(viewPrimsOnlyTemplate.asToken(testCase.type(), testCase.init()));
+            }
+        })
+        .toList();
 
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldArrayElement_boolean() {
-        return (boolean) VH_BOOLEAN_ARRAY_ELEMENT.getStable(BOOLEAN_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldInstanceFieldAcquire_boolean() {
-        return (boolean) VH_BOOLEAN_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldStaticFieldAcquire_boolean() {
-        return (boolean) VH_BOOLEAN_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static boolean testFoldArrayElementAcquire_boolean() {
-        return (boolean) VH_BOOLEAN_ARRAY_ELEMENT.getStableAcquire(BOOLEAN_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldInstanceField_byte() {
-        return (byte) VH_BYTE_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldStaticField_byte() {
-        return (byte) VH_BYTE_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldArrayElement_byte() {
-        return (byte) VH_BYTE_ARRAY_ELEMENT.getStable(BYTE_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldInstanceFieldAcquire_byte() {
-        return (byte) VH_BYTE_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldStaticFieldAcquire_byte() {
-        return (byte) VH_BYTE_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static byte testFoldArrayElementAcquire_byte() {
-        return (byte) VH_BYTE_ARRAY_ELEMENT.getStableAcquire(BYTE_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldInstanceField_char() {
-        return (char) VH_CHAR_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldStaticField_char() {
-        return (char) VH_CHAR_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldArrayElement_char() {
-        return (char) VH_CHAR_ARRAY_ELEMENT.getStable(CHAR_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldInstanceFieldAcquire_char() {
-        return (char) VH_CHAR_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldStaticFieldAcquire_char() {
-        return (char) VH_CHAR_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static char testFoldArrayElementAcquire_char() {
-        return (char) VH_CHAR_ARRAY_ELEMENT.getStableAcquire(CHAR_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldInstanceField_short() {
-        return (short) VH_SHORT_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldStaticField_short() {
-        return (short) VH_SHORT_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldArrayElement_short() {
-        return (short) VH_SHORT_ARRAY_ELEMENT.getStable(SHORT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldInstanceFieldAcquire_short() {
-        return (short) VH_SHORT_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldStaticFieldAcquire_short() {
-        return (short) VH_SHORT_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static short testFoldArrayElementAcquire_short() {
-        return (short) VH_SHORT_ARRAY_ELEMENT.getStableAcquire(SHORT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldInstanceField_int() {
-        return (int) VH_INT_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldStaticField_int() {
-        return (int) VH_INT_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldArrayElement_int() {
-        return (int) VH_INT_ARRAY_ELEMENT.getStable(INT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldInstanceFieldAcquire_int() {
-        return (int) VH_INT_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldStaticFieldAcquire_int() {
-        return (int) VH_INT_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static int testFoldArrayElementAcquire_int() {
-        return (int) VH_INT_ARRAY_ELEMENT.getStableAcquire(INT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldInstanceField_long() {
-        return (long) VH_LONG_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldStaticField_long() {
-        return (long) VH_LONG_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldArrayElement_long() {
-        return (long) VH_LONG_ARRAY_ELEMENT.getStable(LONG_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldInstanceFieldAcquire_long() {
-        return (long) VH_LONG_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldStaticFieldAcquire_long() {
-        return (long) VH_LONG_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static long testFoldArrayElementAcquire_long() {
-        return (long) VH_LONG_ARRAY_ELEMENT.getStableAcquire(LONG_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldInstanceField_float() {
-        return (float) VH_FLOAT_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldStaticField_float() {
-        return (float) VH_FLOAT_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldArrayElement_float() {
-        return (float) VH_FLOAT_ARRAY_ELEMENT.getStable(FLOAT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldInstanceFieldAcquire_float() {
-        return (float) VH_FLOAT_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldStaticFieldAcquire_float() {
-        return (float) VH_FLOAT_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static float testFoldArrayElementAcquire_float() {
-        return (float) VH_FLOAT_ARRAY_ELEMENT.getStableAcquire(FLOAT_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldInstanceField_double() {
-        return (double) VH_DOUBLE_INSTANCE_FIELD.getStable(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldStaticField_double() {
-        return (double) VH_DOUBLE_STATIC_FIELD.getStable();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldArrayElement_double() {
-        return (double) VH_DOUBLE_ARRAY_ELEMENT.getStable(DOUBLE_ARR, 0);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldInstanceFieldAcquire_double() {
-        return (double) VH_DOUBLE_INSTANCE_FIELD.getStableAcquire(CARRIER);
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldStaticFieldAcquire_double() {
-        return (double) VH_DOUBLE_STATIC_FIELD.getStableAcquire();
-    }
-
-    @Test
-    @IR(failOn = { IRNode.LOAD, IRNode.MEMBAR })
-    static double testFoldArrayElementAcquire_double() {
-        return (double) VH_DOUBLE_ARRAY_ELEMENT.getStableAcquire(DOUBLE_ARR, 0);
+        return TestFrameworkClass.render(
+                "compiler.c2.irTests.stable", "StableVarHandleTest_Case",
+                Set.of("java.nio.*",
+                       "java.lang.invoke.*"),
+                comp.getEscapedClassPathOfCompiledClasses(),
+                testTemplateTokens);
     }
 }
